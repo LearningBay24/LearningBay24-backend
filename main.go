@@ -3,38 +3,11 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 
-	"github.com/pelletier/go-toml"
+	"learningbay24.de/backend/config"
 )
-
-type DB struct {
-	Host     string
-	Port     int16
-	User     string
-	Pass     string
-	Database string
-}
-
-type Config struct {
-	DB DB
-}
-
-var (
-	Conf Config
-)
-
-func initConfig() {
-	data, err := ioutil.ReadFile("./config.toml")
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = toml.Unmarshal(data, &Conf)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func setupDbHandle() *sql.DB {
 	dsn := getDataSourceName()
@@ -47,10 +20,10 @@ func setupDbHandle() *sql.DB {
 }
 
 func getDataSourceName() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", Conf.DB.User, Conf.DB.Pass, Conf.DB.Host, Conf.DB.Port, Conf.DB.Database)
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", config.Conf.DB.User, config.Conf.DB.Pass, config.Conf.DB.Host, config.Conf.DB.Port, config.Conf.DB.Database)
 }
 
 func main() {
-	initConfig()
+	config.InitConfig()
 	db := setupDbHandle()
 }

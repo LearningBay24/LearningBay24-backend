@@ -4,3 +4,6 @@ Port = 3306
 User = "learningbay24"
 Pass = "test"
 Database = "learningbay24"
+
+[Files]
+Path = "/var/www/learningbay24/"
