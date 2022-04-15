@@ -14,6 +14,7 @@ import (
 
 //CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database
 func CreateCourse(name, enrollkey string, description null.String, usersid []int) {
+	// TODO: implement check for certificates
 	//Connets to the database
 	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/learningbay24")
 
@@ -38,6 +39,7 @@ func CreateCourse(name, enrollkey string, description null.String, usersid []int
 	if err != nil {
 		panic(err.Error())
 	} else {
+		// TODO: Implement roles assigment for tutors
 		shasc := models.UserHasCourse{UserID: usersid[0], CourseID: c.ID, RoleID: 1}
 		err = shasc.Insert(context.Background(), db, boil.Infer())
 		if err != nil {
