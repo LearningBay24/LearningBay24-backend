@@ -6,7 +6,9 @@ import (
 	"io/ioutil"
 	"log"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pelletier/go-toml"
+	"learningbay24.de/backend/api"
 )
 
 type DB struct {
@@ -51,6 +53,8 @@ func getDataSourceName() string {
 }
 
 func main() {
-	initConfig()
-	db := setupDbHandle()
+	router := gin.Default()
+	router.GET("/courses/:id",api.GetCourseById)
+	router.POST("/courses",api.CreateCourse)
+	router.Run("localhost:8080")
 }
