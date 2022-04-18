@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -41,6 +40,7 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 		return err
 	} else {
 		// TODO: Implement roles assigment for tutors
+		// Gives the user with the ID in the 0 place in the array the role of the creator
 		shasc := models.UserHasCourse{UserID: usersid[0], CourseID: c.ID, RoleID: 1}
 		err = shasc.Insert(context.Background(), db, boil.Infer())
 		if err != nil {
@@ -69,8 +69,8 @@ func UpdateCourse(db *sql.DB, id int, name, enrollkey string, description null.S
 	c.Description = description
 	c.Name = name
 
-	cupdate, err := c.Update(context.Background(), db, boil.Infer())
-	fmt.Println(cupdate)
+	_, err = c.Update(context.Background(), db, boil.Infer())
+
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -83,8 +83,8 @@ func UpdateCourse(db *sql.DB, id int, name, enrollkey string, description null.S
 	}
 	f.Name = name
 
-	fupdate, err := f.Update(context.Background(), db, boil.Infer())
-	fmt.Println(fupdate)
+	_, err = f.Update(context.Background(), db, boil.Infer())
+
 	if err != nil {
 		tx.Rollback()
 		return err
