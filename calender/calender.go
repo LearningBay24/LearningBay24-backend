@@ -1,38 +1,63 @@
 package calender
 
-import "database/sql"
+import (
+	"context"
+	"database/sql"
+	"time"
 
-func AppointmentInCalender(db *sql.DB) {
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"learningbay24.de/backend/models"
+)
 
-	/*TODO: adjust the code onto the db-object
+func AppointmentInCalender(db *sql.DB, id int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time, usersid []int) error {
 
-	// <given variables>___________________________________________________________________________________
-	var appointName = "Terminname"
-	var appointDate = "Termindatum"
-	var appointBegin = "UhrzeitTerminbeginn"
-	var appointEnd = "UhrzeitTerminende"
-	repeats := false
-	var wiederholAbstand = 0 // wenn nicht, dann = 0; 1 = wöchentlich, 2 = monatlich, 3 = jährlich
-	var wiederholEnde = 0    // wenn nicht, dann = 0 bzw. null
-	var zusatzInfo = "Zusatzinfo"
+	// Begins the transaction (got from course.go)
+	transaction, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
 
-	var courseMembers []string // In Wirklichkeit eine gegebene Abhängigkeit zum dazuehörigen Kurs
-	// </given variables>__________________________________________________________________________________
+	// Creating new appointment for that course
+	newAppoint := &models.Appointment{ID: id, Date: date, Location: location, Online: online, CourseID: courseId}
 
-	// new Appointment appointment{appointName, appointDate, ...}
+	// Inserts into database
+	err = newAppoint.Insert(context.Background(), db, boil.Infer())
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
 
-	for i := 0; i < len(courseMembers); i++ {
-		// check, whether it is an repeating appointment
+	// add new appointment to each person in the course
+	// TODO -> per userId, oder muss aus der CourseId der Kurs und die dazugehörigen User gezogen werden?
+	for i := 0; i < len(usersid); i++ {
+
+		var nextDate time.Time = date
 		if repeats {
+
 			// Im gegebenen Abstand den jeweiligen Kalender durchgehen, Termin wie bei else einfügen
-			// for ... {
-			//		courseMembers[i]->calender.insert(appointment)
-			// }
+			for {
+				// courseMembers[i]->calender.insert(appointment)
+
+				// go to next appointment
+				switch repeatDistance {
+				case 1:
+					nextDate.AddDate(0, 0, 7) // add seven days
+				case 2:
+					nextDate.AddDate(0, 1, 0) // add one month
+				case 3:
+					nextDate.AddDate(1, 0, 0) // add a year
+				default:
+					nextDate.AddDate(0, 0, 0)
+				}
+				if nextDate.After(repeatEnd) {
+					break // stop, when the end date is reached
+				}
+			}
 		} else {
 			// courseMembers[i]->calender.insert(appointment)
 		}
 	}
-
-
-	*/
+	transaction.Commit()
+	return nil
 }
