@@ -30,34 +30,36 @@ func AppointmentInCalender(db *sql.DB, id int, date time.Time, location null.Str
 
 	// add new appointment to each person in the course
 	// TODO -> per userId, oder muss aus der CourseId der Kurs und die dazugehörigen User gezogen werden?
-	for i := 0; i < len(usersid); i++ {
+	//for i := 0; i < len(usersid); i++ {
 
-		var nextDate time.Time = date
-		if repeats {
+	var nextDate time.Time = date
+	if repeats {
 
-			// Im gegebenen Abstand den jeweiligen Kalender durchgehen, Termin wie bei else einfügen
-			for {
-				// courseMembers[i]->calender.insert(appointment)
+		// Im gegebenen Abstand den jeweiligen Kalender durchgehen, Termin wie bei else einfügen
+		for {
+			// TODO get Course object, insert appointment with AddAppointments:
+			// func (o *Course) AddAppointments(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Appointment) error {}
 
-				// go to next appointment
-				switch repeatDistance {
-				case 1:
-					nextDate.AddDate(0, 0, 7) // add seven days
-				case 2:
-					nextDate.AddDate(0, 1, 0) // add one month
-				case 3:
-					nextDate.AddDate(1, 0, 0) // add a year
-				default:
-					nextDate.AddDate(0, 0, 0)
-				}
-				if nextDate.After(repeatEnd) {
-					break // stop, when the end date is reached
-				}
+			// go to next appointment
+			switch repeatDistance {
+			case 1:
+				nextDate.AddDate(0, 0, 7) // add seven days
+			case 2:
+				nextDate.AddDate(0, 1, 0) // add one month
+			case 3:
+				nextDate.AddDate(1, 0, 0) // add a year
+			default:
+				nextDate.AddDate(0, 0, 0)
 			}
-		} else {
-			// courseMembers[i]->calender.insert(appointment)
+			if nextDate.After(repeatEnd) {
+				break // stop, when the end date is reached
+			}
 		}
+	} else {
+		// TODO get Course object, insert appointment with AddAppointments:
+		// func (o *Course) AddAppointments(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Appointment) error {}
 	}
+	//}
 	transaction.Commit()
 	return nil
 }
