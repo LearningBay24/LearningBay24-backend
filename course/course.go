@@ -49,7 +49,7 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 		}
 	}
 	tx.Commit()
-	return err
+	return nil
 }
 
 // UpdateCourse takes the ID of a existing course and the already existing fields for name,enrollkey and description and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)
@@ -90,7 +90,7 @@ func UpdateCourse(db *sql.DB, id int, name, enrollkey string, description null.S
 		return err
 	}
 	tx.Commit()
-	return err
+	return nil
 }
 
 // DeleteCourse takes a ID and deletes the course and the forum associated with it
@@ -132,7 +132,7 @@ func DeleteCourse(db *sql.DB, id int) error {
 		return errors.New("More than 10 Minutes have passed")
 	}
 	tx.Commit()
-	return err
+	return nil
 }
 
 // DeactivateCourse takes a ID and deactivates the course and the forum associated with it
@@ -169,120 +169,5 @@ func DeactivateCourse(db *sql.DB, id int) error {
 		return err
 	}
 	tx.Commit()
-	return err
-}
-
-//UpdateCourse takes the ID of a existing course and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)
-func UpdateCourse(id int, name, enrollkey string, description null.String) {
-	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/learningbay24?parseTime=true")
-
-	if err != nil {
-		panic(err.Error())
-	} else {
-		fmt.Println("Connected")
-	}
-
-	c, err := models.FindCourse(context.Background(), db, id)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	c.EnrollKey = enrollkey
-	c.Description = description
-	c.Name = name
-
-	cupdate, err := c.Update(context.Background(), db, boil.Infer())
-	fmt.Println(cupdate)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	f, err := models.FindForum(context.Background(), db, id)
-	if err != nil {
-		panic(err.Error())
-	}
-	f.Name = name
-
-	fupdate, err := f.Update(context.Background(), db, boil.Infer())
-	fmt.Println(fupdate)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	defer db.Close()
-}
-
-//DeleteCourse takes a ID and deletes the course and the forum associated with it
-func DeleteCourse(id int) {
-	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/learningbay24?parseTime=true")
-
-	if err != nil {
-		panic(err.Error())
-	} else {
-		fmt.Println("Connected")
-	}
-	c, err := models.FindCourse(context.Background(), db, id)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	//Checks if more than 10 Minutes have passed wont delete if thats the case
-	curTime := time.Now()
-	diff := curTime.Sub(c.CreatedAt.Time)
-	if diff.Minutes() < 10 {
-		fmt.Println("Only ", diff.Minutes(), "Have passed")
-		cdel, err := c.Delete(context.Background(), db, true)
-		fmt.Println(cdel)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		f, err := models.FindForum(context.Background(), db, id)
-		if err != nil {
-			panic(err.Error())
-		}
-
-		fdel, err := f.Delete(context.Background(), db, true)
-		fmt.Println(fdel)
-		if err != nil {
-			panic(err.Error())
-		}
-	} else {
-		fmt.Println("More than 10 Minutes have passed")
-	}
-	defer db.Close()
-}
-
-//DeactivateCourse takes a ID and deactivates the course and the forum associated with it
-func DeactivateCourse(id int) {
-	db, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/learningbay24?parseTime=true")
-
-	if err != nil {
-		panic(err.Error())
-	} else {
-		fmt.Println("Connected")
-	}
-	c, err := models.FindCourse(context.Background(), db, id)
-	if err != nil {
-		panic(err.Error())
-	}
-	c.DeletedAt = null.NewTime(time.Now(), true)
-	cupdate, err := c.Update(context.Background(), db, boil.Infer())
-	fmt.Println(cupdate)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	f, err := models.FindForum(context.Background(), db, id)
-	if err != nil {
-		panic(err.Error())
-	}
-	f.DeletedAt = null.NewTime(time.Now(), true)
-	fudate, err := f.Update(context.Background(), db, boil.Infer())
-	fmt.Println(fudate)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	defer db.Close()
+	return nil
 }
