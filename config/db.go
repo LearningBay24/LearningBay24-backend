@@ -19,5 +19,7 @@ func SetupDbHandle() *sql.DB {
 }
 
 func getDataSourceName() string {
-	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", Conf.DB.User, Conf.DB.Pass, Conf.DB.Host, Conf.DB.Port, Conf.DB.Database)
+
+	return fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", Conf.DB.User, Conf.DB.Pass, Conf.DB.Host, Conf.DB.Port, Conf.DB.Database)
+
 }
