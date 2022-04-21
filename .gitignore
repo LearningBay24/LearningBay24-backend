@@ -1,2 +1,6 @@
 sqlboiler.toml
+<<<<<<< HEAD
 config.toml
+=======
+config.toml
+>>>>>>> api
