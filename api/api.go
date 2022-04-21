@@ -21,11 +21,13 @@ func GetCourseById(c *gin.Context) {
 	var course *models.Course
 	course, err = models.FindCourse(context.Background(), db, id)
 	if err != nil {
-		panic("nah")
+        fmt.Println(err.Error())
 	}
 
+    c.Header("Access-Control-Allow-Origin", "*")
 	//Return Status and Data in JSON-Format
     c.IndentedJSON(http.StatusOK, course)
+    fmt.Println("course ", course)
 	fmt.Println(err)
 }
 
