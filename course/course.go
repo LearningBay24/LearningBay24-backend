@@ -24,7 +24,7 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 
 // CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is an array of IDs that is used to assign the role of the creator
 // and the roles for tutor
-func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, usersid []int) error {
+func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid []int) error {
 	// TODO: implement check for certificates
 
 	// Begins the transaction
@@ -42,7 +42,7 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 	}
 
 	// Creates a Course struct
-	c := &models.Course{Name: name, ForumID: f.ID, Description: description}
+	c := &models.Course{Name: name, Description: description, EnrollKey: enrollkey, ForumID: f.ID}
 	// Inserts into database
 	err = c.Insert(context.Background(), db, boil.Infer())
 	if err != nil {
@@ -63,7 +63,7 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 }
 
 // UpdateCourse takes the ID of a existing course and the already existing fields for name,enrollkey and description and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)
-func UpdateCourse(db *sql.DB, id int, name, enrollkey string, description null.String) error {
+func UpdateCourse(db *sql.DB, id int, name string, description null.String, enrollkey string) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
@@ -207,8 +207,32 @@ func GetUserCourses(db *sql.DB, uid int) (models.CourseSlice, error) {
 	return courses, nil
 }
 
-// DeleteUserFromCourse takes a UserID and a CourseID and deletes the corresponding entry in the table "user_has_coourse"
-func DeleteUserFromCourse(db *sql.DB, cid int, uid int) error {
+// GetUserCourses takes the ID of a Course and returns a slice of Users which are enrolled in it
+func GetUsersinCourse(db *sql.DB, cid int) (models.UserSlice, error) {
+
+	usrhascourse, err := models.UserHasCourses(models.UserHasCourseWhere.CourseID.EQ(cid)).All(context.Background(), db)
+	if err != nil {
+
+		return nil, err
+	}
+
+	var users models.UserSlice
+
+	for num := 0; len(usrhascourse) > num; num++ {
+
+		user, err := models.FindUser(context.Background(), db, usrhascourse[num].UserID)
+		users = append(users, user)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	return users, nil
+}
+
+// DeleteUserFromCourse takes a UserID and a CourseID and deletes the corresponding entry in the table "user_has_course"
+func DeleteUserFromCourse(db *sql.DB, uid int, cid int) error {
 
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -217,16 +241,50 @@ func DeleteUserFromCourse(db *sql.DB, cid int, uid int) error {
 	}
 
 	usrhascourse, err := models.FindUserHasCourse(context.Background(), db, uid, cid)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	if usrhascourse.RoleID != 1 {
+		_, err = usrhascourse.Delete(context.Background(), db, true)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		tx.Commit()
+		return nil
+	} else {
+		return errors.New("Trying to delete the creator of the course")
+	}
+}
 
+// EnrollUser takes a UserID, CourseID and Enrollkey and adds the User to the course if the enrollkey is correct
+func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) error {
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+
+		return err
+	}
+
+	c, err := models.FindCourse(context.Background(), db, cid)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	_, err = usrhascourse.Delete(context.Background(), db, true)
-	if err != nil {
+	if c.EnrollKey == enrollkey {
+		usrhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: 3}
+		err = usrhascourse.Insert(context.Background(), db, boil.Infer())
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+		tx.Commit()
+		return nil
+
+	} else {
 		tx.Rollback()
-		return err
+		return errors.New("Wrong Enrollkey")
 	}
-	tx.Commit()
-	return nil
+
 }
