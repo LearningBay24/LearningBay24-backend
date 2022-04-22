@@ -8,3 +8,4 @@ Database = "learningbay24"
 
 [Files]
 Path = "/var/www/learningbay24/"
+AllowedFileTypes = ["pdf", "png", "jpg", "zip", "tar", "gz", "bzip", "rar"]

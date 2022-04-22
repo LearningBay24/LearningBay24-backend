@@ -16,7 +16,8 @@ type DB struct {
 }
 
 type Files struct {
-	Path string
+	Path             string
+	AllowedFileTypes []string
 }
 
 type Config struct {
@@ -29,6 +30,7 @@ var (
 )
 
 func InitConfig() {
+	// TODO: save in `/etc/learningbay24/` when not testing
 	data, err := ioutil.ReadFile("./config.toml")
 	if err != nil {
 		log.Fatal(err)
