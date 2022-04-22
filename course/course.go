@@ -12,6 +12,16 @@ import (
 	"learningbay24.de/backend/models"
 )
 
+// GetCourse takes a ID and returns a struct of the course with this ID
+func GetCourse(db *sql.DB, id int) (*models.Course, error) {
+
+	c, err := models.FindCourse(context.Background(), db, id)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
 // CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is an array of IDs that is used to assign the role of the creator
 // and the roles for tutor
 func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, usersid []int) error {
@@ -164,6 +174,55 @@ func DeactivateCourse(db *sql.DB, id int) error {
 	f.DeletedAt = null.NewTime(time.Now(), true)
 	_, err = f.Update(context.Background(), db, boil.Infer())
 
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+// GetUserCourses takes the ID of a User and returns a slice of Courses in which he is enrolled
+func GetUserCourses(db *sql.DB, uid int) (models.CourseSlice, error) {
+
+	usrhascourse, err := models.UserHasCourses(models.UserHasCourseWhere.UserID.EQ(uid)).All(context.Background(), db)
+	if err != nil {
+
+		return nil, err
+	}
+
+	var courses models.CourseSlice
+
+	for num := 0; len(usrhascourse) > num; num++ {
+
+		course, err := models.FindCourse(context.Background(), db, usrhascourse[num].CourseID)
+		courses = append(courses, course)
+		if err != nil {
+
+			return nil, err
+		}
+
+	}
+
+	return courses, nil
+}
+
+// DeleteUserFromCourse takes a UserID and a CourseID and deletes the corresponding entry in the table "user_has_coourse"
+func DeleteUserFromCourse(db *sql.DB, cid int, uid int) error {
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+
+		return err
+	}
+
+	usrhascourse, err := models.FindUserHasCourse(context.Background(), db, uid, cid)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	_, err = usrhascourse.Delete(context.Background(), db, true)
 	if err != nil {
 		tx.Rollback()
 		return err
