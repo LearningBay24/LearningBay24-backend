@@ -2,11 +2,15 @@ version: "3.9"
 
 services:
   db:
-    image: mysql
+    image: mariadb:latest
     command: --character-set-server=utf8 --collation-server=utf8_unicode_ci
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: test
-      MYSQL_DATABASE: learningbay24
+      MARIADB_ROOT_PASSWORD: test
+      MARIADB_DATABASE: learningbay24
+      MARIADB_USER: learningbay24
+      MARIADB_PASSWORD: learningbay24
+    volumes:
+      - ./mariadb-data:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
