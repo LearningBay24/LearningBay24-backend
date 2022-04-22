@@ -1,8 +1,9 @@
 [DB]
 Host = "127.0.0.1"
 Port = 3306
+# default user/pass/db for docker-compose file in contrib/ dir
 User = "learningbay24"
-Pass = "test"
+Pass = "learningbay24"
 Database = "learningbay24"
 
 [Files]
