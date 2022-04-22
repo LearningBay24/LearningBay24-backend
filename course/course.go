@@ -14,13 +14,13 @@ import (
 
 // CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is an array of IDs that is used to assign the role of the creator
 // and the roles for tutor
-func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, usersid []int) error {
+func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, usersid []int) (int, error) {
 	// TODO: implement check for certificates
 
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	// Creates a Forum struct (Forum has to be created first because of Foreign Key)
 	f := &models.Forum{Name: name}
@@ -28,7 +28,7 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 	err = f.Insert(context.Background(), db, boil.Infer())
 	if err != nil {
 		tx.Rollback()
-		return err
+		return 0, err
 	}
 
 	// Creates a Course struct
@@ -37,7 +37,7 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 	err = c.Insert(context.Background(), db, boil.Infer())
 	if err != nil {
 		tx.Rollback()
-		return err
+		return 0, err
 	} else {
 		// TODO: Implement roles assigment for tutors
 		// Gives the user with the ID in the 0 place in the array the role of the creator
@@ -45,11 +45,11 @@ func CreateCourse(db *sql.DB, name, enrollkey string, description null.String, u
 		err = shasc.Insert(context.Background(), db, boil.Infer())
 		if err != nil {
 			tx.Rollback()
-			return err
+			return 0, err
 		}
 	}
 	tx.Commit()
-	return nil
+	return c.ID, nil
 }
 
 // UpdateCourse takes the ID of a existing course and the already existing fields for name,enrollkey and description and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)

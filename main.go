@@ -13,5 +13,6 @@ func main() {
 	router := gin.Default()
 	router.GET("/courses/:id",api.GetCourseById)
 	router.POST("/courses",api.CreateCourse)
+	router.GET("/courses", api.GetCourses)
 	router.Run("0.0.0.0:8080")
 }
