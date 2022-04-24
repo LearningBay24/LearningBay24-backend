@@ -9,6 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"learningbay24.de/backend/models"
 )
 
@@ -119,27 +120,25 @@ func DeleteCourse(db *sql.DB, id int) error {
 	// Checks if more than 10 Minutes have passed wont delete if thats the case
 	curTime := time.Now()
 	diff := curTime.Sub(c.CreatedAt.Time)
-	if diff.Minutes() < 10 {
+	if diff.Minutes() > 10 {
+		return errors.New("more than 10 Minutes have passed")
+	}
+	_, err = c.Delete(context.Background(), db, true)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-		_, err = c.Delete(context.Background(), db, true)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
+	f, err := models.FindForum(context.Background(), db, id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-		f, err := models.FindForum(context.Background(), db, id)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-
-		_, err = f.Delete(context.Background(), db, true)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	} else {
-		return errors.New("More than 10 Minutes have passed")
+	_, err = f.Delete(context.Background(), db, true)
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 	tx.Commit()
 	return nil
@@ -185,47 +184,22 @@ func DeactivateCourse(db *sql.DB, id int) error {
 // GetUserCourses takes the ID of a User and returns a slice of Courses in which he is enrolled
 func GetUserCourses(db *sql.DB, uid int) (models.CourseSlice, error) {
 
-	usrhascourse, err := models.UserHasCourses(models.UserHasCourseWhere.UserID.EQ(uid)).All(context.Background(), db)
+	courses, err := models.Courses(qm.SQL("SELECT * FROM learningbay24.user_has_course,learningbay24.course WHERE learningbay24.user_has_course.user_id = ? AND learningbay24.user_has_course.course_id = learningbay24.course.id", uid)).All(context.Background(), db)
+
 	if err != nil {
 
 		return nil, err
-	}
-
-	var courses models.CourseSlice
-
-	for num := 0; len(usrhascourse) > num; num++ {
-
-		course, err := models.FindCourse(context.Background(), db, usrhascourse[num].CourseID)
-		courses = append(courses, course)
-		if err != nil {
-
-			return nil, err
-		}
-
 	}
 
 	return courses, nil
 }
 
 // GetUserCourses takes the ID of a Course and returns a slice of Users which are enrolled in it
-func GetUsersinCourse(db *sql.DB, cid int) (models.UserSlice, error) {
+func GetUsersInCourse(db *sql.DB, cid int) (models.UserSlice, error) {
 
-	usrhascourse, err := models.UserHasCourses(models.UserHasCourseWhere.CourseID.EQ(cid)).All(context.Background(), db)
+	users, err := models.Users(qm.SQL("SELECT * FROM learningbay24.user_has_course,learningbay24.user WHERE  learningbay24.user_has_course.course_id=? AND learningbay24.user_has_course.user_id = learningbay24.user.id", cid)).All(context.Background(), db)
 	if err != nil {
-
 		return nil, err
-	}
-
-	var users models.UserSlice
-
-	for num := 0; len(usrhascourse) > num; num++ {
-
-		user, err := models.FindUser(context.Background(), db, usrhascourse[num].UserID)
-		users = append(users, user)
-		if err != nil {
-			return nil, err
-		}
-
 	}
 
 	return users, nil
@@ -240,22 +214,21 @@ func DeleteUserFromCourse(db *sql.DB, uid int, cid int) error {
 		return err
 	}
 
-	usrhascourse, err := models.FindUserHasCourse(context.Background(), db, uid, cid)
+	userhascourse, err := models.FindUserHasCourse(context.Background(), db, uid, cid)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
-	if usrhascourse.RoleID != 1 {
-		_, err = usrhascourse.Delete(context.Background(), db, true)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		tx.Commit()
-		return nil
-	} else {
-		return errors.New("Trying to delete the creator of the course")
+	if userhascourse.RoleID == 1 {
+		return errors.New("trying to delete the creator of the course")
 	}
+	_, err = userhascourse.Delete(context.Background(), db, true)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 }
 
 // EnrollUser takes a UserID, CourseID and Enrollkey and adds the User to the course if the enrollkey is correct
@@ -272,19 +245,18 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) error {
 		tx.Rollback()
 		return err
 	}
-	if c.EnrollKey == enrollkey {
-		usrhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: 3}
-		err = usrhascourse.Insert(context.Background(), db, boil.Infer())
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-		tx.Commit()
-		return nil
-
-	} else {
+	if c.EnrollKey != enrollkey {
 		tx.Rollback()
-		return errors.New("Wrong Enrollkey")
+		return errors.New("wrong Enrollkey")
+
 	}
+	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: 3}
+	err = userhascourse.Insert(context.Background(), db, boil.Infer())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
 
 }
