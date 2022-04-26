@@ -63,7 +63,25 @@ func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.S
 		}
 		course.AddAppointments(context.Background(), db, true, newAppoint)
 	}
-	//}
+	transaction.Commit()
+	return nil
+}
+
+func SubmissionInCalender(db *sql.DB) error {
+
+	// Begins transaction
+	transaction, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	// (submission = erstellte Abgabe)
+	// TODO
+	// 1. F.A.'s dazu raus ziehen
+	// 2. PSeudocode
+	// 3. Go-Code
+
+	// End transaction
 	transaction.Commit()
 	return nil
 }
