@@ -184,10 +184,12 @@ func DeactivateCourse(db *sql.DB, id int) error {
 // GetUserCourses takes the ID of a User and returns a slice of Courses in which he is enrolled
 func GetUserCourses(db *sql.DB, uid int) (models.CourseSlice, error) {
 
-	courses, err := models.Courses(qm.SQL("SELECT * FROM learningbay24.user_has_course,learningbay24.course WHERE learningbay24.user_has_course.user_id = ? AND learningbay24.user_has_course.course_id = learningbay24.course.id", uid)).All(context.Background(), db)
-
+	courses, err := models.Courses(
+		qm.From(models.TableNames.UserHasCourse),
+		qm.Where("user_has_course.user_id=?", uid),
+		qm.And("user_has_course.course_id = course.id"),
+	).All(context.Background(), db)
 	if err != nil {
-
 		return nil, err
 	}
 
@@ -197,7 +199,11 @@ func GetUserCourses(db *sql.DB, uid int) (models.CourseSlice, error) {
 // GetUserCourses takes the ID of a Course and returns a slice of Users which are enrolled in it
 func GetUsersInCourse(db *sql.DB, cid int) (models.UserSlice, error) {
 
-	users, err := models.Users(qm.SQL("SELECT * FROM learningbay24.user_has_course,learningbay24.user WHERE  learningbay24.user_has_course.course_id=? AND learningbay24.user_has_course.user_id = learningbay24.user.id", cid)).All(context.Background(), db)
+	users, err := models.Users(
+		qm.From(models.TableNames.UserHasCourse),
+		qm.Where("user_has_course.course_id=?", cid),
+		qm.And("user_has_course.user_id = user.id"),
+	).All(context.Background(), db)
 	if err != nil {
 		return nil, err
 	}
