@@ -1,0 +1,21 @@
+image: alpine/edge
+packages:
+  - go
+  - rsync
+sources:
+  - https://github.com/LearningBay24/LearningBay24-backend
+secrets:
+  - 3a8daec5-761a-4c5f-951f-f6463081dce2 # learningbay24 deploy
+tasks:
+  - build: |
+      cd LearningBay24-backend
+      go build
+  - deploy: |
+      if [ "$GITHUB_REF" != "ref/heads/main" ]
+      then
+        echo "Skipping deploying changes if not on main branch"
+        exit
+      fi
+      echo "StrictHostKeyChecking=no" >> ~/.ssh/config
+      cd LearningBay24-backend
+      rsync -r ./backend srht-deploy@learningbay24.de:/opt/LearningBay24-backend/
