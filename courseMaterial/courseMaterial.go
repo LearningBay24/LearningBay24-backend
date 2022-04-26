@@ -5,9 +5,11 @@ import (
 	"database/sql"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"learningbay24.de/backend/models"
 )
 
-func CreateMaterial(db *sql.DB, name, url string, usersid int, courseID int) error {
+func CreateMaterial(db *sql.DB, name, uri string, uploaderid, courseID int, local int8) error {
 
 	// Begin transaction with database handle
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -15,8 +17,18 @@ func CreateMaterial(db *sql.DB, name, url string, usersid int, courseID int) err
 		return err
 	}
 
-	// TODO: local boolean
+	// Creates File (courseMaterial) struct
+	cm := &models.File{Name: name, URI: uri, UploaderID: uploaderid, Local: local}
 
+	err = cm.Insert(context.Background(), db, boil.Infer())
+	/*
+		if err != nil {
+			tx.Rollback()
+			return err
+		} else {
+
+		}
+	*/
 	// Commit transaction into database
 	tx.Commit()
 	return nil
