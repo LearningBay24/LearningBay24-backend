@@ -10,6 +10,9 @@ tasks:
   - build: |
       cd LearningBay24-backend
       go build
+  - test-fmt: |
+      cd LearningBay24-backend
+      test -z $(gofmt -l **/*.go)
   - deploy: |
       if [ "$GITHUB_REF" != "refs/heads/main" ]
       then
