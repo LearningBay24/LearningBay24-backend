@@ -10,7 +10,7 @@ import (
 	"learningbay24.de/backend/models"
 )
 
-func AppointmentInCalender(db *sql.DB, id int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time, usersid []int) error {
+func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
 
 	// Begins the transaction (got from course.go)
 	transaction, err := db.BeginTx(context.Background(), nil)
@@ -19,7 +19,7 @@ func AppointmentInCalender(db *sql.DB, id int, date time.Time, location null.Str
 	}
 
 	// Creating new appointment for that course
-	newAppoint := &models.Appointment{ID: id, Date: date, Location: location, Online: online, CourseID: courseId}
+	newAppoint := &models.Appointment{ID: apId, Date: date, Location: location, Online: online, CourseID: courseId}
 
 	// Inserts into database
 	err = newAppoint.Insert(context.Background(), db, boil.Infer())
@@ -28,17 +28,17 @@ func AppointmentInCalender(db *sql.DB, id int, date time.Time, location null.Str
 		return err
 	}
 
-	// add new appointment to each person in the course
-	// TODO -> per userId, oder muss aus der CourseId der Kurs und die dazugehörigen User gezogen werden?
-	//for i := 0; i < len(usersid); i++ {
-
 	var nextDate time.Time = date
 	if repeats {
-
-		// Im gegebenen Abstand den jeweiligen Kalender durchgehen, Termin wie bei else einfügen
+		// Go through the calendar at the given interval, insert an appointment
 		for {
-			// TODO get Course object, insert appointment with AddAppointments:
-			// func (o *Course) AddAppointments(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Appointment) error {}
+			// Get Course object, insert appointment with AddAppointments:
+			course, err := models.FindCourse(context.Background(), db, courseId)
+			if err != nil {
+				transaction.Rollback()
+				return err
+			}
+			course.AddAppointments(context.Background(), db, true, newAppoint)
 
 			// go to next appointment
 			switch repeatDistance {
@@ -56,8 +56,12 @@ func AppointmentInCalender(db *sql.DB, id int, date time.Time, location null.Str
 			}
 		}
 	} else {
-		// TODO get Course object, insert appointment with AddAppointments:
-		// func (o *Course) AddAppointments(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Appointment) error {}
+		course, err := models.FindCourse(context.Background(), db, courseId)
+		if err != nil {
+			transaction.Rollback()
+			return err
+		}
+		course.AddAppointments(context.Background(), db, true, newAppoint)
 	}
 	//}
 	transaction.Commit()
