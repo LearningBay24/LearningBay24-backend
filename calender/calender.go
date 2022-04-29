@@ -30,8 +30,8 @@ func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.S
 
 	var nextDate time.Time = date
 	if repeats {
-		// Go through the calendar at the given interval, insert an appointment
-		for {
+		// Go through the calendar at the given interval, insert an appointment; Stop, when the end date is reached
+		for !nextDate.After(repeatEnd) {
 			// Get Course object, insert appointment with AddAppointments:
 			course, err := models.FindCourse(context.Background(), db, courseId)
 			if err != nil {
@@ -50,9 +50,6 @@ func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.S
 				nextDate.AddDate(1, 0, 0) // add a year
 			default:
 				nextDate.AddDate(0, 0, 0)
-			}
-			if nextDate.After(repeatEnd) {
-				break // stop, when the end date is reached
 			}
 		}
 	} else {
