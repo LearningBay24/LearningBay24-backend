@@ -1,4 +1,8 @@
 image: alpine/edge
+triggers:
+  - action: email
+    condition: failure
+    to: witcher <witcher@wiredspace.de>
 packages:
   - go
   - rsync
