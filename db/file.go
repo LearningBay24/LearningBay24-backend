@@ -124,4 +124,29 @@ func saveLocalFile(db *sql.DB, path string, fileName string, uploaderID int, fil
 
 // Save a remote file, a.k.a. a web link, to the database.
 func saveRemoteFile(db *sql.DB, linkName string, url string, u *url.URL, uploaderID int, file *io.Reader) (int, error) {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	f := models.File{Name: linkName, URI: url, Local: 0, UploaderID: uploaderID}
+	err = f.Insert(context.Background(), tx, boil.Infer())
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+
+	return f.ID, nil
 }
