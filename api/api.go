@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -23,8 +24,8 @@ func GetCourseById(c *gin.Context) {
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, course)
-	fmt.Println("course ", course)
-	fmt.Println(err)
+	log.Println("course ", course)
+	log.Println(err)
 }
 
 
@@ -39,8 +40,8 @@ func DeleteUserFromCourse(c *gin.Context) {
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, user)
-	fmt.Println("course ", user)
-	fmt.Println(err)
+	log.Println("course ", user)
+	log.Println(err)
 }
 
 
@@ -54,8 +55,8 @@ func GetUsersInCourse(c *gin.Context) {
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, users)
-	fmt.Println("course ", users)
-	fmt.Println(err)
+	log.Println("course ", users)
+	log.Println(err)
 }
 
 
@@ -70,8 +71,8 @@ func GetUserCourses(c *gin.Context) {
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, courses)
-	fmt.Println("course ", courses)
-	fmt.Println(err)
+	log.Println("course ", courses)
+	log.Println(err)
 }
 
 
@@ -86,8 +87,8 @@ func DeleteCourseById(c *gin.Context) {
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, course)
-	fmt.Println("course ", course)
-	fmt.Println(err)
+	log.Println("course ", course)
+	log.Println(err)
 }
 
 
@@ -101,8 +102,8 @@ func DeactivateCourse(c *gin.Context) {
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, course)
-	fmt.Println("course ", course)
-	fmt.Println(err)
+	log.Println("course ", course)
+	log.Println(err)
 }
 
 
@@ -152,7 +153,7 @@ func UpdateCourseById(c *gin.Context) {
 	}
 	course,err := course.UpdateCourse(db,id, newCourse.Name,newCourse.Description, newCourse.EnrollKey)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Println(err.Error())
 		panic("error creating course")
 	}
 	newCourse.ID = id

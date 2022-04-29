@@ -17,7 +17,7 @@ func main() {
 	router.DELETE("/courses/:id/delete",api.DeleteCourseById)
 	router.DELETE("/courses/:id/delete/user/:user_id",api.DeleteUserFromCourse)
 	router.POST("/courses/create",api.CreateCourse)
-	router.POST("/courses/:id/enroll/user/:user_id",api.CreateCourse)
+	router.POST("/courses/:id/enroll/user/:user_id",api.EnrollUser)
 	router.PATCH("/courses/:id/update",api.UpdateCourseById)
 	router.PATCH("/courses/:id/deactivate",api.DeactivateCourse)
 	//router.GET("/courses", api.GetCourses)
