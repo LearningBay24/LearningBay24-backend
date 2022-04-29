@@ -2,13 +2,16 @@
 package db
 
 import (
+	"bufio"
 	"context"
 	"database/sql"
 	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
 
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/models"
@@ -17,36 +20,40 @@ import (
 )
 
 // Save a File to disk, creating a database entry alongside it.
-// The fileName can change, depending on if a file with the same name exists already
+// The fileName can change, depending on if a file with the same name exists already. If the file is a web link (non local), the fileName will become the name given to the URL.
 // The file represents either a local file or a remote one
-func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *io.Reader) (*models.File, error) {
+func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *io.Reader) (int, error) {
 	// TODO: implement non-local files
 	// TODO: implement non-course files
 	path := config.Conf.Files.Path
 
-	var f *models.File
+	var id int
 	var err error
 
 	if isLocal {
-		f, err = saveLocalFile(db, path, fileName, uploaderID, file)
+		id, err = saveLocalFile(db, path, fileName, uploaderID, file)
 	} else {
 		var u *url.URL
 		u, err = url.ParseRequestURI(fileName)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 
-		f, err = saveRemoteFile(db, path, u, uploaderID, file)
+		id, err = saveRemoteFile(db, fileName, path, u, uploaderID, file)
+		if err != nil {
+			return 0, err
+		}
 	}
 
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return f, nil
+	return id, nil
 }
 
-func saveLocalFile(db *sql.DB, path string, fileName string, uploaderID int, file *io.Reader) (*models.File, error) {
+// Save a file locally by creating a new one, never overwriting an old one. Should a file with the exact same name exist already, append the new one with a suffix of "-<count>"
+func saveLocalFile(db *sql.DB, path string, fileName string, uploaderID int, file *io.Reader) (int, error) {
 	// possibly changed name due to a file with the same name already existing
 	name := fileName
 
@@ -55,28 +62,66 @@ func saveLocalFile(db *sql.DB, path string, fileName string, uploaderID int, fil
 		if _, err := os.Stat(filepath.Join(path, name)); err != nil {
 			if os.IsNotExist(err) {
 				if num != 0 {
-					// TODO: extension
-					name = fmt.Sprintf("%s-%d", name, num)
+					ext := path.Ext(name)
+					f := strings.TrimSuffix(name, ext)
+					name = fmt.Sprintf("%s-%d.%s", f, num, ext)
 				}
 				break
 			} else {
-				return nil, err
+				return 0, err
 			}
 		}
 	}
 
-	// TODO: actually save file locally
-	f := models.File{Name: name, URI: filepath.Join(path, name), Local: 1, UploaderID: uploaderID}
-	// TODO: db transaction
-	err := f.Insert(context.Background(), db, boil.Infer())
+	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	return &f, nil
+	fullFile := filepath.Join(path, name)
+	f := models.File{Name: name, URI: filepath.Join(path, name), Local: 1, UploaderID: uploaderID}
+	err = f.Insert(context.Background(), tx, boil.Infer())
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+
+	// create file on disk
+	fp, err := os.Create(fullFile)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+	defer fp.Close()
+	// write to the file on disk
+	bufr := bufio.NewReader(file)
+	_, err = bufr.WriteTo(fp)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+
+	return f.ID, nil
 }
 
-func saveRemoteFile(db *sql.DB, url string, u *url.URL, uploaderID int, file *io.Reader) (*models.File, error) {
-	// TODO
-	return nil, nil
+// Save a remote file, a.k.a. a web link, to the database.
+func saveRemoteFile(db *sql.DB, linkName string, url string, u *url.URL, uploaderID int, file *io.Reader) (int, error) {
 }
