@@ -51,7 +51,7 @@ func GetUsersInCourse(c *gin.Context) {
 	//Convert data type from str to int to use ist as param 
 	id,err := strconv.Atoi(c.Param("id"))
 	//Fetch Data from Database with Backend function
-    users,err := course.GetUserCourses(db,id)
+    users,err := course.GetUsersInCourse(db,id)
 	//Return Status and Data in JSON-Format
     c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, users)
@@ -112,7 +112,8 @@ func DeactivateCourse(c *gin.Context) {
 func CreateCourse(c *gin.Context) {
 	db := config.SetupDbHandle()
 	var newCourse models.Course
-	user_id, err := strconv.Atoi(c.Param("user_id"))
+	//user_id, err := strconv.Atoi(c.Param("user_id"))
+	user_id := []int{1,}
 	if err := c.BindJSON(&newCourse); err != nil {
 		return
 	}
@@ -130,14 +131,17 @@ func EnrollUser(c *gin.Context) {
 	db := config.SetupDbHandle()
 	
 	id,err := strconv.Atoi(c.Param("id"))
+	log.Println(err.Error())
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {
+		log.Println(err.Error())
 		return
 	}
 	user,err := course.EnrollUser(db, user_id,id,newCourse.EnrollKey)
 
 	c.Header("Access-Control-Allow-Origin", "*")
+	log.Println("user",user)
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
@@ -157,6 +161,7 @@ func UpdateCourseById(c *gin.Context) {
 		panic("error creating course")
 	}
 	newCourse.ID = id
+	log.Println("course",course)
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
