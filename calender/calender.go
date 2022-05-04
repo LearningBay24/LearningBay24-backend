@@ -1,5 +1,14 @@
 package calender
 
+// TODO - unsure:
+// FA470: Appointment erst ab einem gegebenen Datum anezeigen lassen (?) wie umsetzen:
+//	• Checkbox, ob der Kursteilnehmer die Abgabe erst ab einem bestimmten Zeitpunkt sieht
+//	• Wenn vorherige Checkbox checked ist: Zeitfeld und Uhrzeitfeld für Sichtbarkeitsdatum für Kursteilnehmer
+// FA330: Gelangen zu Abgabe über den Kalender:
+//	• Endnutzer sieht auf seinem Dashboard und über den Navigationspunkt „Stundenplan“ seinen Kalender
+//	• Durch Drücken auf einer der Deadlines für seine Abgaben,
+//		öffnet sich für den Endnutzer ein Formular zu dieser Abgabe mit dazugehörigen Informationen (siehe andere F.A.)
+
 import (
 	"context"
 	"database/sql"
@@ -10,7 +19,7 @@ import (
 	"learningbay24.de/backend/models"
 )
 
-func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
+func AddAppointmentToCalender(db *sql.DB, appoId int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
 
 	// Begins the transaction (got from course.go)
 	transaction, err := db.BeginTx(context.Background(), nil)
@@ -19,7 +28,7 @@ func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.S
 	}
 
 	// Creating new appointment for that course
-	newAppoint := &models.Appointment{ID: apId, Date: date, Location: location, Online: online, CourseID: courseId}
+	newAppoint := &models.Appointment{ID: appoId, Date: date, Location: location, Online: online, CourseID: courseId}
 
 	// Inserts into database
 	err = newAppoint.Insert(context.Background(), db, boil.Infer())
@@ -60,11 +69,14 @@ func AppointmentInCalender(db *sql.DB, apId int, date time.Time, location null.S
 		}
 		course.AddAppointments(context.Background(), db, true, newAppoint)
 	}
+
+	// End transaction
 	transaction.Commit()
 	return nil
 }
 
-func SubmissionInCalender(db *sql.DB) error {
+func AddSubmissionToCalender(db *sql.DB, appoId int, submDate time.Time, submName null.String, courseId int) error {
+	// uses location as description for the submission-name, used F.A.'s: 300, 470
 
 	// Begins transaction
 	transaction, err := db.BeginTx(context.Background(), nil)
@@ -72,11 +84,59 @@ func SubmissionInCalender(db *sql.DB) error {
 		return err
 	}
 
-	// (submission = erstellte Abgabe)
+	// Creating new appointment for that course
+	newAppoint := &models.Appointment{ID: appoId, Date: submDate, Location: submName, CourseID: courseId}
+
+	// Inserts into database
+	err = newAppoint.Insert(context.Background(), db, boil.Infer())
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+
+	// Add to course
+	course, err := models.FindCourse(context.Background(), db, courseId)
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+	course.AddAppointments(context.Background(), db, true, newAppoint)
+
+	// End transaction
+	transaction.Commit()
+	return nil
+}
+
+func ChangeSubmissionDate(db *sql.DB, courseId int, submDate time.Time, submName null.String) error {
+
+	// Begins transaction
+	transaction, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
 	// TODO
-	// 1. F.A.'s dazu raus ziehen
-	// 2. PSeudocode
-	// 3. Go-Code
+	// used F.A.'s: 480
+
+	/*
+		/FA480/ Nutzer: Abgaben bearbeiten > Fälligkeitsdatum-/Uhrzeit anpassen:
+			• Der Ersteller des Kurses kann in der Kursansicht über den Toggle „bearbeiten“ in den Bearbeitungs-Zustand wechseln, oder sieht in der Abgabenübersicht neben allen seinen Abgaben den Button „Bearbeiten“
+			• Buttons „Bearbeiten“ neben jeder der Abgaben in der Kursansicht: Erscheinen eines Formulars zum Bearbeiten der Abgabe
+			• Buttons „Bearbeiten“ in der Abgabenübersicht: Erscheinen eines Formulars zum Bearbeiten der Abgabe
+			• Zeitfeld für Abgabendatum, default = bisher eingestelltes Datum
+			• Uhrzeitfeld für Abgabenuhrzeit, default = bisher eingestellte Uhrzeit
+			• Checkbox, ob der Abstand zwischen Abgabezeitpunkt und Sichtbarkeitszeitpunkt für Kursteilnehmer gleich bleiben soll,
+				default = checked
+			• Wenn vorherige Checkbox unchecked ist: Erscheinen von Zeitfeld und Uhrzeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer
+			• Zeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer: default = bisheriges Datum,
+				wenn bisheriges Datum nach dem neuen Abgabedatum liegt: default = Abgabedatum
+			• Uhrzeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer: default = bisherige Uhrzeit,
+				wenn bisheriges Datum nach dem neuen Abgabedatum liegt: default = Abgabeuhrzeit
+			• Zeitfeld und Uhrzeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer können nicht
+				zeitlich nach dem Abgabezeitpunkt eingestellt werden
+			• Button „OK“: Übernimmt die Informationen, schließt das Formular
+			• Button „Abbrechen“: Schließt das Formular
+	*/
 
 	// End transaction
 	transaction.Commit()
