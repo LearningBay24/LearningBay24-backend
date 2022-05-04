@@ -1,4 +1,8 @@
 image: alpine/edge
+triggers:
+  - action: email
+    condition: failure
+    to: witcher <witcher@wiredspace.de>
 packages:
   - go
   - rsync
@@ -10,6 +14,9 @@ tasks:
   - build: |
       cd LearningBay24-backend
       go build
+  - test-fmt: |
+      cd LearningBay24-backend
+      test -z "$(find . -name '*.go' -type f | xargs gofmt -l)"
   - deploy: |
       if [ "$GITHUB_REF" != "refs/heads/main" ]
       then
