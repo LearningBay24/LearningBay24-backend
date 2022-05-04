@@ -23,8 +23,6 @@ import (
 // The fileName can change, depending on if a file with the same name exists already. If the file is a web link (non local), the fileName will become the name given to the URL.
 // The file represents either a local file or a remote one
 func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *io.Reader) (int, error) {
-	// TODO: implement non-local files
-	// TODO: implement non-course files
 	path := config.Conf.Files.Path
 
 	var id int
