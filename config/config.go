@@ -16,7 +16,8 @@ type DB struct {
 }
 
 type Files struct {
-	Path string
+	Path             string
+	AllowedFileTypes []string
 }
 
 type Config struct {
