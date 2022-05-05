@@ -1,9 +1,10 @@
 package calender
 
 // TODO - unsure:
-// FA470: Appointment erst ab einem gegebenen Datum anezeigen lassen (?) wie umsetzen:
+// FA470: Appointment erst ab einem gegebenen Datum anezeigen lassen (?) wie umsetzen?
 //	• Checkbox, ob der Kursteilnehmer die Abgabe erst ab einem bestimmten Zeitpunkt sieht
 //	• Wenn vorherige Checkbox checked ist: Zeitfeld und Uhrzeitfeld für Sichtbarkeitsdatum für Kursteilnehmer
+// -> submission.visibleFrom
 // FA330: Gelangen zu Abgabe über den Kalender:
 //	• Endnutzer sieht auf seinem Dashboard und über den Navigationspunkt „Stundenplan“ seinen Kalender
 //	• Durch Drücken auf einer der Deadlines für seine Abgaben,
@@ -19,7 +20,7 @@ import (
 	"learningbay24.de/backend/models"
 )
 
-func AddAppointmentToCalender(db *sql.DB, appoId int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
+func AddCourseToCalender(db *sql.DB, appoId int, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
 
 	// Begins the transaction (got from course.go)
 	transaction, err := db.BeginTx(context.Background(), nil)
@@ -107,35 +108,90 @@ func AddSubmissionToCalender(db *sql.DB, appoId int, submDate time.Time, submNam
 	return nil
 }
 
-func ChangeSubmissionDate(db *sql.DB, courseId int, submDate time.Time, submName null.String) error {
-
+func AddExamToCalender(db *sql.DB, appoId int, examDate time.Time, location null.String, online int8, examId int) error {
+	// used FA300, TODO -> store exam name in which appointment parameter?
 	// Begins transaction
 	transaction, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
 
-	// TODO
-	// used F.A.'s: 480
+	// Creating new appointment for that course
+	newAppoint := &models.Appointment{ID: appoId, Date: examDate, Location: location, Online: online}
 
+	// Inserts into database
+	err = newAppoint.Insert(context.Background(), db, boil.Infer())
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+
+	// TODO -> add appointment to exam, as it is possible to add an appointment to a course (examId):
 	/*
-		/FA480/ Nutzer: Abgaben bearbeiten > Fälligkeitsdatum-/Uhrzeit anpassen:
-			• Der Ersteller des Kurses kann in der Kursansicht über den Toggle „bearbeiten“ in den Bearbeitungs-Zustand wechseln, oder sieht in der Abgabenübersicht neben allen seinen Abgaben den Button „Bearbeiten“
-			• Buttons „Bearbeiten“ neben jeder der Abgaben in der Kursansicht: Erscheinen eines Formulars zum Bearbeiten der Abgabe
-			• Buttons „Bearbeiten“ in der Abgabenübersicht: Erscheinen eines Formulars zum Bearbeiten der Abgabe
-			• Zeitfeld für Abgabendatum, default = bisher eingestelltes Datum
-			• Uhrzeitfeld für Abgabenuhrzeit, default = bisher eingestellte Uhrzeit
-			• Checkbox, ob der Abstand zwischen Abgabezeitpunkt und Sichtbarkeitszeitpunkt für Kursteilnehmer gleich bleiben soll,
-				default = checked
-			• Wenn vorherige Checkbox unchecked ist: Erscheinen von Zeitfeld und Uhrzeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer
-			• Zeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer: default = bisheriges Datum,
-				wenn bisheriges Datum nach dem neuen Abgabedatum liegt: default = Abgabedatum
-			• Uhrzeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer: default = bisherige Uhrzeit,
-				wenn bisheriges Datum nach dem neuen Abgabedatum liegt: default = Abgabeuhrzeit
-			• Zeitfeld und Uhrzeitfeld für den Zeitpunkt der Sichtbarkeit für Kursteilnehmer können nicht
-				zeitlich nach dem Abgabezeitpunkt eingestellt werden
-			• Button „OK“: Übernimmt die Informationen, schließt das Formular
-			• Button „Abbrechen“: Schließt das Formular
+		course, err := models.FindCourse(context.Background(), db, courseId)
+		if err != nil {
+			transaction.Rollback()
+			return err
+		}
+		course.AddAppointments(context.Background(), db, true, newAppoint)
+	*/
+
+	// End transaction
+	transaction.Commit()
+	return nil
+}
+
+func ChangeSubmissionDate(db *sql.DB, appointmentId int, courseId int, submDate time.Time, submName null.String) error {
+	// used F.A.'s: 480
+	// Begins transaction
+	transaction, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	// Get appointment element
+	appointment, err := models.FindAppointment(context.Background(), db, appointmentId)
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+	// Change the Date -> enough?
+	appointment.Date = submDate
+
+	// TODO: If there is conditional visibility: change date for visibility
+	// 1. case: Change it automatically depending on the new date
+	// 2. case: Change it to a given new visibility
+
+	// End transaction
+	transaction.Commit()
+	return nil
+}
+
+func InactivateAppointment(db *sql.DB, appointmentId int) error {
+	// Begins transaction
+	transaction, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	// Get appointment element
+	appointment, err := models.FindAppointment(context.Background(), db, appointmentId)
+	if err != nil {
+		transaction.Rollback()
+		return err
+	}
+
+	// Deleted at
+	currentDate := time.Now()
+	appointment.DeletedAt = null.TimeFrom(currentDate)
+
+	// Delete in Database -> necessary?
+	/*
+		_, errDel := appointment.Delete(context.Background(), db, false)
+		if errDel != nil {
+			transaction.Rollback()
+			return errDel
+		}
 	*/
 
 	// End transaction
