@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"log"
 	"net/http"
 	"strconv"
@@ -134,6 +135,22 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 
 	var newCourse models.Course
 
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	json.Unmarshal(raw, &j)
+	user_id, ok := j["user_id"].(int)
+	if !ok {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	if err := c.BindJSON(&newCourse); err != nil {
 		if err != nil {
 			log.Println(err)
@@ -141,7 +158,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 			return
 		}
 	}
-	id, err := course.CreateCourse(f.Database, newCourse.Name, newCourse.Description, newCourse.EnrollKey, newCourse.ID)
+	id, err := course.CreateCourse(f.Database, newCourse.Name, newCourse.Description, newCourse.EnrollKey, user_id)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
