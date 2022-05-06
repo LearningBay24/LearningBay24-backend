@@ -3,33 +3,43 @@ package coursematerial
 import (
 	"context"
 	"database/sql"
-	"time"
+	"fmt"
+	"io"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"learningbay24.de/backend/db"
 	"learningbay24.de/backend/models"
 )
 
-// CreateMaterial takes a name, URI, associated uploader-id, course, id and indicator if file is local or remote
+// CreateMaterial takes a fileName, URI, associated uploader-id, course, id and indicator if file is local or remote
 // Created struct gets inserted into database
-func CreateMaterial(db *sql.DB, name string, uri string, uploaderid, courseID int, local int8) error {
+func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local int8, file *io.Reader) error {
 
-	tx, err := db.BeginTx(context.Background(), nil)
+	var isLocal bool
+	switch local {
+	case 0:
+		isLocal = false
+	case 1:
+		isLocal = true
+	default:
+		return fmt.Errorf("Invalid value for variable local: %d", local)
+	}
+
+	fileId, err := db.SaveFile(dbHandle, fileName, uploaderId, isLocal, file)
 	if err != nil {
 		return err
 	}
 
-	cm := &models.File{Name: name, URI: uri, UploaderID: uploaderid, Local: local}
-
-	err = cm.Insert(context.Background(), db, boil.Infer())
-	if err != nil {
-		tx.Rollback()
-		return err
-	} else {
-
+	chf := models.CourseHasFile{
+		CourseID: courseId, FileID: fileId,
 	}
-	tx.Commit()
+
+	err = chf.Insert(context.Background(), dbHandle, boil.Infer())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -47,8 +57,7 @@ func DeactivateMaterial(db *sql.DB, id int) error {
 		return err
 	}
 
-	cm.DeletedAt = null.NewTime(time.Now(), true)
-	_, err = cm.Update(context.Background(), db, boil.Infer())
+	_, err = cm.Delete(context.Background(), db, false)
 	if err != nil {
 		tx.Rollback()
 		return err
