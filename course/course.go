@@ -40,7 +40,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -52,7 +52,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 	err = c.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -63,14 +63,14 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 		err = shasc.Insert(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+				return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 			}
 
 			return 0, err
 		}
 	}
 	if e := tx.Commit(); e != nil {
-		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 	}
 	return c.ID, nil
 }
@@ -85,7 +85,7 @@ func UpdateCourse(db *sql.DB, id int, name string, description null.String, enro
 	c, err := models.FindCourse(context.Background(), tx, id)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -98,7 +98,7 @@ func UpdateCourse(db *sql.DB, id int, name string, description null.String, enro
 
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -107,7 +107,7 @@ func UpdateCourse(db *sql.DB, id int, name string, description null.String, enro
 	f, err := models.FindForum(context.Background(), tx, id)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -118,7 +118,7 @@ func UpdateCourse(db *sql.DB, id int, name string, description null.String, enro
 
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -135,47 +135,80 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-
+	// Check if there are more users in the course besides the creator
+	userhascourse, err := models.UserHasCourses(models.UserHasCourseWhere.CourseID.EQ(id)).Count(context.Background(), db)
+	if err != nil {
+		return 0, err
+	}
+	if userhascourse > 1 {
+		return 0, errors.New("there are still people enrolled in the course besides the creator")
+	}
+	// Get the creator of the course
+	userinc, err := GetUsersInCourse(db, id)
+	if err != nil {
+		return 0, err
+	}
+	// Its just creator in the course so delete him
+	err = DeleteUserFromCourse(db, userinc[0].ID, id)
+	if err != nil {
+		return 0, err
+	}
 	c, err := models.FindCourse(context.Background(), tx, id)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
 	}
-
-	// Checks if more than 10 Minutes have passed wont delete if thats the case
-	curTime := time.Now()
-	diff := curTime.Sub(c.CreatedAt.Time)
-	if diff.Minutes() > 10 {
-		if e := tx.Rollback(); e != nil {
-			return 0, e
-		}
-		return 0, errors.New("more than 10 Minutes have passed")
-	}
-	_, err = c.Delete(context.Background(), tx, true)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-
-		return 0, err
-	}
-
 	f, err := models.FindForum(context.Background(), tx, id)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
+		return 0, err
+	}
+
+	// Checks if more than 10 Minutes have passed will softdelete if thats the case
+	curTime := time.Now()
+	diff := curTime.Sub(c.CreatedAt.Time)
+	if diff.Minutes() < 10 {
+		_, err = c.Delete(context.Background(), tx, false)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			}
+
+			return 0, err
+		}
+		_, err = f.Delete(context.Background(), tx, false)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			}
+
+			return 0, err
+		}
+		if e := tx.Commit(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		}
+		return c.ID, nil
+
+	}
+
+	_, err = c.Delete(context.Background(), tx, true)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
 		return 0, err
 	}
 
 	_, err = f.Delete(context.Background(), tx, true)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -186,59 +219,8 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 	return c.ID, nil
 }
 
-// DeactivateCourse takes a ID and deactivates the course and the forum associated with it
-func DeactivateCourse(db *sql.DB, id int) (*models.Course, error) {
-
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	c, err := models.FindCourse(context.Background(), tx, id)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-
-		return nil, err
-	}
-	c.DeletedAt = null.NewTime(time.Now(), true)
-	_, err = c.Update(context.Background(), tx, boil.Infer())
-
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-
-		return nil, err
-	}
-
-	f, err := models.FindForum(context.Background(), tx, id)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-
-		return nil, err
-	}
-	f.DeletedAt = null.NewTime(time.Now(), true)
-	_, err = f.Update(context.Background(), tx, boil.Infer())
-
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-
-		return nil, err
-	}
-	if e := tx.Commit(); e != nil {
-		return nil, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
-	}
-	return c, nil
-}
-
-// GetUserCourses takes the ID of a User and returns a slice of Courses in which he is enrolled
-func GetUserCourses(db *sql.DB, uid int) (models.CourseSlice, error) {
+// GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
+func GetCoursesFromUser(db *sql.DB, uid int) (models.CourseSlice, error) {
 
 	courses, err := models.Courses(
 		qm.From(models.TableNames.UserHasCourse),
@@ -268,48 +250,36 @@ func GetUsersInCourse(db *sql.DB, cid int) (models.UserSlice, error) {
 }
 
 // DeleteUserFromCourse takes a UserID and a CourseID and deletes the corresponding entry in the table "user_has_course"
-func DeleteUserFromCourse(db *sql.DB, uid int, cid int) (*models.User, error) {
+func DeleteUserFromCourse(db *sql.DB, uid int, cid int) error {
 
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 
-		return nil, err
+		return err
 	}
 
 	userhascourse, err := models.FindUserHasCourse(context.Background(), tx, uid, cid)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
 		}
 
-		return nil, err
+		return err
 	}
-	if userhascourse.RoleID == 1 {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-		return nil, errors.New("trying to delete the creator of the course")
-	}
+
 	_, err = userhascourse.Delete(context.Background(), tx, true)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
 		}
 
-		return nil, err
+		return err
 	}
-	u, err := models.FindUser(context.Background(), tx, uid)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
 
-		return nil, err
-	}
 	if e := tx.Commit(); e != nil {
-		return nil, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
-	return u, nil
+	return nil
 }
 
 // EnrollUser takes a UserID, CourseID and Enrollkey and adds the User to the course if the enrollkey is correct
