@@ -85,7 +85,7 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 	log.Println("course ", users)
 }
 
-func (f *PublicController) GetUserCourses(c *gin.Context) {
+func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
