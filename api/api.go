@@ -21,6 +21,7 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	//Fetch Data from Database with Backend function
 	course, err := course.GetCourse(f.Database, id)
@@ -42,10 +43,12 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	//Fetch Data from Database with Backend function
 	err = course.DeleteUserFromCourse(f.Database, id, user_id)
@@ -67,6 +70,7 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	//Fetch Data from Database with Backend function
 	users, err := course.GetUsersInCourse(f.Database, id)
@@ -88,6 +92,7 @@ func (f *PublicController) GetUserCourses(c *gin.Context) {
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	//Fetch Data from Database with Backend function
 	courses, err := course.GetCoursesFromUser(f.Database, user_id)
@@ -110,6 +115,7 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	//Deactivate Data from Database with Backend function
 	course, err := course.DeleteCourse(f.Database, id)
@@ -127,7 +133,6 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 func (f *PublicController) CreateCourse(c *gin.Context) {
 
 	var newCourse models.Course
-	//user_id, err := strconv.Atoi(c.Param("user_id"))
 
 	if err := c.BindJSON(&newCourse); err != nil {
 		if err != nil {
@@ -150,12 +155,24 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 func (f *PublicController) EnrollUser(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 	log.Println(err.Error())
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	var newCourse models.Course
+	if err := c.BindJSON(&newCourse); err != nil {
+		if err != nil {
+			log.Println(err)
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 
 	user, err := course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
 
@@ -175,6 +192,7 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
+		return
 	}
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {

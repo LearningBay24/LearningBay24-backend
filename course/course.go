@@ -267,7 +267,7 @@ func DeleteUserFromCourse(db *sql.DB, uid int, cid int) error {
 		return err
 	}
 
-	_, err = userhascourse.Delete(context.Background(), tx, true)
+	_, err = userhascourse.Delete(context.Background(), tx, false)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
