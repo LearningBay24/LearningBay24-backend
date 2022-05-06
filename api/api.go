@@ -10,6 +10,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"learningbay24.de/backend/course"
 	"learningbay24.de/backend/models"
+
+	"github.com/volatiletech/null/v8"
 )
 
 type PublicController struct {
@@ -143,22 +145,42 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 	}
 
 	var j map[string]interface{}
-	json.Unmarshal(raw, &j)
-	user_id, ok := j["user_id"].(int)
-	if !ok {
-		log.Println(err)
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Printf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	if err := c.BindJSON(&newCourse); err != nil {
-		if err != nil {
-			log.Println(err)
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
+	log.Printf("user_id: %+T", j["user_id"])
+	tmp, ok := j["user_id"].(float64)
+	if !ok {
+		log.Println("unable to convert user_id to float64")
+		c.Status(http.StatusInternalServerError)
+		return
 	}
-	id, err := course.CreateCourse(f.Database, newCourse.Name, newCourse.Description, newCourse.EnrollKey, user_id)
+	user_id := int(tmp)
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Println("unable to convert name to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	description, ok := j["description"].(string)
+	if !ok {
+		log.Println("unable to convert description to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	enroll_key, ok := j["enroll_key"].(string)
+	if !ok {
+		log.Println("unable to convert enroll_key to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())

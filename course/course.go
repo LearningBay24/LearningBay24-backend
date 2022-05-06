@@ -58,8 +58,9 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 		return 0, err
 	} else {
 		// TODO: Implement roles assigment for tutors
+		// TODO: remove hard coded role
 		// Gives the user with the ID in the 0 place in the array the role of the creator
-		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: 1}
+		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: 2}
 		err = shasc.Insert(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
