@@ -10,16 +10,16 @@ func main() {
 	config.InitConfig()
 	// TODO: do something with the db handle
 	db := config.SetupDbHandle()
-	pCtrl := api.PublicController { Database: db }
+	pCtrl := api.PublicController{Database: db}
 	router := gin.Default()
-	router.GET("/courses/:id",pCtrl.GetCourseById)
-	router.GET("/courses/:user_id",pCtrl.GetUserCourses)
-	router.GET("/courses/:id/users",pCtrl.GetUsersInCourse)
-	router.DELETE("/courses/:id",pCtrl.DeactivateCourse)
-	router.DELETE("/courses/:id/:user_id",pCtrl.DeleteUserFromCourse)
-	router.POST("/courses",pCtrl.CreateCourse)
-	router.POST("/courses/:id/:user_id",pCtrl.EnrollUser)
-	router.PATCH("/courses/:id",pCtrl.UpdateCourseById)
+	router.GET("/courses/:id", pCtrl.GetCourseById)
+	router.GET("/courses/:user_id", pCtrl.GetUserCourses)
+	router.GET("/courses/:id/users", pCtrl.GetUsersInCourse)
+	router.DELETE("/courses/:id", pCtrl.DeactivateCourse)
+	router.DELETE("/courses/:id/:user_id", pCtrl.DeleteUserFromCourse)
+	router.POST("/courses", pCtrl.CreateCourse)
+	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
+	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 	//router.GET("/courses", api.GetCourses)
 	router.Run("0.0.0.0:8080")
 }
