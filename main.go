@@ -15,11 +15,10 @@ func main() {
 	router.GET("/courses/:id", pCtrl.GetCourseById)
 	router.GET("/courses/:user_id", pCtrl.GetUserCourses)
 	router.GET("/courses/:id/users", pCtrl.GetUsersInCourse)
-	router.DELETE("/courses/:id", pCtrl.DeactivateCourse)
+	router.DELETE("/courses/:id", pCtrl.DeleteCourse)
 	router.DELETE("/courses/:id/:user_id", pCtrl.DeleteUserFromCourse)
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
-	//router.GET("/courses", api.GetCourses)
 	router.Run("0.0.0.0:8080")
 }

@@ -19,6 +19,9 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	//Fetch Data from Database with Backend function
 	course, err := course.GetCourse(f.Database, id)
 	if err != nil {
@@ -37,9 +40,15 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
 	user_id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	//Fetch Data from Database with Backend function
-	user, err := course.DeleteUserFromCourse(f.Database, id, user_id)
+	err = course.DeleteUserFromCourse(f.Database, id, user_id)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -47,8 +56,8 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	}
 	//Return Status and Data in JSON-Format
 	c.Header("Access-Control-Allow-Origin", "*")
-	c.IndentedJSON(http.StatusOK, user)
-	log.Println("course ", user)
+	c.Status(http.StatusNoContent)
+
 }
 
 func (f *PublicController) GetUsersInCourse(c *gin.Context) {
@@ -56,6 +65,9 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	//Fetch Data from Database with Backend function
 	users, err := course.GetUsersInCourse(f.Database, id)
 	if err != nil {
@@ -74,8 +86,11 @@ func (f *PublicController) GetUserCourses(c *gin.Context) {
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
 	user_id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	//Fetch Data from Database with Backend function
-	courses, err := course.GetUserCourses(f.Database, user_id)
+	courses, err := course.GetCoursesFromUser(f.Database, user_id)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -88,13 +103,16 @@ func (f *PublicController) GetUserCourses(c *gin.Context) {
 
 }
 
-func (f *PublicController) DeactivateCourse(c *gin.Context) {
+func (f *PublicController) DeleteCourse(c *gin.Context) {
 
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	//Deactivate Data from Database with Backend function
-	course, err := course.DeactivateCourse(f.Database, id)
+	course, err := course.DeleteCourse(f.Database, id)
 	//Return Status and Data in JSON-Format
 	if err != nil {
 		log.Println(err)
@@ -110,7 +128,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 
 	var newCourse models.Course
 	//user_id, err := strconv.Atoi(c.Param("user_id"))
-	user_id := []int{1}
+
 	if err := c.BindJSON(&newCourse); err != nil {
 		if err != nil {
 			log.Println(err)
@@ -118,7 +136,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 			return
 		}
 	}
-	id, err := course.CreateCourse(f.Database, newCourse.Name, newCourse.Description, newCourse.EnrollKey, user_id)
+	id, err := course.CreateCourse(f.Database, newCourse.Name, newCourse.Description, newCourse.EnrollKey, newCourse.ID)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -134,6 +152,9 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	log.Println(err.Error())
 	user_id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	var newCourse models.Course
 
 	user, err := course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
@@ -152,6 +173,9 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 func (f *PublicController) UpdateCourseById(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+	}
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {
 		log.Println(err)
@@ -169,20 +193,3 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
-
-/* func GetCourses(c *gin.Context) {
-	db := config.SetupDbHandle()
-	var courses []models.Course
-
-	err := queries.Raw("select * from course").Bind(context.Background(), db, &courses)
-	if err != nil {
-		fmt.Println(err.Error())
-		panic("error raw query")
-	}
-
-	c.Header("Access-Control-Allow-Origin", "*")
-	//Return Status and Data in JSON-Format
-	c.IndentedJSON(http.StatusOK, courses)
-	fmt.Println("courses ", courses)
-	fmt.Println(err)
-} */

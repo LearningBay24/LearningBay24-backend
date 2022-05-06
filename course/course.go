@@ -26,7 +26,7 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 
 // CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is an array of IDs that is used to assign the role of the creator
 // and the roles for tutor
-func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid []int) (int, error) {
+func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int) (int, error) {
 	// TODO: implement check for certificates
 
 	// Begins the transaction
@@ -59,7 +59,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 	} else {
 		// TODO: Implement roles assigment for tutors
 		// Gives the user with the ID in the 0 place in the array the role of the creator
-		shasc := models.UserHasCourse{UserID: usersid[0], CourseID: c.ID, RoleID: 1}
+		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: 1}
 		err = shasc.Insert(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
