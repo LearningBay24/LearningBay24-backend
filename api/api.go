@@ -302,7 +302,8 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
-func (f *PublicController) UpdateCourseById(c *gin.Context) {
+func (f *PublicController) EditCourseById(c *gin.Context) {
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -314,7 +315,7 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	_, err = course.UpdateCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
+	course, err := course.EditCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
 	if err != nil {
 		log.Errorf("Unable to update course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
