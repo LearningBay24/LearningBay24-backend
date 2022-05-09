@@ -17,6 +17,9 @@ tasks:
   - test-fmt: |
       cd LearningBay24-backend
       test -z "$(find . -name '*.go' -type f | xargs gofmt -l)"
+  - lint: |
+      cd LearningBay24-backend
+      go vet ./...
   - deploy: |
       if [ "$GITHUB_REF" != "refs/heads/main" ]
       then
