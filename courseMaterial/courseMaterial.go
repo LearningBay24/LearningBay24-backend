@@ -45,17 +45,73 @@ func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, c
 
 // DeactivateMaterial takes an ID and deactivates the chosen material
 // Sets deactivation-timer and updates database
-func DeactivateMaterial(db *sql.DB, id int) error {
-
-	cm, err := models.FindFile(context.Background(), db, id)
+func DeactivateMaterial(db *sql.DB, courseId, fileId int) error {
+	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = cm.Delete(context.Background(), db, false)
+	cm, err := models.FindFile(context.Background(), tx, fileId)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = cm.Delete(context.Background(), tx, false)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	chf, err := models.FindCourseHasFile(context.Background(), tx, courseId, fileId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	_, err = chf.Delete(context.Background(), tx, false)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
 		return err
 	}
 
 	return nil
 }
+
+/*
+ Switches out file if creator wants to change it
+ Takes id and updates name and uri
+*/
+/*
+ func UpdateMaterial(db *sql.DB, id int, name, uri string) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	c, err := models.FindFile(context.Background(), db, id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	c.Name = name
+	c.URI = uri
+
+	_, err = c.Update(context.Background(), db, boil.Infer())
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	tx.Commit()
+	return nil
+}
+*/
