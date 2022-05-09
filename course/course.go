@@ -31,6 +31,11 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int) (int, error) {
 	// TODO: implement check for certificates
 
+	// Validation
+	if name == "" {
+		return 0, errors.New("name or semester cant be empty")
+	}
+
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -78,8 +83,14 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 	return c.ID, nil
 }
 
-// UpdateCourse takes the ID of a existing course and the already existing fields for name,enrollkey and description and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)
-func UpdateCourse(db *sql.DB, id int, name string, description null.String, enrollkey string) (int, error) {
+// EditCourse takes the ID of a existing course and the already existing fields for name,enrollkey and description and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)
+func EditCourse(db *sql.DB, id int, name string, description null.String, enrollkey string) (int, error) {
+
+	// Validation
+	if name == "" {
+		return 0, errors.New("name or semester cant be empty")
+	}
+
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err

@@ -71,10 +71,11 @@ func main() {
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.GET("/courses/search", pCtrl.SearchCourse)
-	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
-	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
-	router.GET("/users/:id", pCtrl.GetUserById)
+	router.DELETE("/users/:id", pCtrl.DeleteUser)
+	// TODO: panics
+	router.GET("/users/:user_id", pCtrl.GetUserById)
+	router.PATCH("/courses/:id", pCtrl.EditCourseById)
 
 	router.Run("0.0.0.0:8080")
 }
