@@ -66,35 +66,3 @@ func DeactivateMaterial(db *sql.DB, id int) error {
 	tx.Commit()
 	return nil
 }
-
-/*
- Switches out file if creator wants to change it
- Takes id and updates name and uri
-*/
-/*
- func UpdateMaterial(db *sql.DB, id int, name, uri string) error {
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	c, err := models.FindFile(context.Background(), db, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	c.Name = name
-	c.URI = uri
-
-	_, err = c.Update(context.Background(), db, boil.Infer())
-
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	tx.Commit()
-	return nil
-}
-*/
