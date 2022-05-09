@@ -46,23 +46,16 @@ func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, c
 // DeactivateMaterial takes an ID and deactivates the chosen material
 // Sets deactivation-timer and updates database
 func DeactivateMaterial(db *sql.DB, id int) error {
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
 
 	cm, err := models.FindFile(context.Background(), db, id)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	_, err = cm.Delete(context.Background(), db, false)
 	if err != nil {
-		tx.Rollback()
 		return err
 	}
 
-	tx.Commit()
 	return nil
 }
