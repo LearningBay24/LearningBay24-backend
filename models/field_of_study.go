@@ -26,9 +26,8 @@ import (
 type FieldOfStudy struct {
 	ID int `boil:"id" json:"id" toml:"id" yaml:"id"`
 	// Name of the field of study.
-	Name null.String `boil:"name" json:"name,omitempty" toml:"name" yaml:"name,omitempty"`
-	// Amount of semesters this field of study has.
-	Semesters null.String `boil:"semesters" json:"semesters,omitempty" toml:"semesters" yaml:"semesters,omitempty"`
+	Name      null.String `boil:"name" json:"name,omitempty" toml:"name" yaml:"name,omitempty"`
+	Semesters null.Int    `boil:"semesters" json:"semesters,omitempty" toml:"semesters" yaml:"semesters,omitempty"`
 	CreatedAt time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt null.Time   `boil:"updated_at" json:"updated_at,omitempty" toml:"updated_at" yaml:"updated_at,omitempty"`
 	DeletedAt null.Time   `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
@@ -74,14 +73,14 @@ var FieldOfStudyTableColumns = struct {
 var FieldOfStudyWhere = struct {
 	ID        whereHelperint
 	Name      whereHelpernull_String
-	Semesters whereHelpernull_String
+	Semesters whereHelpernull_Int
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpernull_Time
 	DeletedAt whereHelpernull_Time
 }{
 	ID:        whereHelperint{field: "`field_of_study`.`id`"},
 	Name:      whereHelpernull_String{field: "`field_of_study`.`name`"},
-	Semesters: whereHelpernull_String{field: "`field_of_study`.`semesters`"},
+	Semesters: whereHelpernull_Int{field: "`field_of_study`.`semesters`"},
 	CreatedAt: whereHelpertime_Time{field: "`field_of_study`.`created_at`"},
 	UpdatedAt: whereHelpernull_Time{field: "`field_of_study`.`updated_at`"},
 	DeletedAt: whereHelpernull_Time{field: "`field_of_study`.`deleted_at`"},
@@ -112,8 +111,8 @@ type fieldOfStudyL struct{}
 
 var (
 	fieldOfStudyAllColumns            = []string{"id", "name", "semesters", "created_at", "updated_at", "deleted_at"}
-	fieldOfStudyColumnsWithoutDefault = []string{"name", "semesters", "updated_at", "deleted_at"}
-	fieldOfStudyColumnsWithDefault    = []string{"id", "created_at"}
+	fieldOfStudyColumnsWithoutDefault = []string{"name", "updated_at", "deleted_at"}
+	fieldOfStudyColumnsWithDefault    = []string{"id", "semesters", "created_at"}
 	fieldOfStudyPrimaryKeyColumns     = []string{"id"}
 	fieldOfStudyGeneratedColumns      = []string{}
 )

@@ -3223,6 +3223,7 @@ func (o UserSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, col
 
 var mySQLUserUniqueColumns = []string{
 	"id",
+	"email",
 	"phone_number",
 }
 

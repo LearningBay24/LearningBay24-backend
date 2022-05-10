@@ -17,3 +17,4 @@ user = "learningbay24"
 pass = "learningbay24"
 sslmode = "false"
 dbname = "learningbay24"
+blacklist = ["gorp_migrations"]
