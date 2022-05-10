@@ -3,16 +3,17 @@ package db
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"errors"
+	"fmt"
 
 	"learningbay24.de/backend/models"
 
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func validateUser(user *models.User) error {
+func validateUserFields(user *models.User) error {
 	if user.Title.Valid && len(user.Title.String) > 64 {
 		return errors.New("Field \"title\" is too long, only 64 characters allowed")
 	}
@@ -44,10 +45,10 @@ func validateUser(user *models.User) error {
 	return nil
 }
 
-// Create a user with a given password as []byte
-// the cleartext password received will be hashed in this function
+// Create a user with a given password as []byte.
+// the cleartext password received will be hashed in this function.
 func CreateUser(db *sql.DB, user models.User) (int, error) {
-	err := validateUser(&user)
+	err := validateUserFields(&user)
 	if err != nil {
 		return 0, err
 	}
@@ -84,4 +85,25 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 	}
 
 	return 0, nil
+}
+
+// Verify if the given cleartext password matches the saved password in the database for the user with the given email.
+// Passwords in the database are always saved as a hash.
+// Returns nil on success, or an error on failure.
+func VerifyCredentials(db *sql.DB, email string, password []byte) error {
+	user, err := models.Users(qm.From("user"), qm.Where("email = ?", email)).One(context.Background(), db)
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return fmt.Errorf("Unable to find user with E-Mail: %s", email)
+	}
+
+	err = bcrypt.CompareHashAndPassword(user.Password, password)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
