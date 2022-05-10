@@ -1,0 +1,4 @@
+development:
+  dialect: mysql
+  datasource: learningbay24:learningbay24@tcp(127.0.0.1:3306)/learningbay24?parseTime=true
+  dir: migrations
