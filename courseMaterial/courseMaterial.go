@@ -13,6 +13,29 @@ import (
 	"learningbay24.de/backend/models"
 )
 
+// GetMaterial takes an ID and returns a struct of the file with the corresponding ID
+func GetMaterialFromCourse(db *sql.DB, fileId int) (*models.File, error) {
+	cm, err := models.FindFile(context.Background(), db, fileId)
+	if err != nil {
+		return nil, err
+	}
+	return cm, err
+}
+
+// GetMaterials takes a courseID and returns a slice of files associated with it
+func GetMaterialSliceFromCourse(db *sql.DB, courseId int) (models.FileSlice, error) {
+	files, err := models.Files(
+		qm.From(models.TableNames.CourseHasFiles),
+		qm.Where("course_has_files.course_id=?", courseId),
+		qm.And("course_has_files.file_id = file.id"),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
 // CreateMaterial takes a fileName, URI, associated uploader-id, course, id and indicator if file is local or remote
 // Created struct gets inserted into database
 func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local int8, file *io.Reader) error {
@@ -44,23 +67,9 @@ func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, c
 	return nil
 }
 
-// GetMaterials takes a courseID and returns a slice of files associated with it
-func GetMaterials(db *sql.DB, courseId int) (models.FileSlice, error) {
-	files, err := models.Files(
-		qm.From(models.TableNames.CourseHasFiles),
-		qm.Where("course_has_files.course_id=?", courseId),
-		qm.And("course_has_files.file_id = file.id"),
-	).All(context.Background(), db)
-	if err != nil {
-		return nil, err
-	}
-
-	return files, nil
-}
-
 // DeactivateMaterial takes both course-ID and file-ID and deactivates the chosen material
 // Sets deactivation-timer and updates database
-func DeactivateMaterial(db *sql.DB, courseId, fileId int) error {
+func DeactivateMaterialFromCourse(db *sql.DB, courseId, fileId int) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
@@ -68,31 +77,73 @@ func DeactivateMaterial(db *sql.DB, courseId, fileId int) error {
 
 	cm, err := models.FindFile(context.Background(), tx, fileId)
 	if err != nil {
-		tx.Rollback()
-		return err
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
 	}
 
 	_, err = cm.Delete(context.Background(), tx, false)
 	if err != nil {
-		tx.Rollback()
-		return err
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
 	}
 
 	chf, err := models.FindCourseHasFile(context.Background(), tx, courseId, fileId)
 	if err != nil {
-		tx.Rollback()
-		return err
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
 	}
 
 	_, err = chf.Delete(context.Background(), tx, false)
 	if err != nil {
-		tx.Rollback()
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+
+	return nil
+}
+
+// DeactivateAllMaterials takes the ID of a course and deactivates all files associated with it
+func DeactivateAllMaterialsFromCourse(db *sql.DB, courseId int) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
 		return err
 	}
 
-	err = tx.Commit()
+	materials, err := GetMaterialSliceFromCourse(db, courseId)
 	if err != nil {
-		tx.Rollback()
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+		}
+
+		return err
+	}
+	materials.DeleteAll(context.Background(), tx, false)
+
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+	return nil
+}
+
+// UpdateMaterial takes the ID of an existing file and name and overwrites the corresponding string with the new one
+func RenameMaterialFromCourse(db *sql.DB, fileId int, name string) error {
+	cm, err := models.FindFile(context.Background(), db, fileId)
+	if err != nil {
+		return err
+	}
+
+	cm.Name = name
+
+	_, err = cm.Update(context.Background(), db, boil.Infer())
+	if err != nil {
 		return err
 	}
 
