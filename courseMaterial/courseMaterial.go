@@ -143,6 +143,7 @@ func DeleteMaterialFromCourse(db *sql.DB, courseId, fileId int) error {
 }
 
 // DeleteAllMaterialsFromCourse takes the ID of a course and deactivates all files associated with it
+// TODO: compability with transactions
 func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
