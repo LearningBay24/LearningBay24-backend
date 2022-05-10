@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"learningbay24.de/backend/db"
 	"learningbay24.de/backend/models"
 )
@@ -43,7 +44,21 @@ func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, c
 	return nil
 }
 
-// DeactivateMaterial takes an ID and deactivates the chosen material
+// GetMaterials takes a courseID and returns a slice of files associated with it
+func GetMaterials(db *sql.DB, courseId int) (models.FileSlice, error) {
+	files, err := models.Files(
+		qm.From(models.TableNames.CourseHasFiles),
+		qm.Where("course_has_files.course_id=?", courseId),
+		qm.And("course_has_files.file_id = file.id"),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
+// DeactivateMaterial takes both course-ID and file-ID and deactivates the chosen material
 // Sets deactivation-timer and updates database
 func DeactivateMaterial(db *sql.DB, courseId, fileId int) error {
 	tx, err := db.BeginTx(context.Background(), nil)
