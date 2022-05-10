@@ -1,0 +1,19 @@
+output = "models"
+pkgname = "models"
+# ensure reproducible output by wiping first
+wipe = true
+# generated tests are partially failing
+no-tests = true
+add-enum-types = true
+# write `deleted_at` field instead of deleting
+add-soft-deletes = true
+add-global-variants = false
+
+[mysql]
+host = "127.0.0.1"
+port = "3306"
+# credentials/dbname for development db
+user = "learningbay24"
+pass = "learningbay24"
+sslmode = "false"
+dbname = "learningbay24"

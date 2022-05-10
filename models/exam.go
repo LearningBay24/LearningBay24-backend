@@ -193,8 +193,8 @@ type examL struct{}
 
 var (
 	examAllColumns            = []string{"id", "name", "description", "date", "duration", "online", "location", "course_id", "creator_id", "graded", "register_deadline", "deregister_deadline", "created_at", "updated_at", "deleted_at"}
-	examColumnsWithoutDefault = []string{"name", "description", "date", "duration", "online", "location", "course_id", "creator_id", "register_deadline", "deregister_deadline", "updated_at", "deleted_at"}
-	examColumnsWithDefault    = []string{"id", "graded", "created_at"}
+	examColumnsWithoutDefault = []string{"name", "description", "duration", "online", "location", "course_id", "creator_id", "register_deadline", "deregister_deadline", "updated_at", "deleted_at"}
+	examColumnsWithDefault    = []string{"id", "date", "graded", "created_at"}
 	examPrimaryKeyColumns     = []string{"id"}
 	examGeneratedColumns      = []string{}
 )
