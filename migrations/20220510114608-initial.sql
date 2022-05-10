@@ -9,8 +9,7 @@ CREATE TABLE `appointment` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_appointment_course1_idx` (`course_id`),
-  CONSTRAINT `fk_appointment_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
+  KEY `fk_appointment_course1_idx` (`course_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `certificate` (
@@ -24,10 +23,7 @@ CREATE TABLE `certificate` (
   PRIMARY KEY (`id`),
   KEY `fk_certificate_user_idx` (`user_id`),
   KEY `fk_certificate_course1_idx` (`linked_course_id`),
-  KEY `fk_certificate_exam1_idx` (`exam_id`),
-  CONSTRAINT `fk_certificate_course1` FOREIGN KEY (`linked_course_id`) REFERENCES `course` (`id`),
-  CONSTRAINT `fk_certificate_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
-  CONSTRAINT `fk_certificate_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
+  KEY `fk_certificate_exam1_idx` (`exam_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `course` (
@@ -41,8 +37,7 @@ CREATE TABLE `course` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `fk_course_forum1_idx` (`forum_id`),
-  CONSTRAINT `fk_course_forum1` FOREIGN KEY (`forum_id`) REFERENCES `forum` (`id`)
+  KEY `fk_course_forum1_idx` (`forum_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `course_has_files` (
@@ -51,9 +46,7 @@ CREATE TABLE `course_has_files` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`course_id`,`file_id`),
-  KEY `fk_course_has_files_file1_idx` (`file_id`),
-  CONSTRAINT `fk_course_has_files_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
-  CONSTRAINT `fk_course_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
+  KEY `fk_course_has_files_file1_idx` (`file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `course_requires_certificate` (
@@ -61,9 +54,7 @@ CREATE TABLE `course_requires_certificate` (
   `certificate_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
   PRIMARY KEY (`course_id`,`certificate_id`),
   KEY `fk_certificate_has_course_course1_idx` (`course_id`),
-  KEY `fk_certificate_has_course_certificate1_idx` (`certificate_id`),
-  CONSTRAINT `fk_certificate_has_course_certificate1` FOREIGN KEY (`certificate_id`) REFERENCES `certificate` (`id`),
-  CONSTRAINT `fk_certificate_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
+  KEY `fk_certificate_has_course_certificate1_idx` (`certificate_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `directory` (
@@ -75,8 +66,7 @@ CREATE TABLE `directory` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_directory_course1_idx` (`course_id`),
-  CONSTRAINT `fk_directory_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
+  KEY `fk_directory_course1_idx` (`course_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A directory in the listing of materials of a course containing materials.';
 
 CREATE TABLE `directory_has_files` (
@@ -84,9 +74,7 @@ CREATE TABLE `directory_has_files` (
   `file_id` int(11) NOT NULL,
   PRIMARY KEY (`directory_id`,`file_id`),
   KEY `fk_directory_has_files_directory1_idx` (`directory_id`),
-  KEY `fk_directory_has_files_file1_idx` (`file_id`),
-  CONSTRAINT `fk_directory_has_files_directory1` FOREIGN KEY (`directory_id`) REFERENCES `directory` (`id`),
-  CONSTRAINT `fk_directory_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
+  KEY `fk_directory_has_files_file1_idx` (`file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `exam` (
@@ -108,18 +96,14 @@ CREATE TABLE `exam` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
   KEY `fk_exam_course1_idx` (`course_id`),
-  KEY `fk_exam_user1_idx` (`creator_id`),
-  CONSTRAINT `fk_exam_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
-  CONSTRAINT `fk_exam_user1` FOREIGN KEY (`creator_id`) REFERENCES `user` (`id`)
+  KEY `fk_exam_user1_idx` (`creator_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `exam_has_files` (
   `exam_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
   PRIMARY KEY (`exam_id`,`file_id`),
-  KEY `fk_exam_has_files_file1_idx` (`file_id`),
-  CONSTRAINT `fk_exam_has_files_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
-  CONSTRAINT `fk_exam_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
+  KEY `fk_exam_has_files_file1_idx` (`file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `field_of_study` (
@@ -138,9 +122,7 @@ CREATE TABLE `field_of_study_has_course` (
   `semester` int(11) NOT NULL COMMENT 'The semester the course is supposed to take place in in the field of study with the id field_of_study_id.',
   PRIMARY KEY (`field_of_study_id`,`course_id`),
   KEY `fk_field_of_study_has_course_course1_idx` (`course_id`),
-  KEY `fk_field_of_study_has_course_field_of_study1_idx` (`field_of_study_id`),
-  CONSTRAINT `fk_field_of_study_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
-  CONSTRAINT `fk_field_of_study_has_course_field_of_study1` FOREIGN KEY (`field_of_study_id`) REFERENCES `field_of_study` (`id`)
+  KEY `fk_field_of_study_has_course_field_of_study1_idx` (`field_of_study_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `file` (
@@ -152,8 +134,7 @@ CREATE TABLE `file` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT 'When the file was created.',
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_file_user1_idx` (`uploader_id`),
-  CONSTRAINT `fk_file_user1` FOREIGN KEY (`uploader_id`) REFERENCES `user` (`id`)
+  KEY `fk_file_user1_idx` (`uploader_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A local or remote file.\nLocal files do not store a hash as it is easily generated. Files with the same hash should be combined as one entry.';
 
 CREATE TABLE `forum` (
@@ -178,10 +159,7 @@ CREATE TABLE `forum_entry` (
   PRIMARY KEY (`id`),
   KEY `fk_forum_entry_forum1_idx` (`forum_id`),
   KEY `fk_forum_entry_user1_idx` (`author_id`),
-  KEY `fk_forum_entry_forum_entry1_idx` (`in_reply_to`),
-  CONSTRAINT `fk_forum_entry_forum1` FOREIGN KEY (`forum_id`) REFERENCES `forum` (`id`),
-  CONSTRAINT `fk_forum_entry_forum_entry1` FOREIGN KEY (`in_reply_to`) REFERENCES `forum_entry` (`id`),
-  CONSTRAINT `fk_forum_entry_user1` FOREIGN KEY (`author_id`) REFERENCES `user` (`id`)
+  KEY `fk_forum_entry_forum_entry1_idx` (`in_reply_to`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `graduation_level` (
@@ -208,8 +186,7 @@ CREATE TABLE `notification` (
   `updated_at` timestamp NULL DEFAULT NULL,
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
-  KEY `fk_notification_user1_idx` (`user_to_id`),
-  CONSTRAINT `fk_notification_user1` FOREIGN KEY (`user_to_id`) REFERENCES `user` (`id`)
+  KEY `fk_notification_user1_idx` (`user_to_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `role` (
@@ -235,17 +212,14 @@ CREATE TABLE `submission` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
-  KEY `fk_submission_course1_idx` (`course_id`),
-  CONSTRAINT `fk_submission_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
+  KEY `fk_submission_course1_idx` (`course_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Submission which a course administrator can create for enrolled users to upload files to for grading.';
 
 CREATE TABLE `submission_has_files` (
   `submission_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
   PRIMARY KEY (`submission_id`,`file_id`),
-  KEY `fk_submission_has_files_file1_idx` (`file_id`),
-  CONSTRAINT `fk_submission_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`),
-  CONSTRAINT `fk_submission_has_files_submission1` FOREIGN KEY (`submission_id`) REFERENCES `submission` (`id`)
+  KEY `fk_submission_has_files_file1_idx` (`file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `user` (
@@ -272,11 +246,7 @@ CREATE TABLE `user` (
   KEY `fk_user_graduation_level1_idx` (`graduation_level`),
   KEY `fk_user_language1_idx` (`preferred_language_id`),
   KEY `fk_user_file1_idx` (`profile_picture`),
-  KEY `fk_user_role1_idx` (`role_id`),
-  CONSTRAINT `fk_user_file1` FOREIGN KEY (`profile_picture`) REFERENCES `file` (`id`),
-  CONSTRAINT `fk_user_graduation_level1` FOREIGN KEY (`graduation_level`) REFERENCES `graduation_level` (`id`),
-  CONSTRAINT `fk_user_language1` FOREIGN KEY (`preferred_language_id`) REFERENCES `language` (`id`),
-  CONSTRAINT `fk_user_role1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
+  KEY `fk_user_role1_idx` (`role_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `user_has_course` (
@@ -289,10 +259,7 @@ CREATE TABLE `user_has_course` (
   PRIMARY KEY (`user_id`,`course_id`),
   KEY `fk_user_has_course_course1_idx` (`course_id`),
   KEY `fk_user_has_course_user1_idx` (`user_id`),
-  KEY `fk_user_has_course_role1_idx` (`role_id`),
-  CONSTRAINT `fk_user_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
-  CONSTRAINT `fk_user_has_course_role1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`),
-  CONSTRAINT `fk_user_has_course_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
+  KEY `fk_user_has_course_role1_idx` (`role_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `user_has_exam` (
@@ -307,9 +274,7 @@ CREATE TABLE `user_has_exam` (
   `deleted_at` timestamp NULL DEFAULT NULL COMMENT 'When the user deregistered from the exam.',
   PRIMARY KEY (`user_id`,`exam_id`),
   KEY `fk_user_has_exam_exam1_idx` (`exam_id`),
-  KEY `fk_user_has_exam_user1_idx` (`user_id`),
-  CONSTRAINT `fk_user_has_exam_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
-  CONSTRAINT `fk_user_has_exam_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
+  KEY `fk_user_has_exam_user1_idx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `user_has_field_of_study` (
@@ -317,9 +282,7 @@ CREATE TABLE `user_has_field_of_study` (
   `field_of_study_id` int(11) NOT NULL,
   PRIMARY KEY (`user_id`,`field_of_study_id`),
   KEY `fk_user_has_field_of_study_field_of_study1_idx` (`field_of_study_id`),
-  KEY `fk_user_has_field_of_study_user1_idx` (`user_id`),
-  CONSTRAINT `fk_user_has_field_of_study_field_of_study1` FOREIGN KEY (`field_of_study_id`) REFERENCES `field_of_study` (`id`),
-  CONSTRAINT `fk_user_has_field_of_study_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
+  KEY `fk_user_has_field_of_study_user1_idx` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE `user_submission` (
@@ -335,21 +298,102 @@ CREATE TABLE `user_submission` (
   `updated_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `fk_submission_file_user1_idx` (`submitter_id`),
-  KEY `fk_user_submission_submission1_idx` (`submission_id`),
-  CONSTRAINT `fk_submission_file_user1` FOREIGN KEY (`submitter_id`) REFERENCES `user` (`id`),
-  CONSTRAINT `fk_user_submission_submission1` FOREIGN KEY (`submission_id`) REFERENCES `submission` (`id`)
+  KEY `fk_user_submission_submission1_idx` (`submission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A submission of a user. An entry in this table can exist without the user actually submitting any files in case that the user is allowed to submit the files later than the original due date in the submission.';
 
 CREATE TABLE `user_submission_has_files` (
   `user_submission_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
   PRIMARY KEY (`user_submission_id`,`file_id`),
-  KEY `fk_user_submission_has_files_file1_idx` (`file_id`),
-  CONSTRAINT `fk_submission_has_files_user_submission1` FOREIGN KEY (`user_submission_id`) REFERENCES `user_submission` (`id`),
-  CONSTRAINT `fk_user_submission_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
+  KEY `fk_user_submission_has_files_file1_idx` (`file_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+ALTER TABLE `appointment`
+	ADD CONSTRAINT `fk_appointment_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`);
+
+ALTER TABLE `certificate`
+	ADD CONSTRAINT `fk_certificate_course1` FOREIGN KEY (`linked_course_id`) REFERENCES `course` (`id`),
+	ADD CONSTRAINT `fk_certificate_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
+	ADD CONSTRAINT `fk_certificate_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `course`
+	ADD CONSTRAINT `fk_course_forum1` FOREIGN KEY (`forum_id`) REFERENCES `forum` (`id`);
+
+ALTER TABLE `course_has_files`
+	ADD CONSTRAINT `fk_course_has_files_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
+	ADD CONSTRAINT `fk_course_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`);
+
+ALTER TABLE `course_requires_certificate`
+	ADD CONSTRAINT `fk_certificate_has_course_certificate1` FOREIGN KEY (`certificate_id`) REFERENCES `certificate` (`id`),
+	ADD CONSTRAINT `fk_certificate_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`);
+
+ALTER TABLE `directory`
+	ADD CONSTRAINT `fk_directory_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`);
+
+ALTER TABLE `directory_has_files`
+	ADD CONSTRAINT `fk_directory_has_files_directory1` FOREIGN KEY (`directory_id`) REFERENCES `directory` (`id`),
+	ADD CONSTRAINT `fk_directory_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`);
+
+ALTER TABLE `exam`
+	ADD CONSTRAINT `fk_exam_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
+	ADD CONSTRAINT `fk_exam_user1` FOREIGN KEY (`creator_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `exam_has_files`
+	ADD CONSTRAINT `fk_exam_has_files_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
+	ADD CONSTRAINT `fk_exam_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`);
+
+ALTER TABLE `field_of_study_has_course`
+	ADD CONSTRAINT `fk_field_of_study_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
+	ADD CONSTRAINT `fk_field_of_study_has_course_field_of_study1` FOREIGN KEY (`field_of_study_id`) REFERENCES `field_of_study` (`id`);
+
+ALTER TABLE `file`
+	ADD CONSTRAINT `fk_file_user1` FOREIGN KEY (`uploader_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `forum_entry`
+	ADD CONSTRAINT `fk_forum_entry_forum1` FOREIGN KEY (`forum_id`) REFERENCES `forum` (`id`),
+	ADD CONSTRAINT `fk_forum_entry_forum_entry1` FOREIGN KEY (`in_reply_to`) REFERENCES `forum_entry` (`id`),
+	ADD CONSTRAINT `fk_forum_entry_user1` FOREIGN KEY (`author_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `notification`
+	ADD CONSTRAINT `fk_notification_user1` FOREIGN KEY (`user_to_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `submission`
+	ADD CONSTRAINT `fk_submission_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`);
+
+ALTER TABLE `submission_has_files`
+	ADD CONSTRAINT `fk_submission_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`),
+	ADD CONSTRAINT `fk_submission_has_files_submission1` FOREIGN KEY (`submission_id`) REFERENCES `submission` (`id`);
+
+ALTER TABLE `user`
+	ADD CONSTRAINT `fk_user_file1` FOREIGN KEY (`profile_picture`) REFERENCES `file` (`id`),
+	ADD CONSTRAINT `fk_user_graduation_level1` FOREIGN KEY (`graduation_level`) REFERENCES `graduation_level` (`id`),
+	ADD CONSTRAINT `fk_user_language1` FOREIGN KEY (`preferred_language_id`) REFERENCES `language` (`id`),
+	ADD CONSTRAINT `fk_user_role1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`);
+
+ALTER TABLE `user_has_course`
+	ADD CONSTRAINT `fk_user_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
+	ADD CONSTRAINT `fk_user_has_course_role1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`),
+	ADD CONSTRAINT `fk_user_has_course_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `user_has_exam`
+	ADD CONSTRAINT `fk_user_has_exam_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
+	ADD CONSTRAINT `fk_user_has_exam_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `user_has_field_of_study`
+	ADD CONSTRAINT `fk_user_has_field_of_study_field_of_study1` FOREIGN KEY (`field_of_study_id`) REFERENCES `field_of_study` (`id`),
+	ADD CONSTRAINT `fk_user_has_field_of_study_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`);
+
+ALTER TABLE `user_submission`
+	ADD CONSTRAINT `fk_submission_file_user1` FOREIGN KEY (`submitter_id`) REFERENCES `user` (`id`),
+	ADD CONSTRAINT `fk_user_submission_submission1` FOREIGN KEY (`submission_id`) REFERENCES `submission` (`id`);
+
+ALTER TABLE `user_submission_has_files`
+	ADD CONSTRAINT `fk_submission_has_files_user_submission1` FOREIGN KEY (`user_submission_id`) REFERENCES `user_submission` (`id`),
+	ADD CONSTRAINT `fk_user_submission_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`);
+
 -- +migrate Down
+-- we don't care about foreign key checks, everything should be deleted if this migration is applied anyway
+SET FOREIGN_KEY_CHECKS=OFF;
 DROP TABLE `appointment`;
 DROP TABLE `certificate`;
 DROP TABLE `course`;
@@ -376,3 +420,5 @@ DROP TABLE `user_has_exam`;
 DROP TABLE `user_has_field_of_study`;
 DROP TABLE `user_submission`;
 DROP TABLE `user_submission_has_files`;
+-- turn on foreign key checks again for good measure
+SET FOREIGN_KEY_CHECKS=ON;
