@@ -1,21 +1,4 @@
 -- +migrate Up
-/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
-/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
-/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
-/*!40101 SET NAMES utf8mb4 */;
-/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
-/*!40103 SET TIME_ZONE='+00:00' */;
-/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
-/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
-/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
-/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-
---
--- Table structure for table `appointment`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `appointment` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `date` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT 'The date the appointment should be.',
@@ -29,14 +12,7 @@ CREATE TABLE `appointment` (
   KEY `fk_appointment_course1_idx` (`course_id`),
   CONSTRAINT `fk_appointment_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `certificate`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `certificate` (
   `id` char(36) COLLATE utf8_unicode_ci NOT NULL COMMENT 'UUID generated before insertion into the database.\nNeeds to be a randomly generated String of a specific format in order to avoid getting any desired certificate.',
   `user_id` int(11) NOT NULL,
@@ -53,14 +29,7 @@ CREATE TABLE `certificate` (
   CONSTRAINT `fk_certificate_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
   CONSTRAINT `fk_certificate_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `course`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `course` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) COLLATE utf8_unicode_ci NOT NULL,
@@ -75,14 +44,7 @@ CREATE TABLE `course` (
   KEY `fk_course_forum1_idx` (`forum_id`),
   CONSTRAINT `fk_course_forum1` FOREIGN KEY (`forum_id`) REFERENCES `forum` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=41 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `course_has_files`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `course_has_files` (
   `course_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
@@ -93,14 +55,7 @@ CREATE TABLE `course_has_files` (
   CONSTRAINT `fk_course_has_files_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
   CONSTRAINT `fk_course_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `course_requires_certificate`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `course_requires_certificate` (
   `course_id` int(11) NOT NULL,
   `certificate_id` char(36) COLLATE utf8_unicode_ci NOT NULL,
@@ -110,14 +65,7 @@ CREATE TABLE `course_requires_certificate` (
   CONSTRAINT `fk_certificate_has_course_certificate1` FOREIGN KEY (`certificate_id`) REFERENCES `certificate` (`id`),
   CONSTRAINT `fk_certificate_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `directory`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `directory` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(128) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The displayed name of the directory.',
@@ -130,14 +78,7 @@ CREATE TABLE `directory` (
   KEY `fk_directory_course1_idx` (`course_id`),
   CONSTRAINT `fk_directory_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A directory in the listing of materials of a course containing materials.';
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `directory_has_files`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `directory_has_files` (
   `directory_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
@@ -147,14 +88,7 @@ CREATE TABLE `directory_has_files` (
   CONSTRAINT `fk_directory_has_files_directory1` FOREIGN KEY (`directory_id`) REFERENCES `directory` (`id`),
   CONSTRAINT `fk_directory_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `exam`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `exam` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(128) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Name of the exam.',
@@ -178,14 +112,7 @@ CREATE TABLE `exam` (
   CONSTRAINT `fk_exam_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
   CONSTRAINT `fk_exam_user1` FOREIGN KEY (`creator_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `exam_has_files`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `exam_has_files` (
   `exam_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
@@ -194,14 +121,7 @@ CREATE TABLE `exam_has_files` (
   CONSTRAINT `fk_exam_has_files_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
   CONSTRAINT `fk_exam_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `field_of_study`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `field_of_study` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Name of the field of study.',
@@ -211,14 +131,7 @@ CREATE TABLE `field_of_study` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='The current field of study of the user.';
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `field_of_study_has_course`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `field_of_study_has_course` (
   `field_of_study_id` int(11) NOT NULL,
   `course_id` int(11) NOT NULL,
@@ -229,14 +142,7 @@ CREATE TABLE `field_of_study_has_course` (
   CONSTRAINT `fk_field_of_study_has_course_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`),
   CONSTRAINT `fk_field_of_study_has_course_field_of_study1` FOREIGN KEY (`field_of_study_id`) REFERENCES `field_of_study` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `file`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `file` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Displayed name of the file.',
@@ -249,14 +155,7 @@ CREATE TABLE `file` (
   KEY `fk_file_user1_idx` (`uploader_id`),
   CONSTRAINT `fk_file_user1` FOREIGN KEY (`uploader_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A local or remote file.\nLocal files do not store a hash as it is easily generated. Files with the same hash should be combined as one entry.';
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `forum`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `forum` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The name given to the forum by the course administrator.',
@@ -265,14 +164,7 @@ CREATE TABLE `forum` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Admin of the forum is it''s course''s admin.';
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `forum_entry`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `forum_entry` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `subject` varchar(64) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The subject of the forum entry.',
@@ -291,41 +183,20 @@ CREATE TABLE `forum_entry` (
   CONSTRAINT `fk_forum_entry_forum_entry1` FOREIGN KEY (`in_reply_to`) REFERENCES `forum_entry` (`id`),
   CONSTRAINT `fk_forum_entry_user1` FOREIGN KEY (`author_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `graduation_level`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `graduation_level` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `graduation_level` varchar(128) COLLATE utf8_unicode_ci NOT NULL,
   `level` int(11) NOT NULL COMMENT 'Level (or "rank") of the graduation compared to others. Ranks with the a similar "meaning" should get the same level.',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `language`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `language` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '2-letter ISO 639-1 language code.',
   `name` varchar(64) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Display name of the language.',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `notification`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `notification` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(64) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The title of the notification.',
@@ -340,14 +211,7 @@ CREATE TABLE `notification` (
   KEY `fk_notification_user1_idx` (`user_to_id`),
   CONSTRAINT `fk_notification_user1` FOREIGN KEY (`user_to_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `role`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `role` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL COMMENT 'The name of the role.',
@@ -357,14 +221,7 @@ CREATE TABLE `role` (
   `deleted_at` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `submission`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `submission` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) COLLATE utf8_unicode_ci NOT NULL COMMENT 'Name of the submission.',
@@ -381,14 +238,7 @@ CREATE TABLE `submission` (
   KEY `fk_submission_course1_idx` (`course_id`),
   CONSTRAINT `fk_submission_course1` FOREIGN KEY (`course_id`) REFERENCES `course` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='Submission which a course administrator can create for enrolled users to upload files to for grading.';
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `submission_has_files`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `submission_has_files` (
   `submission_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
@@ -397,14 +247,7 @@ CREATE TABLE `submission_has_files` (
   CONSTRAINT `fk_submission_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`),
   CONSTRAINT `fk_submission_has_files_submission1` FOREIGN KEY (`submission_id`) REFERENCES `submission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `user`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'The title this user has.',
@@ -435,14 +278,7 @@ CREATE TABLE `user` (
   CONSTRAINT `fk_user_language1` FOREIGN KEY (`preferred_language_id`) REFERENCES `language` (`id`),
   CONSTRAINT `fk_user_role1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `user_has_course`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_has_course` (
   `user_id` int(11) NOT NULL,
   `course_id` int(11) NOT NULL,
@@ -458,14 +294,7 @@ CREATE TABLE `user_has_course` (
   CONSTRAINT `fk_user_has_course_role1` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`),
   CONSTRAINT `fk_user_has_course_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `user_has_exam`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_has_exam` (
   `user_id` int(11) NOT NULL,
   `exam_id` int(11) NOT NULL,
@@ -482,14 +311,7 @@ CREATE TABLE `user_has_exam` (
   CONSTRAINT `fk_user_has_exam_exam1` FOREIGN KEY (`exam_id`) REFERENCES `exam` (`id`),
   CONSTRAINT `fk_user_has_exam_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `user_has_field_of_study`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_has_field_of_study` (
   `user_id` int(11) NOT NULL,
   `field_of_study_id` int(11) NOT NULL,
@@ -499,14 +321,7 @@ CREATE TABLE `user_has_field_of_study` (
   CONSTRAINT `fk_user_has_field_of_study_field_of_study1` FOREIGN KEY (`field_of_study_id`) REFERENCES `field_of_study` (`id`),
   CONSTRAINT `fk_user_has_field_of_study_user1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `user_submission`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_submission` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Name of the submission.',
@@ -524,14 +339,7 @@ CREATE TABLE `user_submission` (
   CONSTRAINT `fk_submission_file_user1` FOREIGN KEY (`submitter_id`) REFERENCES `user` (`id`),
   CONSTRAINT `fk_user_submission_submission1` FOREIGN KEY (`submission_id`) REFERENCES `submission` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci COMMENT='A submission of a user. An entry in this table can exist without the user actually submitting any files in case that the user is allowed to submit the files later than the original due date in the submission.';
-/*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Table structure for table `user_submission_has_files`
---
-
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `user_submission_has_files` (
   `user_submission_id` int(11) NOT NULL,
   `file_id` int(11) NOT NULL,
@@ -540,16 +348,6 @@ CREATE TABLE `user_submission_has_files` (
   CONSTRAINT `fk_submission_has_files_user_submission1` FOREIGN KEY (`user_submission_id`) REFERENCES `user_submission` (`id`),
   CONSTRAINT `fk_user_submission_has_files_file1` FOREIGN KEY (`file_id`) REFERENCES `file` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-
-/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
-/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
-/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
-/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- +migrate Down
 DROP TABLE `appointment`;
