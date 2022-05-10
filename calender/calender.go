@@ -20,6 +20,55 @@ import (
 	"learningbay24.de/backend/models"
 )
 
+/*Returns all appointments the user with the user-ID has*/
+func GetAllAppointments(db *sql.DB, userId int) ([]models.Appointment, error) {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := models.FindUser(context.Background(), tx, userId)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+		}
+		return nil, err
+	}
+	courseQuery := user.UserHasCourses()
+	courseSlice, err := courseQuery.All(context.Background(), tx)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
+		}
+		return nil, err
+	}
+	var allAppointments []models.Appointment
+
+	// Collect all appointments from all courses of the user
+	for i := 0; i < len(courseSlice); i++ {
+		appointmentQuery := courseSlice[i].R.Course.Appointments()
+		appointmentSlice, err := appointmentQuery.All(context.Background(), tx)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
+			}
+			return nil, err
+		}
+		for j := 0; j < len(appointmentSlice); j++ {
+			allAppointments = append(allAppointments, *appointmentSlice[j])
+		}
+	}
+
+	// TODO: es werden für den user noch die Submissions und Exams geholt und returned
+	// 1. user.exams holen
+	// 2. user.course.submissions holen
+
+	if e := tx.Commit(); e != nil {
+		return nil, fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+	}
+	return allAppointments, nil
+}
+
 func AddCourseToCalender(db *sql.DB, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -137,6 +186,7 @@ func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.Strin
 	}
 
 	// TODO -> get submission object with submission.id as parameter, set submission.date to given Date, don't create a new appointment
+	// newer TODO: Don't set Date, read Date from submission and add to calender (calender API)
 
 	newAppoint := &models.Appointment{Date: submDate, Location: submName, CourseID: courseId}
 	err = newAppoint.Insert(context.Background(), tx, boil.Infer())
@@ -154,64 +204,6 @@ func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.Strin
 		return err
 	}
 	course.AddAppointments(context.Background(), tx, true, newAppoint)
-
-	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
-	}
-	return nil
-}
-
-func DeactivateSubmissionInCalender(db *sql.DB, appointmentId int, courseId int) error {
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	appointment, err := models.FindAppointment(context.Background(), tx, appointmentId)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-		return err
-	}
-	currentDate := time.Now()
-	appointment.DeletedAt = null.TimeFrom(currentDate)
-
-	/* TODO - deactivate Appointment in course?
-	course, err := models.FindCourse(context.Background(), tx, courseId)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-		return err
-	}
-	course.Appointments()...
-	*/
-
-	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
-	}
-	return nil
-}
-
-func AddExamToCalender(db *sql.DB, examDate time.Time, location null.String, online int8, examId int) error {
-	// used FA300, TODO -> store exam name in which appointment parameter?
-
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	// TODO -> get exam object with exam.id as parameter, set exam.date to given Date, don't create a new appointment
-
-	newAppoint := &models.Appointment{Date: examDate, Location: location, Online: online}
-	err = newAppoint.Insert(context.Background(), tx, boil.Infer())
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-		return err
-	}
 
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
@@ -243,6 +235,29 @@ func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
 	return nil
 }
 
+func DeactivateAppointment(db *sql.DB, appointmentId int) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	appointment, err := models.FindAppointment(context.Background(), tx, appointmentId)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+		}
+		return err
+	}
+	currentDate := time.Now()
+	appointment.DeletedAt = null.TimeFrom(currentDate)
+
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+	}
+	return nil
+}
+
+/*
 func ChangeSubmissionDate(db *sql.DB, appointmentId int, courseId int, submDate time.Time, submName null.String, submId int) error {
 	// used F.A.'s: 480
 
@@ -280,25 +295,4 @@ func ChangeSubmissionDate(db *sql.DB, appointmentId int, courseId int, submDate 
 	}
 	return nil
 }
-
-func DeactivateAppointment(db *sql.DB, appointmentId int) error {
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	appointment, err := models.FindAppointment(context.Background(), tx, appointmentId)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-		return err
-	}
-	currentDate := time.Now()
-	appointment.DeletedAt = null.TimeFrom(currentDate)
-
-	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
-	}
-	return nil
-}
+*/
