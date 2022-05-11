@@ -1,14 +1,32 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
+	"database/sql"
+	"log"
+
 	"learningbay24.de/backend/api"
 	"learningbay24.de/backend/config"
+
+	"github.com/gin-gonic/gin"
+	"github.com/rubenv/sql-migrate"
 )
+
+func applyMigrations(db *sql.DB) {
+	migrations := &migrate.FileMigrationSource{
+		Dir: "migrations",
+	}
+
+	n, err := migrate.Exec(db, "mysql", migrations, migrate.Up)
+	if err != nil {
+		log.Fatal("Unable to apply migrations. Aborting.")
+	}
+	log.Printf("Applied %d migrations\n", n)
+}
 
 func main() {
 	config.InitConfig()
 	db := config.SetupDbHandle()
+	applyMigrations(db)
 
 	pCtrl := api.PublicController{Database: db}
 	router := gin.Default()
