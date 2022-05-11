@@ -10,16 +10,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-	"github.com/volatiletech/null/v8"
+	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
 	"learningbay24.de/backend/db"
 	"learningbay24.de/backend/models"
-)
 
-const (
-	SecretKey = "wasdf12345"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
+	"github.com/volatiletech/null/v8"
 )
 
 type PublicController struct {
@@ -288,7 +286,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	})
 
 	//Get signed token with the sercret key
-	token, err := claims.SignedString([]byte(SecretKey))
+	token, err := claims.SignedString([]byte(config.Conf.Secrets.JWTSecret))
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusInternalServerError, err.Error())

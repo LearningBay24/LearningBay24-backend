@@ -9,3 +9,6 @@ Database = "learningbay24"
 [Files]
 Path = "/var/lib/learningbay24/"
 AllowedFileTypes = ["pdf", "png", "jpg", "zip", "tar", "gz", "bzip", "rar"]
+
+[Secrets]
+JWTSecret = "changethis"
