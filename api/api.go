@@ -3,6 +3,8 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -269,8 +271,13 @@ func (f *PublicController) Login(c *gin.Context) {
 	//Check if credentials of given user are valid
 	err := db.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Unable to find user with E-Mail: %s", newUser.Email))
+		} else {
+			c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		}
+
 		log.Println(err)
-		c.IndentedJSON(http.StatusUnauthorized, err.Error())
 		return
 	}
 

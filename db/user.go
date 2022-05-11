@@ -62,10 +62,6 @@ func VerifyCredentials(db *sql.DB, email string, password []byte) error {
 		return err
 	}
 
-	if user == nil {
-		return fmt.Errorf("Unable to find user with E-Mail: %s", email)
-	}
-
 	err = bcrypt.CompareHashAndPassword(user.Password, password)
 	if err != nil {
 		return err
