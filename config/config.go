@@ -20,9 +20,16 @@ type Files struct {
 	AllowedFileTypes []string
 }
 
+type Secrets struct {
+	JWTSecret string
+}
+
 type Config struct {
-	DB    DB
-	Files Files
+	Domain  string
+	Secure  bool
+	DB      DB
+	Files   Files
+	Secrets Secrets
 }
 
 var (
