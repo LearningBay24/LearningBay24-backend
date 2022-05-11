@@ -258,24 +258,19 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 }
 
 func (f *PublicController) Login(c *gin.Context) {
-	var newUser models.User
-
 	//Map the given user on json
-
+	var newUser models.User
 	if err := c.BindJSON(&newUser); err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	_, err := db.CreateUser(f.Database, newUser)
-	if err != nil {
-		log.Println(err)
-	}
+
 	//Check if credentials of given user are valid
-	err = db.VerifyCredentials(f.Database, newUser.Email, newUser.Password)
+	err := db.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
 	if err != nil {
 		log.Println(err)
-		c.IndentedJSON(http.StatusBadGateway, err.Error())
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
 		return
 	}
 
@@ -289,9 +284,10 @@ func (f *PublicController) Login(c *gin.Context) {
 	token, err := claims.SignedString([]byte(SecretKey))
 	if err != nil {
 		log.Println(err)
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
+
 	//Set the cookie and add it to the response header
 	c.SetCookie("jwt", token, 3600, "", "0.0.0.0:8080", false, true)
 	//Return user with set cookie
