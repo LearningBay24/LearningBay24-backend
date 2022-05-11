@@ -6,12 +6,18 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"learningbay24.de/backend/course"
-	"learningbay24.de/backend/models"
-
 	"github.com/volatiletech/null/v8"
+	"learningbay24.de/backend/course"
+	"learningbay24.de/backend/db"
+	"learningbay24.de/backend/models"
+)
+
+const (
+	SecretKey = "wasdf12345"
 )
 
 type PublicController struct {
@@ -249,4 +255,46 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 	log.Println("course", course)
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
+}
+
+func (f *PublicController) Login(c *gin.Context) {
+	var newUser models.User
+
+	//Map the given user on json
+
+	if err := c.BindJSON(&newUser); err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	_, err := db.CreateUser(f.Database, newUser)
+	if err != nil {
+		log.Println(err)
+	}
+	//Check if credentials of given user are valid
+	err = db.VerifyCredentials(f.Database, newUser.Email, newUser.Password)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadGateway, err.Error())
+		return
+	}
+
+	//Put new Claim on given user
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		Issuer:    strconv.Itoa(int(newUser.ID)),
+		ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+	})
+
+	//Get signed token with the sercret key
+	token, err := claims.SignedString([]byte(SecretKey))
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Set the cookie and add it to the response header
+	c.SetCookie("jwt", token, 3600, "", "0.0.0.0:8080", false, true)
+	//Return user with set cookie
+	newUser.Password = nil
+	c.IndentedJSON(http.StatusOK, newUser)
 }

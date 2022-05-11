@@ -31,6 +31,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 
 	// TODO: logic?
 	// TODO: role_id, etc.? (foreign keys)
+	user.ID = 0
 	err = user.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
@@ -56,7 +57,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 // Passwords in the database are always saved as a hash.
 // Returns nil on success, or an error on failure.
 func VerifyCredentials(db *sql.DB, email string, password []byte) error {
-	user, err := models.Users(qm.From(models.TableNames.User), qm.Where("email = ?", email)).One(context.Background(), db)
+	user, err := models.Users(qm.Where("email = ?", email)).One(context.Background(), db)
 	if err != nil {
 		return err
 	}
