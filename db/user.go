@@ -48,7 +48,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 		return 0, err
 	}
 
-	return 0, nil
+	return user.ID, nil
 }
 
 // Verify if the given cleartext password matches the saved password in the database for the user with the given email.
