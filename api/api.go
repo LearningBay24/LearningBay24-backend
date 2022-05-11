@@ -294,3 +294,21 @@ func (f *PublicController) Login(c *gin.Context) {
 	newUser.Password = nil
 	c.IndentedJSON(http.StatusOK, newUser)
 }
+
+func (f *PublicController) Register(c *gin.Context) {
+	var newUser models.User
+	if err := c.BindJSON(&newUser); err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	_, err := db.CreateUser(f.Database, newUser)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+
+	newUser.Password = nil
+	c.IndentedJSON(http.StatusCreated, newUser)
+}
