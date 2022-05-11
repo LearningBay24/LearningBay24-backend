@@ -281,7 +281,7 @@ func (f *PublicController) Login(c *gin.Context) {
 
 	//Put new Claim on given user
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
-		IssuedAt: time.Now().Unix(),
+		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 	})
 

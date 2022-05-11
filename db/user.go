@@ -29,8 +29,6 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 		return 0, err
 	}
 
-	// TODO: logic?
-	// TODO: role_id, etc.? (foreign keys)
 	user.ID = 0
 	err = user.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
