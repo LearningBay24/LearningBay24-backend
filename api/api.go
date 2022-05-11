@@ -282,7 +282,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	//Put new Claim on given user
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		Issuer:    strconv.Itoa(int(newUser.ID)),
-		ExpiresAt: time.Now().Add(time.Hour * 72).Unix(),
+		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 	})
 
 	//Get signed token with the sercret key
@@ -294,7 +294,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	}
 
 	//Set the cookie and add it to the response header
-	c.SetCookie("jwt", token, 3600, "", "0.0.0.0:8080", false, true)
+	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	//Return user with set cookie
 	newUser.Password = nil
 	c.IndentedJSON(http.StatusOK, newUser)

@@ -25,6 +25,8 @@ type Secrets struct {
 }
 
 type Config struct {
+	Domain  string
+	Secure  bool
 	DB      DB
 	Files   Files
 	Secrets Secrets
