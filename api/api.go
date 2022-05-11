@@ -308,12 +308,13 @@ func (f *PublicController) Register(c *gin.Context) {
 		return
 	}
 
-	_, err := db.CreateUser(f.Database, newUser)
+	id, err := db.CreateUser(f.Database, newUser)
 	if err != nil {
 		log.Println(err)
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 
+	newUser.ID = id
 	newUser.Password = nil
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
