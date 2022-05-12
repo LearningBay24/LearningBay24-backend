@@ -16,8 +16,8 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/volatiletech/null/v8"
 	log "github.com/sirupsen/logrus"
+	"github.com/volatiletech/null/v8"
 )
 
 type PublicController struct {

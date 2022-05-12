@@ -64,7 +64,7 @@ func InitConfig() {
 	if err != nil {
 		log.Fatalf("Unable to unmarshal config file: %s\n", err.Error())
 	}
-	if Conf.LogLevel == ""{
+	if Conf.LogLevel == "" {
 		Conf.LogLevel = "info"
 	}
 	parseCLI()
