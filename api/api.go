@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	"github.com/volatiletech/null/v8"
+	log "github.com/sirupsen/logrus"
 )
 
 type PublicController struct {
@@ -35,15 +35,13 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 	//Fetch Data from Database with Backend function
 	course, err := course.GetCourse(f.Database, id)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to get course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	//Return Status and Data in JSON-Format
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, course)
-	log.Println("course ", course)
-	log.Println(err)
 }
 
 func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
@@ -62,7 +60,7 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	//Fetch Data from Database with Backend function
 	err = course.DeleteUserFromCourse(f.Database, id, user_id)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to delete user from course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -84,14 +82,13 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 	//Fetch Data from Database with Backend function
 	users, err := course.GetUsersInCourse(f.Database, id)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to get users in course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	//Return Status and Data in JSON-Format
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, users)
-	log.Println("course ", users)
 }
 
 func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
@@ -106,14 +103,13 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 	//Fetch Data from Database with Backend function
 	courses, err := course.GetCoursesFromUser(f.Database, user_id)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to get courses from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	//Return Status and Data in JSON-Format
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, courses)
-	log.Println("course ", courses)
 
 }
 
@@ -130,13 +126,12 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 	course, err := course.DeleteCourse(f.Database, id)
 	//Return Status and Data in JSON-Format
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to delete course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, course)
-	log.Println("course ", course)
 }
 
 func (f *PublicController) CreateCourse(c *gin.Context) {
@@ -145,7 +140,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 
 	raw, err := c.GetRawData()
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -153,15 +148,14 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 	var j map[string]interface{}
 	err = json.Unmarshal(raw, &j)
 	if err != nil {
-		log.Printf("Unable to unmarshal the json body: %+v", raw)
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("user_id: %+T", j["user_id"])
 	tmp, ok := j["user_id"].(float64)
 	if !ok {
-		log.Println("unable to convert user_id to float64")
+		log.Error("unable to convert user_id to float64")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -169,26 +163,26 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 
 	name, ok := j["name"].(string)
 	if !ok {
-		log.Println("unable to convert name to string")
+		log.Error("unable to convert name to string")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	description, ok := j["description"].(string)
 	if !ok {
-		log.Println("unable to convert description to string")
+		log.Error("unable to convert description to string")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 	enroll_key, ok := j["enroll_key"].(string)
 	if !ok {
-		log.Println("unable to convert enroll_key to string")
+		log.Error("unable to convert enroll_key to string")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to create course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -201,10 +195,10 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	log.Println(err.Error())
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -213,22 +207,20 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {
 		if err != nil {
-			log.Println(err)
+			log.Errorf("Unable to bind json: %s\n", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
 	}
 
-	user, err := course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
-
+	_, err = course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to enroll user in course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	c.Header("Access-Control-Allow-Origin", "*")
-	log.Println("user", user)
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
@@ -241,18 +233,17 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 	}
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {
-		log.Println(err)
+		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	course, err := course.UpdateCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
+	_, err = course.UpdateCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to update course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	newCourse.ID = id
-	log.Println("course", course)
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
@@ -261,7 +252,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	//Map the given user on json
 	var newUser models.User
 	if err := c.BindJSON(&newUser); err != nil {
-		log.Println(err)
+		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -273,9 +264,9 @@ func (f *PublicController) Login(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Unable to find user with E-Mail: %s", newUser.Email))
 		} else {
 			c.IndentedJSON(http.StatusUnauthorized, err.Error())
+			log.Errorf("Unable to verify credentials: %s\n", err.Error())
 		}
 
-		log.Println(err)
 		return
 	}
 
@@ -288,7 +279,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	//Get signed token with the sercret key
 	token, err := claims.SignedString([]byte(config.Conf.Secrets.JWTSecret))
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to get signed token: %s\n", err.Error())
 		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -305,14 +296,14 @@ func (f *PublicController) Login(c *gin.Context) {
 func (f *PublicController) Register(c *gin.Context) {
 	var newUser models.User
 	if err := c.BindJSON(&newUser); err != nil {
-		log.Println(err)
+		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
 	id, err := db.CreateUser(f.Database, newUser)
 	if err != nil {
-		log.Println(err)
+		log.Errorf("Unable to create user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 	}
 

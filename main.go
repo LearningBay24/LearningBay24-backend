@@ -22,7 +22,7 @@ func applyMigrations(db *sql.DB) {
 		log.Fatal("Unable to apply migrations. Aborting.")
 	}
 
-	log.Info("Applied %d migrations\n", n)
+	log.Infof("Applied %d migrations\n", n)
 }
 
 func main() {
