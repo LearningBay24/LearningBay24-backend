@@ -53,17 +53,17 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 
 // Verify if the given cleartext password matches the saved password in the database for the user with the given email.
 // Passwords in the database are always saved as a hash.
-// Returns nil on success, or an error on failure.
-func VerifyCredentials(db *sql.DB, email string, password []byte) error {
+// Returns userId and nil on success, or an error on failure.
+func VerifyCredentials(db *sql.DB, email string, password []byte) (int, error) {
 	user, err := models.Users(qm.Where("email = ?", email)).One(context.Background(), db)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	err = bcrypt.CompareHashAndPassword(user.Password, password)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return user.ID, nil
 }

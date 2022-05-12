@@ -267,7 +267,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	}
 
 	//Check if credentials of given user are valid
-	err := db.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
+	id, err := db.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Unable to find user with E-Mail: %s", newUser.Email))
@@ -297,6 +297,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	//Return user with set cookie
 	newUser.Password = nil
+	newUser.ID = id
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newUser)
 }
