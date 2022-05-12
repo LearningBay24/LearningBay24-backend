@@ -2,10 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"io/ioutil"
 
 	"learningbay24.de/backend/api"
 	"learningbay24.de/backend/config"
+	"learningbay24.de/backend/dbi"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rubenv/sql-migrate"
@@ -25,26 +25,20 @@ func applyMigrations(db *sql.DB) {
 	log.Infof("Applied %d migrations\n", n)
 }
 
+func setupEnvironment(db *sql.DB) {
+	if config.Conf.Environment != "development" {
+		return
+	}
+
+	dbi.AddDummyData(db)
+}
+
 func main() {
 	config.InitConfig()
 	config.InitLogger()
 	db := config.SetupDbHandle()
 	applyMigrations(db)
-
-	if config.Conf.Environment == "development" {
-		// populate database with dummy data
-		data, err := ioutil.ReadFile("./db/sql/init-dummy-data.sql")
-		if err != nil {
-			log.Fatalf("Unable to read file: %s\n", err.Error())
-		}
-
-		_, err = db.Exec(string(data))
-		if err != nil {
-			log.Warnf("Unable to populate database with dummy data: %s\n", err.Error())
-		} else {
-			log.Info("Populated database with dummy data")
-		}
-	}
+	setupEnvironment(db)
 
 	pCtrl := api.PublicController{Database: db}
 	router := gin.Default()

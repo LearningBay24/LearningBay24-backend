@@ -1,0 +1,13 @@
+INSERT INTO `course` VALUES (40,'dummy course','dummy description','',38,'2022-04-22 19:23:27',NULL,NULL);
+INSERT INTO `directory` VALUES (2,'dummy directory',40,'2022-04-22 19:23:41','2022-04-22 19:23:41',NULL,NULL);
+INSERT INTO `exam` VALUES (1,'dummy exam','dummy exam description','2022-04-22 19:26:10',5400,0,'dummy room 101',40,4,0,NULL,NULL,'2022-04-22 19:26:10',NULL,NULL);
+INSERT INTO `field_of_study` VALUES (1,'dummy field_of_study','6','2022-04-22 19:26:52',NULL,NULL);
+INSERT INTO `forum` VALUES (38,'dummy forum','2022-04-22 19:11:18',NULL,NULL);
+INSERT INTO `forum_entry` VALUES (1,'dummy forum entry','dummy forum entry content',NULL,4,38,'2022-04-22 19:28:00',NULL,NULL);
+INSERT INTO `graduation_level` VALUES (1,'dummy graduation level',1);
+INSERT INTO `language` VALUES (2,'dummy language');
+INSERT INTO `notification` VALUES (1,'dummy notification','dummy notification body',NULL,4,NULL,'2022-04-22 19:28:44',NULL,NULL);
+INSERT INTO `role` VALUES (2,'dummy role','dummy role','2022-04-22 19:12:17',NULL,NULL);
+INSERT INTO `submission` VALUES (1,'dummy submission',NULL,40,5,'2022-04-22 19:29:50','2022-04-22 19:29:50',NULL,NULL,NULL);
+INSERT INTO `user` VALUES (4,NULL,'dummy firstname','dummy lastname','dummy@email.com','\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0',2,1,1,'+4900000000000','dummy residence',NULL,'dummy biography',2,'2022-04-22 19:16:40',NULL,NULL);
+INSERT INTO `user_has_course` VALUES (4,40,2,'2022-04-22 19:30:36',NULL,NULL);

@@ -11,7 +11,7 @@ import (
 
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
-	"learningbay24.de/backend/db"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -258,7 +258,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	}
 
 	//Check if credentials of given user are valid
-	id, err := db.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
+	id, err := dbi.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Unable to find user with E-Mail: %s", newUser.Email))
@@ -301,7 +301,7 @@ func (f *PublicController) Register(c *gin.Context) {
 		return
 	}
 
-	id, err := db.CreateUser(f.Database, newUser)
+	id, err := dbi.CreateUser(f.Database, newUser)
 	if err != nil {
 		log.Errorf("Unable to create user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
