@@ -2,6 +2,8 @@
 Domain = "learningbay24.de"
 # Using https?
 Secure = true
+# Populate the development database with dummy data
+Environment = "development"
 
 [DB]
 Host = "127.0.0.1"

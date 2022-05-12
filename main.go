@@ -2,13 +2,14 @@ package main
 
 import (
 	"database/sql"
-	"log"
+	"io/ioutil"
 
 	"learningbay24.de/backend/api"
 	"learningbay24.de/backend/config"
 
 	"github.com/gin-gonic/gin"
 	"github.com/rubenv/sql-migrate"
+	log "github.com/sirupsen/logrus"
 )
 
 func applyMigrations(db *sql.DB) {
@@ -20,13 +21,30 @@ func applyMigrations(db *sql.DB) {
 	if err != nil {
 		log.Fatal("Unable to apply migrations. Aborting.")
 	}
-	log.Printf("Applied %d migrations\n", n)
+
+	log.Info("Applied %d migrations\n", n)
 }
 
 func main() {
 	config.InitConfig()
+	config.InitLogger()
 	db := config.SetupDbHandle()
 	applyMigrations(db)
+
+	if config.Conf.Environment == "development" {
+		// populate database with dummy data
+		data, err := ioutil.ReadFile("./db/sql/init-dummy-data.sql")
+		if err != nil {
+			log.Fatalf("Unable to read file: %s\n", err.Error())
+		}
+
+		_, err = db.Exec(string(data))
+		if err != nil {
+			log.Warnf("Unable to populate database with dummy data: %s\n", err.Error())
+		} else {
+			log.Info("Populated database with dummy data")
+		}
+	}
 
 	pCtrl := api.PublicController{Database: db}
 	router := gin.Default()
