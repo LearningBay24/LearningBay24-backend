@@ -297,6 +297,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	//Return user with set cookie
 	newUser.Password = nil
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newUser)
 }
 
@@ -316,5 +317,6 @@ func (f *PublicController) Register(c *gin.Context) {
 
 	newUser.ID = id
 	newUser.Password = nil
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
