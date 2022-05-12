@@ -28,4 +28,4 @@ tasks:
       fi
       echo "StrictHostKeyChecking=no" >> ~/.ssh/config
       cd LearningBay24-backend
-      rsync -r ./backend srht-deploy@learningbay24.de:/opt/LearningBay24-backend/
+      rsync -r ./backend migrations srht-deploy@learningbay24.de:/opt/LearningBay24-backend/
