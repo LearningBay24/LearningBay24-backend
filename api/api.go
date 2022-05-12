@@ -3,14 +3,20 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
-	"github.com/gin-gonic/gin"
+	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
+	"learningbay24.de/backend/db"
 	"learningbay24.de/backend/models"
 
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"github.com/volatiletech/null/v8"
 )
 
@@ -249,4 +255,69 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 	log.Println("course", course)
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
+}
+
+func (f *PublicController) Login(c *gin.Context) {
+	//Map the given user on json
+	var newUser models.User
+	if err := c.BindJSON(&newUser); err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	//Check if credentials of given user are valid
+	id, err := db.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Unable to find user with E-Mail: %s", newUser.Email))
+		} else {
+			c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		}
+
+		log.Println(err)
+		return
+	}
+
+	//Put new Claim on given user
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
+		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+	})
+
+	//Get signed token with the sercret key
+	token, err := claims.SignedString([]byte(config.Conf.Secrets.JWTSecret))
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	//Set the cookie and add it to the response header
+	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
+	//Return user with set cookie
+	newUser.Password = nil
+	newUser.ID = id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newUser)
+}
+
+func (f *PublicController) Register(c *gin.Context) {
+	var newUser models.User
+	if err := c.BindJSON(&newUser); err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	id, err := db.CreateUser(f.Database, newUser)
+	if err != nil {
+		log.Println(err)
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+
+	newUser.ID = id
+	newUser.Password = nil
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusCreated, newUser)
 }
