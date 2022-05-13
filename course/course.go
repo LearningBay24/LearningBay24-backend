@@ -11,6 +11,7 @@ import (
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	coursematerial "learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/models"
 )
 
@@ -191,6 +192,8 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 
 			return 0, err
 		}
+
+		err = coursematerial.DeleteAllMaterialsFromCourse(db, id, false)
 		if e := tx.Commit(); e != nil {
 			return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 		}
