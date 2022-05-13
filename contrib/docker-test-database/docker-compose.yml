@@ -10,7 +10,5 @@ services:
       MARIADB_DATABASE: learningbay24
       MARIADB_USER: learningbay24
       MARIADB_PASSWORD: learningbay24
-    volumes:
-      - ./mariadb-data:/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"

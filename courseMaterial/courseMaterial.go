@@ -8,7 +8,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"learningbay24.de/backend/db"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 )
 
@@ -45,7 +45,7 @@ func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, c
 		return fmt.Errorf("Invalid value for variable local: %d", local)
 	}
 
-	fileId, err := db.SaveFile(dbHandle, fileName, uploaderId, isLocal, file)
+	fileId, err := dbi.SaveFile(dbHandle, fileName, uploaderId, isLocal, file)
 	if err != nil {
 		return err
 	}

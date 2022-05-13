@@ -1,5 +1,5 @@
-// Package db implements operations on the db, in the learningbay24 context
-package db
+// Package dbi implements operations on the db, in the learningbay24 context
+package dbi
 
 import (
 	"bufio"

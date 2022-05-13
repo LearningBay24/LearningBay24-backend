@@ -239,8 +239,8 @@ type appointmentL struct{}
 
 var (
 	appointmentAllColumns            = []string{"id", "date", "location", "online", "course_id", "created_at", "updated_at", "deleted_at"}
-	appointmentColumnsWithoutDefault = []string{"date", "location", "online", "course_id", "updated_at", "deleted_at"}
-	appointmentColumnsWithDefault    = []string{"id", "created_at"}
+	appointmentColumnsWithoutDefault = []string{"location", "online", "course_id", "updated_at", "deleted_at"}
+	appointmentColumnsWithDefault    = []string{"id", "date", "created_at"}
 	appointmentPrimaryKeyColumns     = []string{"id"}
 	appointmentGeneratedColumns      = []string{}
 )
