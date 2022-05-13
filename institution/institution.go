@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -17,7 +16,7 @@ func GetUserCount(db *sql.DB) (int, error) {
 	// Check if there are more users in the course besides the creator
 	users, err := models.Users().Count(context.Background(), db)
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 	var usercount int = int(users)
 
@@ -25,7 +24,7 @@ func GetUserCount(db *sql.DB) (int, error) {
 }
 
 // GetAllFieldsOfStudies returns a slice of all field of studies available in the institution
-func GetAllFieldOfStudies(db *sql.DB) (models.FieldOfStudySlice, error) {
+func GetAllFieldsOfStudies(db *sql.DB) (models.FieldOfStudySlice, error) {
 	fieldofstudies, err := models.FieldOfStudies().All(context.Background(), db)
 
 	if err != nil {
@@ -35,8 +34,8 @@ func GetAllFieldOfStudies(db *sql.DB) (models.FieldOfStudySlice, error) {
 	return fieldofstudies, nil
 }
 
-// GetFieldOfStudie returns a single field of study
-func GetFieldOfStudie(db *sql.DB, fid int) (*models.FieldOfStudy, error) {
+// GetFieldOfStudy takes a id and returns a single field of study
+func GetFieldOfStudy(db *sql.DB, fid int) (*models.FieldOfStudy, error) {
 	fieldofstudy, err := models.FindFieldOfStudy(context.Background(), db, fid)
 
 	if err != nil {
@@ -47,9 +46,9 @@ func GetFieldOfStudie(db *sql.DB, fid int) (*models.FieldOfStudy, error) {
 }
 
 // CreateFieldOfStudy takes a name and number of semesters and creates a field of study
-func CreateFieldOfStudy(db *sql.DB, name null.String, semester null.String) (int, error) {
-	if name.String == "" || semester.String == "" {
-		return 0, errors.New("name or semester cant be empty")
+func CreateFieldOfStudy(db *sql.DB, name null.String, semester null.Int) (int, error) {
+	if name.String == "" || semester.Int <= 0 {
+		return 0, errors.New("name cant be empty and semester has to be higher than 0")
 	}
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -116,9 +115,9 @@ func EditFieldOfStudy(db *sql.DB, fid int, name string, semester int) (int, erro
 	if err != nil {
 		return 0, err
 	}
-	// Semester is a string should be an int
-	fos.Semesters = Newsemester
-	fos.Name = null.NewString(name, true)
+
+	fos.Semesters.Int = semester
+	fos.Name.String = name
 
 	// Update
 	_, err = fos.Update(context.Background(), tx, boil.Infer())
@@ -137,7 +136,7 @@ func EditFieldOfStudy(db *sql.DB, fid int, name string, semester int) (int, erro
 }
 
 // AddFieldOfStudyHasCourse takes a FieldOfStudy ID, Course ID, and a Semester and adds them in the Database
-func AddFieldOfStudyHasCourses(db *sql.DB, fid int, cid int, semester int) error {
+func AddFieldOfStudyHasCourse(db *sql.DB, fid int, cid int, semester int) error {
 
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -150,16 +149,10 @@ func AddFieldOfStudyHasCourses(db *sql.DB, fid int, cid int, semester int) error
 	if err != nil {
 		return err
 	}
-	// TODO: Remove because semester should be an int
-	// Convert semesters to a int
-	semesterint, err := strconv.Atoi(fos.Semesters.String)
-	if err != nil {
-		return err
-	}
 
 	// Check if the new semester greater then 0 and not bigger then the max semesters
-	if semester <= 0 || semesterint < semester {
-		return fmt.Errorf("fatal: semester %s is not a valid semester", fos.Semesters.String)
+	if semester <= 0 || fos.Semesters.Int < semester {
+		return fmt.Errorf("fatal: semester %d is not a valid semester", fos.Semesters.Int)
 	}
 
 	fosHasCourse := &models.FieldOfStudyHasCourse{FieldOfStudyID: fid, CourseID: cid, Semester: semester}
@@ -173,7 +166,7 @@ func AddFieldOfStudyHasCourses(db *sql.DB, fid int, cid int, semester int) error
 }
 
 // EditFieldOfStudyHasCourse takes a the old FieldOfStudy ID, old Course ID, new FieldOfStudy ID and the new semester and updates the database with the new FieldOfStudy and new semester
-func EditFieldOfStudyHasCourse(db *sql.DB, Oldfid int, Oldcid int, Newfid int, Newsemester int) error {
+func EditFieldOfStudyHasCourse(db *sql.DB, fid int, cid int, Newsemester int) error {
 
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -182,29 +175,21 @@ func EditFieldOfStudyHasCourse(db *sql.DB, Oldfid int, Oldcid int, Newfid int, N
 	}
 
 	// Get the struct of the FieldOfStudyHasCourse
-	fosHasCourse, err := models.FindFieldOfStudyHasCourse(context.Background(), db, Oldfid, Oldcid)
+	fosHasCourse, err := models.FindFieldOfStudyHasCourse(context.Background(), db, fid, cid)
 	if err != nil {
 		return err
 	}
 
 	// Get the correponding FieldOfStudy
-	fos, err := models.FindFieldOfStudy(context.Background(), db, Newfid)
-	if err != nil {
-		return err
-	}
-
-	// TODO: Remove because semester should be an int
-	// Convert semesters to a int
-	semesterint, err := strconv.Atoi(fos.Semesters.String)
+	fos, err := models.FindFieldOfStudy(context.Background(), db, fid)
 	if err != nil {
 		return err
 	}
 
 	// Check if the new semester greater then 0 and not bigger then the max semesters
-	if Newsemester <= 0 || semesterint < Newsemester {
-		return fmt.Errorf("fatal: semester %s is not a valid semester", fos.Semesters.String)
+	if Newsemester <= 0 || fos.Semesters.Int < Newsemester {
+		return errors.New("this semester doesnt exist")
 	}
-	fosHasCourse.FieldOfStudyID = Newfid
 	fosHasCourse.Semester = Newsemester
 	// Update
 	_, err = fosHasCourse.Update(context.Background(), tx, boil.Infer())
@@ -222,8 +207,8 @@ func EditFieldOfStudyHasCourse(db *sql.DB, Oldfid int, Oldcid int, Newfid int, N
 	return nil
 }
 
-// RemoveFieldOfStudyHasCourse takes a field of study ID, course ID and a semester and removes relation to those two
-func RemoveFieldOfStudyHasCourse(db *sql.DB, fid int, cid int) error {
+// DeleteFieldOfStudyHasCourse takes a field of study ID, course ID and a semester and removes relation to those two
+func DeleteFieldOfStudyHasCourse(db *sql.DB, fid int, cid int) error {
 
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
