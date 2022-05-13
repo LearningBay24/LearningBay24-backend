@@ -11,6 +11,7 @@ require (
 	github.com/pelletier/go-toml v1.9.4
 	github.com/rubenv/sql-migrate v1.1.1
 	github.com/sirupsen/logrus v1.8.1
+	github.com/volatiletech/null v8.0.0+incompatible
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.9.2
 	github.com/volatiletech/strmangle v0.0.2
@@ -36,6 +37,7 @@ require (
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
+	github.com/volatiletech/sqlboiler v3.7.1+incompatible // indirect
 	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad // indirect
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
