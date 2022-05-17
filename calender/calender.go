@@ -69,6 +69,51 @@ func GetAllAppointments(db *sql.DB, userId int) ([]models.Appointment, error) {
 	return allAppointments, nil
 }
 
+/*Returns the dates of all submissions the user with the user-ID has*/
+func GetAllSubmissions(db *sql.DB, userId int) ([]time.Time, error) {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	user, err := models.FindUser(context.Background(), tx, userId)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+		}
+		return nil, err
+	}
+	courseQuery := user.UserHasCourses()
+	courseSlice, err := courseQuery.All(context.Background(), tx)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
+		}
+		return nil, err
+	}
+	var allSubmissions []time.Time
+
+	// Collect all appointments from all courses of the user
+	for i := 0; i < len(courseSlice); i++ {
+		submissionQuery := courseSlice[i].R.Course.Submissions()
+		submissionSlice, err := submissionQuery.All(context.Background(), tx)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
+			}
+			return nil, err
+		}
+		for j := 0; j < len(submissionSlice); j++ {
+			allSubmissions = append(allSubmissions, submissionSlice[j].Deadline.Time)
+		}
+	}
+
+	if e := tx.Commit(); e != nil {
+		return nil, fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+	}
+	return allSubmissions, nil
+}
+
 func AddCourseToCalender(db *sql.DB, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
