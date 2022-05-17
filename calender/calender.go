@@ -21,7 +21,7 @@ import (
 )
 
 /*Returns all appointments the user with the user-ID has*/
-func GetAllAppointments(db *sql.DB, userId int) ([]models.Appointment, error) {
+func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil, err
@@ -42,7 +42,7 @@ func GetAllAppointments(db *sql.DB, userId int) ([]models.Appointment, error) {
 		}
 		return nil, err
 	}
-	var allAppointments []models.Appointment
+	var allAppointments []*models.Appointment
 
 	// Collect all appointments from all courses of the user
 	for i := 0; i < len(courseSlice); i++ {
@@ -55,7 +55,7 @@ func GetAllAppointments(db *sql.DB, userId int) ([]models.Appointment, error) {
 			return nil, err
 		}
 		for j := 0; j < len(appointmentSlice); j++ {
-			allAppointments = append(allAppointments, *appointmentSlice[j])
+			allAppointments = append(allAppointments, appointmentSlice[j])
 		}
 	}
 
@@ -70,7 +70,7 @@ func GetAllAppointments(db *sql.DB, userId int) ([]models.Appointment, error) {
 }
 
 /*Returns the dates of all submissions the user with the user-ID has*/
-func GetAllSubmissions(db *sql.DB, userId int) ([]time.Time, error) {
+func GetAllSubmissions(db *sql.DB, userId int) ([]*time.Time, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil, err
@@ -91,7 +91,7 @@ func GetAllSubmissions(db *sql.DB, userId int) ([]time.Time, error) {
 		}
 		return nil, err
 	}
-	var allSubmissions []time.Time
+	var allSubmissions []*time.Time
 
 	// Collect all appointments from all courses of the user
 	for i := 0; i < len(courseSlice); i++ {
@@ -104,7 +104,7 @@ func GetAllSubmissions(db *sql.DB, userId int) ([]time.Time, error) {
 			return nil, err
 		}
 		for j := 0; j < len(submissionSlice); j++ {
-			allSubmissions = append(allSubmissions, submissionSlice[j].Deadline.Time)
+			allSubmissions = append(allSubmissions, &submissionSlice[j].Deadline.Time)
 		}
 	}
 
