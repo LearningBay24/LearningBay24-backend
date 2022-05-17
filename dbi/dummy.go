@@ -35,6 +35,7 @@ func AddDummyData(db *sql.DB) {
 	role := models.Role{ID: 9999, Name: "dummy role", DisplayName: "dummy role"}
 	submission := models.Submission{ID: 9999, Name: "dummy submission", CourseID: 9999, VisibleFrom: time.Date(2022, time.May, 12, 10, 45, 00, 00, time.UTC)}
 	user := models.User{ID: 9999, Firstname: "dummy firstname", Surname: "dummy surname", Email: "dummy@email.com", Password: password, RoleID: 9999, PreferredLanguageID: 9999}
+	user_has_course := models.UserHasCourse{UserID: 9999, CourseID: 9999, RoleID: 9999}
 
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -166,6 +167,17 @@ func AddDummyData(db *sql.DB) {
 	err = submission.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		log.Errorf("Unable to insert dummy submission into db: %s. Skipping inserting dummy data.", err.Error())
+		e := tx.Rollback()
+		if e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of dummy data")
+		}
+
+		return
+	}
+
+	err = user_has_course.Insert(context.Background(), tx, boil.Infer())
+	if err != nil {
+		log.Errorf("Unable to insert dummy user_has_course into db: %s. Skipping inserting dummy data.", err.Error())
 		e := tx.Rollback()
 		if e != nil {
 			log.Error("Unable to rollback changes from database, aborting insertion of dummy data")

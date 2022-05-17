@@ -7,6 +7,7 @@ import (
 
 	"learningbay24.de/backend/models"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/crypto/bcrypt"
@@ -33,7 +34,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 	err = user.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -42,7 +43,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -66,4 +67,64 @@ func VerifyCredentials(db *sql.DB, email string, password []byte) (int, error) {
 	}
 
 	return user.ID, nil
+}
+
+// Recursively delete a user with their id.
+// This doesn't delete forum entries, certificates or exams.
+func DeleteUser(db *sql.DB, id int) error {
+	flog := log.WithFields(log.Fields{
+		"context": "user_deletion",
+	})
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		flog.Errorf("Unable to create transaction: %s", err.Error())
+		return err
+	}
+
+	us, err := models.UserSubmissions(models.UserSubmissionWhere.SubmitterID.EQ(id)).DeleteAll(context.Background(), tx, false)
+	if err != nil {
+		flog.Errorf("Unable to delete user submissions: %s", err.Error())
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+	flog.Infof("Deleted %d entries from user_submission", us)
+
+	f, err := models.Files(models.FileWhere.UploaderID.EQ(id)).DeleteAll(context.Background(), tx, false)
+	if err != nil {
+		flog.Errorf("Unable to delete files: %s", err.Error())
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+	flog.Infof("Deleted %d entries from file", f)
+
+	// don't delete forum_entry
+
+	notif, err := models.Notifications(models.NotificationWhere.UserToID.EQ(id)).DeleteAll(context.Background(), tx, false)
+	if err != nil {
+		flog.Errorf("Unable to delete notifications: %s", err.Error())
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+	flog.Infof("Deleted %d entries from notification", notif)
+
+	uhc, err := models.UserHasCourses(models.UserHasCourseWhere.UserID.EQ(id)).DeleteAll(context.Background(), tx, false)
+	if err != nil {
+		flog.Errorf("Unable to delete user_has_courses: %s", err.Error())
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+	flog.Infof("Deleted %d entries from user_has_course", uhc)
+
+	// TODO: user_has_field_of_study?
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("unable to commit transaction: %s", err)
+	}
+
+	return nil
 }

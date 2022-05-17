@@ -360,7 +360,6 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, id)
 	if err != nil {
 		log.Errorf("Unable to get all materials from course: %s", err.Error())
@@ -405,6 +404,20 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 
 	c.File(file.URI)
 	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) DeleteUser(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'id' to an integer")
+	}
+
+	err = dbi.DeleteUser(f.Database, id)
+	if err != nil {
+		log.Errorf("Unable to delete user from db: %s", err.Error())
+	}
+
+	c.Status(http.StatusNoContent)
 }
 
 /* Uncomment, when calender.go is integrated into main branch
