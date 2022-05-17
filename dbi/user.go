@@ -128,3 +128,17 @@ func DeleteUser(db *sql.DB, id int) error {
 
 	return nil
 }
+
+func GetUserById(db *sql.DB, id int) (*models.User, error) {
+	flog := log.WithFields(log.Fields{
+		"context": "GetUserById",
+	})
+
+	user, err := models.FindUser(context.Background(), db, id)
+	if err != nil {
+		flog.Errorf("Unable to get user with id %d: %s", id, err.Error())
+		return nil, err
+	}
+
+	return user, nil
+}

@@ -420,6 +420,25 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
+func (f *PublicController) GetUserById(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'id' to an integer")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	user, err := dbi.GetUserById(f.Database, id)
+	if err != nil {
+		log.Errorf("Unable to get user with id %d", id)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, user)
+}
+
 /* Uncomment, when calender.go is integrated into main branch
 
 func (f *PublicController) GetAllAppointments(c *gin.Context) {
