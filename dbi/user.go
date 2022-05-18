@@ -140,5 +140,7 @@ func GetUserById(db *sql.DB, id int) (*models.User, error) {
 		return nil, err
 	}
 
+	user.Password = nil
+
 	return user, nil
 }
