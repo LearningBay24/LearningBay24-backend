@@ -312,3 +312,24 @@ func (f *PublicController) Register(c *gin.Context) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
+
+/* Uncomment, when calender.go is integrated into main branch
+
+func (f *PublicController) GetAllAppointments(c *gin.Context) {
+
+	user_id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	appointments, err := calender.GetAllAppointments(f.Database, user_id)
+	if err != nil {
+		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, appointments)
+}
+*/
