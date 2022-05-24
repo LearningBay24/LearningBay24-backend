@@ -73,6 +73,14 @@ func main() {
 	// TODO: panics
 	router.GET("/users/:user_id", pCtrl.GetUserById)
 	router.PATCH("/courses/:id", pCtrl.EditCourseById)
+	router.GET("/users/", pCtrl.GetUserCount)
+	router.GET("/fieldofstudies", pCtrl.GetAllFieldsOfStudy)
+	router.POST("/fieldofstudies", pCtrl.CreateFieldOfStudy)
+	router.DELETE("/fieldofstudies/:id", pCtrl.DeleteFieldOfStudy)
+	router.PATCH("/fieldofstudies/:id", pCtrl.EditFieldOfStudyById)
+	router.POST("/courses/:id/fieldofstudies/:fieldofstudy_id", pCtrl.AddFieldOfStudyHasCourse)
+	router.DELETE("/courses/:id/fieldofstudies/:fieldofstudy_id", pCtrl.DeleteFieldOfStudyHasCourse)
+	router.PATCH("/courses/:id/fieldofstudies/:fieldofstudy_id", pCtrl.EditFieldOfStudyHasCourseById)
 
 	router.Run("0.0.0.0:8080")
 }

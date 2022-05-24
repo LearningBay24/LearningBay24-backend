@@ -14,6 +14,7 @@ import (
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/dbi"
+	"learningbay24.de/backend/institution"
 	"learningbay24.de/backend/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -258,8 +259,15 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	tmp, ok = j["role_id"].(float64)
+	if !ok {
+		log.Error("unable to convert user_id to float64")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	role_id := int(tmp)
 
-	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id)
+	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id, role_id)
 	if err != nil {
 		log.Errorf("Unable to create course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -632,17 +640,222 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
 	user_id, err := strconv.Atoi(c.Param("user_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
 
-	appointments, err := calender.GetAllAppointments(f.Database, user_id)
+		appointments, err := calender.GetAllAppointments(f.Database, user_id)
 	if err != nil {
 		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
+	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 */
+func (f *PublicController) GetUserCount(c *gin.Context) {
+
+	//Fetch Data from Database with Backend function
+	usercount, err := institution.GetUserCount(f.Database)
+	if err != nil {
+		log.Errorf("Unable to get usercount: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Return Status and Data in JSON-Format
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, usercount)
+
+}
+
+func (f *PublicController) GetAllFieldsOfStudy(c *gin.Context) {
+
+	//Fetch Data from Database with Backend function
+	fieldofstudies, err := institution.GetAllFieldsOfStudies(f.Database)
+	if err != nil {
+		log.Errorf("Unable to get all FieldOfStudies: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Return Status and Data in JSON-Format
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, fieldofstudies)
+
+}
+
+func (f *PublicController) CreateFieldOfStudy(c *gin.Context) {
+
+	var newFieldOfStudy models.FieldOfStudy
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	tmp, ok := j["semesters"].(float64)
+	if !ok {
+		log.Error("unable to convert semesters to float64")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	semesters := int(tmp)
+
+	id, err := institution.CreateFieldOfStudy(f.Database, null.StringFrom(name), null.IntFrom(semesters))
+	if err != nil {
+		log.Errorf("Unable to create fieldofstudy: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newFieldOfStudy.ID = id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newFieldOfStudy) // Es wird ein ganzes Objekt von FieldOfStudy zurückgegeben aber nur die ID ist beschrieben soll das so???
+}
+
+func (f *PublicController) DeleteFieldOfStudy(c *gin.Context) {
+
+	//Get given ID from the Context
+	//Convert data type from str to int to use ist as param
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	//Deactivate Data from Database with Backend function
+	fos_id, err := institution.DeleteFieldOfStudy(f.Database, id)
+	//Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete fieldofstudy: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, fos_id)
+}
+
+func (f *PublicController) EditFieldOfStudyById(c *gin.Context) {
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	var newFieldOfStudy models.FieldOfStudy
+	if err := c.BindJSON(&newFieldOfStudy); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	_, err = institution.EditFieldOfStudy(f.Database, id, newFieldOfStudy.Name.String, newFieldOfStudy.Semesters.Int)
+	if err != nil {
+		log.Errorf("Unable to update fieldofstudy: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newFieldOfStudy.ID = id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newFieldOfStudy) // Es wird ein ganzes Objekt von FieldOfStudy zurückgegeben aber nur die ID ist beschrieben soll das so???
+}
+
+func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	fieldOfStudy_id, err := strconv.Atoi(c.Param("fieldofstudy_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	var newfos_has_course models.FieldOfStudyHasCourse
+	if err := c.BindJSON(&newfos_has_course); err != nil {
+		if err != nil {
+			log.Errorf("Unable to bind json: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+
+	err = institution.AddFieldOfStudyHasCourse(f.Database, fieldOfStudy_id, id, newfos_has_course.Semester)
+	if err != nil {
+		log.Errorf("Unable to add fieldOfStudy to course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newfos_has_course)
+}
+
+func (f *PublicController) DeleteFieldOfStudyHasCourse(c *gin.Context) {
+
+	//Get given ID from the Context
+	//Convert data type from str to int to use ist as param
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	fieldOfStudy_id, err := strconv.Atoi(c.Param("fieldofstudy_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	//Deactivate Data from Database with Backend function
+	err = institution.DeleteFieldOfStudyHasCourse(f.Database, fieldOfStudy_id, id)
+	//Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete fieldofstudy from course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, fieldOfStudy_id)
+}
+
+func (f *PublicController) EditFieldOfStudyHasCourseById(c *gin.Context) {
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	fieldOfStudy_id, err := strconv.Atoi(c.Param("fieldofstudy_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	var newFieldOfStudyHasCourse models.FieldOfStudyHasCourse
+	if err := c.BindJSON(&newFieldOfStudyHasCourse); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	err = institution.EditFieldOfStudyHasCourse(f.Database, fieldOfStudy_id, id, newFieldOfStudyHasCourse.Semester)
+	if err != nil {
+		log.Errorf("Unable to update fieldofstudy: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newFieldOfStudyHasCourse.CourseID = id
+	newFieldOfStudyHasCourse.FieldOfStudyID = fieldOfStudy_id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newFieldOfStudyHasCourse)
+}
