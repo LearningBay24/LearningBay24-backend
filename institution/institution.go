@@ -23,8 +23,8 @@ func GetUserCount(db *sql.DB) (int, error) {
 	return usercount, nil
 }
 
-// GetAllFieldsOfStudies returns a slice of all field of studies available in the institution
-func GetAllFieldsOfStudies(db *sql.DB) (models.FieldOfStudySlice, error) {
+// GetAllFieldsOfStudies returns a array of all field of studies available in the institution
+func GetAllFieldsOfStudies(db *sql.DB) ([]*models.FieldOfStudy, error) {
 	fieldofstudies, err := models.FieldOfStudies().All(context.Background(), db)
 
 	if err != nil {
@@ -72,33 +72,6 @@ func CreateFieldOfStudy(db *sql.DB, name null.String, semester null.Int) (int, e
 	return fieldOfStudy.ID, nil
 }
 
-// DeleteFieldOfStudy takes a name and number of semesters and deletes a field of study
-func DeleteFieldOfStudy(db *sql.DB, fid int) error {
-
-	// Begins the transaction
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return err
-	}
-
-	fieldOfStudy, err := models.FindFieldOfStudy(context.Background(), db, fid)
-	if err != nil {
-		return err
-	}
-	_, err = fieldOfStudy.Delete(context.Background(), tx, false)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-		}
-
-		return err
-	}
-	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
-	}
-	return nil
-}
-
 // EditFieldOfStudyHasCourse takes the id,the new name and the new semester
 func EditFieldOfStudy(db *sql.DB, fid int, name string, semester int) (int, error) {
 	if name == "" || semester <= 0 {
@@ -133,6 +106,33 @@ func EditFieldOfStudy(db *sql.DB, fid int, name string, semester int) (int, erro
 		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
 	return fos.ID, nil
+}
+
+// DeleteFieldOfStudy takes a name and number of semesters and deletes a field of study
+func DeleteFieldOfStudy(db *sql.DB, fid int) (int, error) {
+
+	// Begins the transaction
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return 0, err
+	}
+
+	fieldOfStudy, err := models.FindFieldOfStudy(context.Background(), db, fid)
+	if err != nil {
+		return 0, err
+	}
+	_, err = fieldOfStudy.Delete(context.Background(), tx, false)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+	if e := tx.Commit(); e != nil {
+		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+	return fieldOfStudy.ID, nil
 }
 
 // AddFieldOfStudyHasCourse takes a FieldOfStudy ID, Course ID, and a Semester and adds them in the Database

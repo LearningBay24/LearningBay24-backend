@@ -26,9 +26,8 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 	return c, nil
 }
 
-// CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is an array of IDs that is used to assign the role of the creator
-// and the roles for tutor
-func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int) (int, error) {
+// CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is the id of the creator
+func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int, roleid int) (int, error) {
 	// TODO: implement check for certificates
 
 	// Validation
@@ -235,8 +234,8 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 	return c.ID, nil
 }
 
-// GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
-func GetCoursesFromUser(db *sql.DB, uid int) (models.CourseSlice, error) {
+// GetCoursesFromUser takes the ID of a User and returns a array of Courses in which he is enrolled
+func GetCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
 
 	courses, err := models.Courses(
 		qm.From(models.TableNames.UserHasCourse),
@@ -250,8 +249,8 @@ func GetCoursesFromUser(db *sql.DB, uid int) (models.CourseSlice, error) {
 	return courses, nil
 }
 
-// GetUserCourses takes the ID of a Course and returns a slice of Users which are enrolled in it
-func GetUsersInCourse(db *sql.DB, cid int) (models.UserSlice, error) {
+// GetUserCourses takes the ID of a Course and returns a array of Users which are enrolled in it
+func GetUsersInCourse(db *sql.DB, cid int) ([]*models.User, error) {
 
 	users, err := models.Users(
 		qm.From(models.TableNames.UserHasCourse),
