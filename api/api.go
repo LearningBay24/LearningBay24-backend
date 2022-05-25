@@ -273,9 +273,9 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	newCourse.ID = id
 
-	c.IndentedJSON(http.StatusOK, newCourse)
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, id)
 }
 
 func (f *PublicController) EnrollUser(c *gin.Context) {
@@ -683,8 +683,6 @@ func (f *PublicController) GetAllFieldsOfStudy(c *gin.Context) {
 
 func (f *PublicController) CreateFieldOfStudy(c *gin.Context) {
 
-	var newFieldOfStudy models.FieldOfStudy
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
@@ -721,9 +719,9 @@ func (f *PublicController) CreateFieldOfStudy(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	newFieldOfStudy.ID = id
+
 	c.Header("Access-Control-Allow-Origin", "*")
-	c.IndentedJSON(http.StatusOK, newFieldOfStudy) // Es wird ein ganzes Objekt von FieldOfStudy zurückgegeben aber nur die ID ist beschrieben soll das so???
+	c.IndentedJSON(http.StatusOK, id)
 }
 
 func (f *PublicController) DeleteFieldOfStudy(c *gin.Context) {
@@ -766,9 +764,9 @@ func (f *PublicController) EditFieldOfStudyById(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	newFieldOfStudy.ID = id
+
 	c.Header("Access-Control-Allow-Origin", "*")
-	c.IndentedJSON(http.StatusOK, newFieldOfStudy) // Es wird ein ganzes Objekt von FieldOfStudy zurückgegeben aber nur die ID ist beschrieben soll das so???
+	c.IndentedJSON(http.StatusOK, id)
 }
 
 func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
