@@ -411,7 +411,7 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 
 	file_id, err := strconv.Atoi(c.Param("file_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to convert parameter `file_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
