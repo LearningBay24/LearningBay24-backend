@@ -319,7 +319,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -371,14 +371,16 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		// TODO
-		panic(err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
 	}
 
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, id)
 	if err != nil {
-		// TODO
-		panic(err.Error())
+		log.Errorf("Unable to get all materials from course: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
 	}
 
 	var _files []_file
