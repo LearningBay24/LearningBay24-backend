@@ -325,16 +325,20 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 	}
 
 	if c.ContentType() == "text/plain" {
-		name := c.Param("name")
+		type _file struct {
+			Name string `json:"name"`
+			Uri  string `json:"uri"`
+		}
 
-		raw, err := c.GetRawData()
-		if err != nil {
-			log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		var file _file
+		if err := c.BindJSON(&file); err != nil {
+			log.Errorf("Unable to bind json: %s\n", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
+		log.Info(file)
 
-		coursematerial.CreateMaterial(f.Database, name, string(raw[:]), 10000, id, 0, nil)
+		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, 10000, id, false, nil)
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -350,7 +354,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			return
 		}
 
-		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", 10000, id, 1, fi)
+		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", 10000, id, true, fi)
 		if err != nil {
 			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -396,6 +400,15 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, _files)
 }
+
+//func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
+//	id, err := strconv.Atoi(c.Param("id"))
+//	if err != nil {
+//		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+//		c.Status(http.StatusInternalServerError)
+//		return
+//	}
+//}
 
 /* Uncomment, when calender.go is integrated into main branch
 

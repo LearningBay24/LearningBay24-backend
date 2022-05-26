@@ -37,20 +37,10 @@ func GetAllMaterialsFromCourse(db *sql.DB, courseId int) (models.FileSlice, erro
 
 // CreateMaterial takes a fileName, URI, associated uploader-id, course, id and indicator if file is local or remote
 // Created struct gets inserted into database
-func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local int8, file io.Reader) error {
+func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local bool, file io.Reader) error {
 	// TODO: max upload size
 
-	var isLocal bool
-	switch local {
-	case 0:
-		isLocal = false
-	case 1:
-		isLocal = true
-	default:
-		return fmt.Errorf("Invalid value for variable local: %d", local)
-	}
-
-	fileId, err := dbi.SaveFile(dbHandle, fileName, uri, uploaderId, isLocal, &file)
+	fileId, err := dbi.SaveFile(dbHandle, fileName, uri, uploaderId, local, &file)
 	if err != nil {
 		return err
 	}

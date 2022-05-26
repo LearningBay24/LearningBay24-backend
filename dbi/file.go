@@ -40,7 +40,7 @@ func SaveFile(db *sql.DB, fileName string, uri string, uploaderID int, isLocal b
 			return 0, err
 		}
 
-		id, err = saveRemoteFile(db, fileName, filePath, u, uploaderID, file)
+		id, err = saveRemoteFile(db, fileName, u, uploaderID, file)
 		if err != nil {
 			return 0, err
 		}
@@ -120,13 +120,13 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 }
 
 // Save a remote file, a.k.a. a web link, to the database.
-func saveRemoteFile(db *sql.DB, linkName string, url string, u *url.URL, uploaderID int, file *io.Reader) (int, error) {
+func saveRemoteFile(db *sql.DB, linkName string, u *url.URL, uploaderID int, file *io.Reader) (int, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
 	}
 
-	f := models.File{Name: linkName, URI: url, Local: 0, UploaderID: uploaderID}
+	f := models.File{Name: linkName, URI: u.String(), Local: 0, UploaderID: uploaderID}
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
