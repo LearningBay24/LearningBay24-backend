@@ -14,7 +14,8 @@ import (
 )
 
 // GetMaterialFromCourse takes an ID and returns a struct of the file with the corresponding ID
-func GetMaterialFromCourse(db *sql.DB, fileId int) (*models.File, error) {
+func GetMaterialFromCourse(db *sql.DB, courseId int, fileId int) (*models.File, error) {
+	// TODO: use courseId to verify that the file is indeed in that course
 	cm, err := models.FindFile(context.Background(), db, fileId)
 	if err != nil {
 		return nil, err

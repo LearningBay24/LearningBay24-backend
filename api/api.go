@@ -402,16 +402,23 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 }
 
 func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	file, err := coursematerial.GetMaterialFromCourse(f.Database, id)
+	file_id, err := strconv.Atoi(c.Param("file_id"))
 	if err != nil {
-		log.Errorf("Unable to get material with id %d from course: %s", id, err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	file, err := coursematerial.GetMaterialFromCourse(f.Database, course_id, file_id)
+	if err != nil {
+		log.Errorf("Unable to get material with id %d from course: %s", file_id, err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
