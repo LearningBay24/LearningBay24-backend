@@ -11,6 +11,7 @@ import (
 
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
+	"learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 
@@ -311,6 +312,87 @@ func (f *PublicController) Register(c *gin.Context) {
 	newUser.Password = nil
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusCreated, newUser)
+}
+
+func (f *PublicController) UploadMaterial(c *gin.Context) {
+	// TODO: read user_id from cookie
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if c.ContentType() == "text/plain" {
+		name := c.Param("name")
+
+		raw, err := c.GetRawData()
+		if err != nil {
+			log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		coursematerial.CreateMaterial(f.Database, name, string(raw[:]), 10000, id, 0, nil)
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("No file found in request: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		fi, err := file.Open()
+		if err != nil {
+			log.Errorf("Unable to open file: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", 10000, id, 1, fi)
+		if err != nil {
+			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Status(http.StatusCreated)
+}
+
+func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
+	type _file struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		URI  string `json:"uri"`
+	}
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		// TODO
+		panic(err.Error())
+	}
+
+	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, id)
+	if err != nil {
+		// TODO
+		panic(err.Error())
+	}
+
+	var _files []_file
+	for _, file := range files {
+		uri := ""
+		if file.Local == 0 {
+			uri = file.URI
+		}
+
+		_files = append(_files, _file{file.ID, file.Name, uri})
+	}
+
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, _files)
 }
 
 /* Uncomment, when calender.go is integrated into main branch

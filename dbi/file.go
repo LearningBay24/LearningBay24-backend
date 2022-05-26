@@ -22,7 +22,7 @@ import (
 // Save a File to disk, creating a database entry alongside it.
 // The fileName can change, depending on if a file with the same name exists already. If the file is a web link (non local), the fileName will become the name given to the URL.
 // The file represents either a local file or a remote one
-func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *io.Reader) (int, error) {
+func SaveFile(db *sql.DB, fileName string, uri string, uploaderID int, isLocal bool, file *io.Reader) (int, error) {
 	filePath := config.Conf.Files.Path
 
 	var id int
@@ -30,9 +30,12 @@ func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *i
 
 	if isLocal {
 		id, err = saveLocalFile(db, filePath, fileName, uploaderID, file)
+		if err != nil {
+			return 0, err
+		}
 	} else {
 		var u *url.URL
-		u, err = url.ParseRequestURI(fileName)
+		u, err = url.ParseRequestURI(uri)
 		if err != nil {
 			return 0, err
 		}
@@ -41,10 +44,6 @@ func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *i
 		if err != nil {
 			return 0, err
 		}
-	}
-
-	if err != nil {
-		return 0, err
 	}
 
 	return id, nil

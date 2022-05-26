@@ -52,6 +52,8 @@ func main() {
 	router.POST("/register", pCtrl.Register)
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
+	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
+	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 
 	router.Run("0.0.0.0:8080")

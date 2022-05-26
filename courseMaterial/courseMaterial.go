@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries"
 	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 )
@@ -23,7 +24,10 @@ func GetMaterialFromCourse(db *sql.DB, fileId int) (*models.File, error) {
 
 // GetAllMaterialsFromCourse takes a courseID and returns a slice of files associated with it
 func GetAllMaterialsFromCourse(db *sql.DB, courseId int) (models.FileSlice, error) {
-	files, err := models.Files(models.CourseHasFileWhere.CourseID.EQ(courseId)).All(context.Background(), db)
+	var files []*models.File
+	// NOTE: raw query is used because sqlboiler seems to not be able to query the database properly in this case when used with query building
+	err := queries.Raw("select * from file, course_has_files where course_has_files.course_id=? AND course_has_files.file_id=file.id", courseId).Bind(context.Background(), db, &files)
+
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +37,8 @@ func GetAllMaterialsFromCourse(db *sql.DB, courseId int) (models.FileSlice, erro
 
 // CreateMaterial takes a fileName, URI, associated uploader-id, course, id and indicator if file is local or remote
 // Created struct gets inserted into database
-func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local int8, file *io.Reader) error {
+func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local int8, file io.Reader) error {
+	// TODO: max upload size
 
 	var isLocal bool
 	switch local {
@@ -45,7 +50,7 @@ func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, c
 		return fmt.Errorf("Invalid value for variable local: %d", local)
 	}
 
-	fileId, err := dbi.SaveFile(dbHandle, fileName, uploaderId, isLocal, file)
+	fileId, err := dbi.SaveFile(dbHandle, fileName, uri, uploaderId, isLocal, &file)
 	if err != nil {
 		return err
 	}
