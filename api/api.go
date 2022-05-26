@@ -401,14 +401,25 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, _files)
 }
 
-//func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
-//	id, err := strconv.Atoi(c.Param("id"))
-//	if err != nil {
-//		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-//		c.Status(http.StatusInternalServerError)
-//		return
-//	}
-//}
+func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	file, err := coursematerial.GetMaterialFromCourse(f.Database, id)
+	if err != nil {
+		log.Errorf("Unable to get material with id %d from course: %s", id, err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.File(file.URI)
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Status(http.StatusOK)
+}
 
 /* Uncomment, when calender.go is integrated into main branch
 
