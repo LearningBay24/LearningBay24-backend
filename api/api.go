@@ -26,28 +26,27 @@ type PublicController struct {
 }
 
 func (f *PublicController) GetCourseById(c *gin.Context) {
-	//Get given ID from the Context
-	//Convert data type from str to int to use ist as param
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	//Fetch Data from Database with Backend function
+	// Fetch Data from Database with Backend function
 	course, err := course.GetCourse(f.Database, id)
 	if err != nil {
 		log.Errorf("Unable to get course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
+	// Return Status and Data in JSON-Format
 	c.IndentedJSON(http.StatusOK, course)
 }
 
 func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
-	//Get given ID from the Context
-	//Convert data type from str to int to use ist as param
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -58,85 +57,75 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	//Fetch Data from Database with Backend function
+	// Fetch Data from Database with Backend function
 	err = course.DeleteUserFromCourse(f.Database, id, user_id)
 	if err != nil {
 		log.Errorf("Unable to delete user from course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
+	// Return Status and Data in JSON-Format
 	c.Status(http.StatusNoContent)
-
 }
 
 func (f *PublicController) GetUsersInCourse(c *gin.Context) {
-
-	//Get given ID from the Context
-	//Convert data type from str to int to use ist as param
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	//Fetch Data from Database with Backend function
+	// Fetch Data from Database with Backend function
 	users, err := course.GetUsersInCourse(f.Database, id)
 	if err != nil {
 		log.Errorf("Unable to get users in course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
+	// Return Status and Data in JSON-Format
 	c.IndentedJSON(http.StatusOK, users)
 }
 
 func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
-
-	//Get given ID from the Context
-	//Convert data type from str to int to use ist as param
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	//Fetch Data from Database with Backend function
+	// Fetch Data from Database with Backend function
 	courses, err := course.GetCoursesFromUser(f.Database, user_id)
 	if err != nil {
 		log.Errorf("Unable to get courses from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
+	// Return Status and Data in JSON-Format
 	c.IndentedJSON(http.StatusOK, courses)
-
 }
 
 func (f *PublicController) DeleteCourse(c *gin.Context) {
-
-	//Get given ID from the Context
-	//Convert data type from str to int to use ist as param
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	//Deactivate Data from Database with Backend function
+	// Deactivate Data from Database with Backend function
 	course, err := course.DeleteCourse(f.Database, id)
-	//Return Status and Data in JSON-Format
+	// Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to delete course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, course)
 }
 
 func (f *PublicController) CreateCourse(c *gin.Context) {
-
 	var newCourse models.Course
 
 	raw, err := c.GetRawData()
@@ -188,12 +177,10 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		return
 	}
 	newCourse.ID = id
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
 func (f *PublicController) EnrollUser(c *gin.Context) {
-
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
@@ -221,12 +208,10 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
 func (f *PublicController) UpdateCourseById(c *gin.Context) {
-
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -245,12 +230,11 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 		return
 	}
 	newCourse.ID = id
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
 func (f *PublicController) Login(c *gin.Context) {
-	//Map the given user on json
+	// Map the given user on json
 	var newUser models.User
 	if err := c.BindJSON(&newUser); err != nil {
 		log.Errorf("Unable to bind json: %s\n", err.Error())
@@ -258,7 +242,7 @@ func (f *PublicController) Login(c *gin.Context) {
 		return
 	}
 
-	//Check if credentials of given user are valid
+	// Check if credentials of given user are valid
 	id, err := dbi.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -271,13 +255,13 @@ func (f *PublicController) Login(c *gin.Context) {
 		return
 	}
 
-	//Put new Claim on given user
+	// Put new Claim on given user
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 	})
 
-	//Get signed token with the sercret key
+	// Get signed token with the sercret key
 	token, err := claims.SignedString([]byte(config.Conf.Secrets.JWTSecret))
 	if err != nil {
 		log.Errorf("Unable to get signed token: %s\n", err.Error())
@@ -285,12 +269,11 @@ func (f *PublicController) Login(c *gin.Context) {
 		return
 	}
 
-	//Set the cookie and add it to the response header
+	// Set the cookie and add it to the response header
 	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
-	//Return user with set cookie
+	// Return user with set cookie
 	newUser.Password = nil
 	newUser.ID = id
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newUser)
 }
 
@@ -310,7 +293,6 @@ func (f *PublicController) Register(c *gin.Context) {
 
 	newUser.ID = id
 	newUser.Password = nil
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
 
@@ -362,7 +344,6 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 		}
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.Status(http.StatusCreated)
 }
 
@@ -397,7 +378,6 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 		_files = append(_files, _file{file.ID, file.Name, uri})
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, _files)
 }
 
@@ -424,7 +404,6 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 	}
 
 	c.File(file.URI)
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.Status(http.StatusOK)
 }
 
@@ -444,7 +423,6 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 */

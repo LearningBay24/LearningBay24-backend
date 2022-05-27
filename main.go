@@ -33,6 +33,18 @@ func setupEnvironment(db *sql.DB) {
 	dbi.AddDummyData(db)
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, UPDATE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+		} else {
+			c.Next()
+		}
+	}
+}
+
 func main() {
 	config.InitConfig()
 	config.InitLogger()
@@ -42,6 +54,7 @@ func main() {
 
 	pCtrl := api.PublicController{Database: db}
 	router := gin.Default()
+	router.Use(CORSMiddleware())
 
 	router.GET("/courses/:id", pCtrl.GetCourseById)
 	router.GET("/users/:user_id/courses", pCtrl.GetCoursesFromUser)
