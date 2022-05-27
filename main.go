@@ -33,6 +33,18 @@ func setupEnvironment(db *sql.DB) {
 	dbi.AddDummyData(db)
 }
 
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, UPDATE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+		} else {
+			c.Next()
+		}
+	}
+}
+
 func main() {
 	config.InitConfig()
 	config.InitLogger()
@@ -42,6 +54,7 @@ func main() {
 
 	pCtrl := api.PublicController{Database: db}
 	router := gin.Default()
+	router.Use(CORSMiddleware())
 
 	router.GET("/courses/:id", pCtrl.GetCourseById)
 	router.GET("/users/:user_id/courses", pCtrl.GetCoursesFromUser)
@@ -52,6 +65,9 @@ func main() {
 	router.POST("/register", pCtrl.Register)
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
+	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
+	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
+	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 
 	router.Run("0.0.0.0:8080")
