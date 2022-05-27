@@ -24,11 +24,10 @@ func GetMaterialFromCourse(db *sql.DB, courseId int, fileId int) (*models.File, 
 }
 
 // GetAllMaterialsFromCourse takes a courseID and returns a slice of files associated with it
-func GetAllMaterialsFromCourse(db *sql.DB, courseId int) (models.FileSlice, error) {
+func GetAllMaterialsFromCourse(db *sql.DB, courseId int) ([]*models.File, error) {
 	var files []*models.File
 	// NOTE: raw query is used because sqlboiler seems to not be able to query the database properly in this case when used with query building
 	err := queries.Raw("select * from file, course_has_files where course_has_files.course_id=? AND course_has_files.file_id=file.id", courseId).Bind(context.Background(), db, &files)
-
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +107,8 @@ func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) err
 		return err
 	}
 
-	materials, err := GetAllMaterialsFromCourse(db, courseId)
+	var materials models.FileSlice
+	materials, err = GetAllMaterialsFromCourse(db, courseId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
