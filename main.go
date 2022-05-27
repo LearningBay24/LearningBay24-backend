@@ -35,7 +35,7 @@ func setupEnvironment(db *sql.DB) {
 
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, UPDATE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PATCH, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
