@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"learningbay24.de/backend/calender"
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
 	"learningbay24.de/backend/dbi"
@@ -313,8 +314,6 @@ func (f *PublicController) Register(c *gin.Context) {
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
 
-/* Uncomment, when calender.go is integrated into main branch
-
 func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
 	user_id, err := strconv.Atoi(c.Param("user_id"))
@@ -332,4 +331,45 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, appointments)
 }
-*/
+
+func (f *PublicController) GetAppointments(c *gin.Context) {
+
+	/* Copied from UpdateCourse, too see how to handle the parameters for backend function:
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	var newCourse models.Course
+	if err := c.BindJSON(&newCourse); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	_, err = course.UpdateCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
+	if err != nil {
+		log.Errorf("Unable to update course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newCourse.ID = id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newCourse)
+	// end*/
+
+	user_id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	//appointments, err := calender.GetAppointments(f.Database, user_id, beforeDate, afterDate) // Uncomment this
+	appointments, err := calender.GetAllAppointments(f.Database, user_id) // Delete this
+	if err != nil {
+		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, appointments)
+}
