@@ -11,7 +11,7 @@ import (
 
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
-	"learningbay24.de/backend/courseMaterial"
+	coursematerial "learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 
@@ -91,6 +91,7 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
 	user_id, err := strconv.Atoi(c.Param("user_id"))
+	log.Println(c.Request.Header.Get("Cookie"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
@@ -259,6 +260,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.StandardClaims{
 		IssuedAt:  time.Now().Unix(),
 		ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+		Id:        strconv.Itoa(id),
 	})
 
 	// Get signed token with the sercret key
