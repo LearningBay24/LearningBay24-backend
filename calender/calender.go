@@ -20,7 +20,7 @@ import (
 	"learningbay24.de/backend/models"
 )
 
-/*Returns all appointments the user with the user-ID has*/
+// Returns all appointments the user with the user-ID has
 func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -45,8 +45,8 @@ func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
 	var allAppointments []*models.Appointment
 
 	// Collect all appointments from all courses of the user
-	for i := 0; i < len(courseSlice); i++ {
-		appointmentQuery := courseSlice[i].R.Course.Appointments()
+	for _, course := range courseSlice {
+		appointmentQuery := course.R.Course.Appointments()
 		appointmentSlice, err := appointmentQuery.All(context.Background(), tx)
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -54,8 +54,8 @@ func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
 			}
 			return nil, err
 		}
-		for j := 0; j < len(appointmentSlice); j++ {
-			allAppointments = append(allAppointments, appointmentSlice[j])
+		for _, appointment := range appointmentSlice {
+			allAppointments = append(allAppointments, appointment)
 		}
 	}
 
@@ -69,7 +69,7 @@ func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
 	return allAppointments, nil
 }
 
-/*Returns all appointments the user with the user-ID has, between the beforeDate and afterDate*/
+// Returns all appointments the user with the user-ID has, between the beforeDate and afterDate
 func GetAppointments(db *sql.DB, userId int, beforeDate time.Time, afterDate time.Time) ([]*models.Appointment, error) {
 
 	if beforeDate.After(afterDate) {
@@ -99,8 +99,8 @@ func GetAppointments(db *sql.DB, userId int, beforeDate time.Time, afterDate tim
 	var allAppointments []*models.Appointment
 
 	// Collect all appointments from all courses of the user
-	for i := 0; i < len(courseSlice); i++ {
-		appointmentQuery := courseSlice[i].R.Course.Appointments()
+	for _, course := range courseSlice {
+		appointmentQuery := course.R.Course.Appointments()
 		appointmentSlice, err := appointmentQuery.All(context.Background(), tx)
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -108,9 +108,9 @@ func GetAppointments(db *sql.DB, userId int, beforeDate time.Time, afterDate tim
 			}
 			return nil, err
 		}
-		for j := 0; j < len(appointmentSlice); j++ {
-			if afterDate.After(appointmentSlice[i].Date) && beforeDate.Before(appointmentSlice[i].Date) {
-				allAppointments = append(allAppointments, appointmentSlice[j])
+		for _, appointment := range appointmentSlice {
+			if afterDate.After(appointment.Date) && beforeDate.Before(appointment.Date) {
+				allAppointments = append(allAppointments, appointment)
 			}
 		}
 	}
@@ -121,13 +121,15 @@ func GetAppointments(db *sql.DB, userId int, beforeDate time.Time, afterDate tim
 	return allAppointments, nil
 }
 
-/*Returns the dates of all submissions the user with the user-ID has*/
+// Returns the dates of all submissions the user with the user-ID has
 func GetAllSubmissions(db *sql.DB, userId int) ([]*time.Time, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
 
+	// TODO - replace following lines with..
+	// models.UserHasCourses(models.UserHasCourseWhere.UserID.EQ(userId)).All(context.Background(), tx)
 	user, err := models.FindUser(context.Background(), tx, userId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
@@ -146,8 +148,8 @@ func GetAllSubmissions(db *sql.DB, userId int) ([]*time.Time, error) {
 	var allSubmissions []*time.Time
 
 	// Collect all appointments from all courses of the user
-	for i := 0; i < len(courseSlice); i++ {
-		submissionQuery := courseSlice[i].R.Course.Submissions()
+	for _, course := range courseSlice {
+		submissionQuery := course.R.Course.Submissions()
 		submissionSlice, err := submissionQuery.All(context.Background(), tx)
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -246,7 +248,7 @@ func DeactivateCourseInCalender(db *sql.DB, appointmentId int, courseId int, rep
 	}
 
 	// TODO
-	// repeats: if repeats: delete it more than once? All repeating appointments have same id -> change?
+	// if repeats: how to get the other appointments?
 	appointment, err := models.FindAppointment(context.Background(), tx, appointmentId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
@@ -254,8 +256,7 @@ func DeactivateCourseInCalender(db *sql.DB, appointmentId int, courseId int, rep
 		}
 		return err
 	}
-	currentDate := time.Now()
-	appointment.DeletedAt = null.TimeFrom(currentDate)
+	appointment.Delete(context.Background(), db, false)
 
 	/* TODO - deactivate Appointment in course?
 	course, err := models.FindCourse(context.Background(), tx, courseId)
@@ -314,8 +315,6 @@ func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
 		return err
 	}
 
-	// TODO: probably no appointment, but just the exam.Date (get exam object with exam.id as parameter)
-
 	appointment, err := models.FindAppointment(context.Background(), tx, appointmentId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
@@ -323,8 +322,7 @@ func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
 		}
 		return err
 	}
-	currentDate := time.Now()
-	appointment.DeletedAt = null.TimeFrom(currentDate)
+	appointment.Delete(context.Background(), db, false)
 
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
@@ -345,8 +343,7 @@ func DeactivateAppointment(db *sql.DB, appointmentId int) error {
 		}
 		return err
 	}
-	currentDate := time.Now()
-	appointment.DeletedAt = null.TimeFrom(currentDate)
+	appointment.Delete(context.Background(), db, false)
 
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
