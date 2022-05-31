@@ -334,37 +334,40 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
 func (f *PublicController) GetAppointments(c *gin.Context) {
 
-	/* Copied from UpdateCourse, too see how to handle the parameters for backend function:
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	var newCourse models.Course
-	if err := c.BindJSON(&newCourse); err != nil {
-		log.Errorf("Unable to bind json: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	_, err = course.UpdateCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
-	if err != nil {
-		log.Errorf("Unable to update course: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	newCourse.ID = id
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.IndentedJSON(http.StatusOK, newCourse)
-	// end*/
-
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	//appointments, err := calender.GetAppointments(f.Database, user_id, beforeDate, afterDate) // Uncomment this
-	appointments, err := calender.GetAllAppointments(f.Database, user_id) // Delete this
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	beforeDate, ok := j["beforeDate"].(time.Time)
+	if !ok {
+		log.Error("unable to convert beforeDate to time.Time")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	afterDate, ok := j["afterDate"].(time.Time)
+	if !ok {
+		log.Error("unable to convert afterDate to time.Time")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	appointments, err := calender.GetAppointments(f.Database, user_id, beforeDate, afterDate)
 	if err != nil {
 		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -372,4 +375,95 @@ func (f *PublicController) GetAppointments(c *gin.Context) {
 	}
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, appointments)
+}
+
+func (f *PublicController) GetAllSubmissions(c *gin.Context) {
+
+	user_id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	appointments, err := calender.GetAllSubmissions(f.Database, user_id)
+	if err != nil {
+		log.Errorf("Unable to get submissions from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, appointments)
+}
+
+func (f *PublicController) AddCourseToCalender(c *gin.Context) {
+
+	var newAppointment models.Appointment
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	date, ok := j["date"].(time.Time)
+	if !ok {
+		log.Error("unable to convert date to time.Time")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	location, ok := j["location"].(null.String)
+	if !ok {
+		log.Error("unable to convert location to null.String")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	online, ok := j["online"].(int8)
+	if !ok {
+		log.Error("unable to convert online to int8")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	courseId, ok := j["courseId"].(int)
+	if !ok {
+		log.Error("unable to convert courseId to int")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	repeats, ok := j["repeats"].(bool)
+	if !ok {
+		log.Error("unable to convert repeats to bool")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	repeatDistance, ok := j["repeatDistance"].(int)
+	if !ok {
+		log.Error("unable to convert repeatDistance to int")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	repeatEnd, ok := j["repeatEnd"].(time.Time)
+	if !ok {
+		log.Error("unable to convert repeatEnd to time.Time")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	id, err := calender.AddCourseToCalender(f.Database, date, location, online, courseId, repeats, repeatDistance, repeatEnd)
+	if err != nil {
+		log.Errorf("Unable to create course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newAppointment.ID = id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newAppointment)
 }
