@@ -202,7 +202,8 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	// Return Status and Data in JSON-Format
+	//Return Status and Data in JSON-Format
+
 	c.Status(http.StatusNoContent)
 }
 
@@ -241,7 +242,8 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	// Return Status and Data in JSON-Format
+	//Return Status and Data in JSON-Format
+
 	c.IndentedJSON(http.StatusOK, users)
 }
 
@@ -274,7 +276,8 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	// Return Status and Data in JSON-Format
+	//Return Status and Data in JSON-Format
+
 	c.IndentedJSON(http.StatusOK, courses)
 }
 
@@ -387,7 +390,6 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, id)
 }
 
@@ -548,10 +550,18 @@ func (f *PublicController) Login(c *gin.Context) {
 	}
 
 	// Set the cookie and add it to the response header
+
 	c.SetCookie("user_token", tokenString, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	// Return empty string
 
 	c.IndentedJSON(http.StatusOK, "")
+	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
+	// Return user with set cookie
+	newUser.Password = nil
+	newUser.ID = id
+
+	c.IndentedJSON(http.StatusOK, newUser)
+
 }
 
 func (f *PublicController) Logout(c *gin.Context) {
@@ -955,7 +965,7 @@ func (f *PublicController) GetAllFieldsOfStudy(c *gin.Context) {
 	fieldofstudies, err := institution.GetAllFieldsOfStudies(f.Database)
 	if err != nil {
 		log.Errorf("Unable to get all FieldOfStudies: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	//Return Status and Data in JSON-Format
@@ -991,7 +1001,7 @@ func (f *PublicController) CreateFieldOfStudy(c *gin.Context) {
 	tmp, ok := j["semesters"].(float64)
 	if !ok {
 		log.Error("unable to convert semesters to float64")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	semesters := int(tmp)
@@ -1013,7 +1023,7 @@ func (f *PublicController) DeleteFieldOfStudy(c *gin.Context) {
 	//Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	//Deactivate Data from Database with Backend function
@@ -1021,7 +1031,7 @@ func (f *PublicController) DeleteFieldOfStudy(c *gin.Context) {
 	//Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to delete fieldofstudy: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.Header("Access-Control-Allow-Origin", "*")
@@ -1032,7 +1042,7 @@ func (f *PublicController) EditFieldOfStudyById(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	var newFieldOfStudy models.FieldOfStudy
@@ -1057,12 +1067,12 @@ func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	fieldOfStudy_id, err := strconv.Atoi(c.Param("fieldofstudy_id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	var newfos_has_course models.FieldOfStudyHasCourse
@@ -1077,7 +1087,7 @@ func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
 	err = institution.AddFieldOfStudyHasCourse(f.Database, fieldOfStudy_id, id, newfos_has_course.Semester)
 	if err != nil {
 		log.Errorf("Unable to add fieldOfStudy to course: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -1091,12 +1101,12 @@ func (f *PublicController) DeleteFieldOfStudyHasCourse(c *gin.Context) {
 	//Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	fieldOfStudy_id, err := strconv.Atoi(c.Param("fieldofstudy_id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	//Deactivate Data from Database with Backend function
@@ -1104,10 +1114,10 @@ func (f *PublicController) DeleteFieldOfStudyHasCourse(c *gin.Context) {
 	//Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to delete fieldofstudy from course: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(http.StatusOK, fieldOfStudy_id)
 }
 
@@ -1132,12 +1142,12 @@ func (f *PublicController) EditFieldOfStudyHasCourseById(c *gin.Context) {
 	err = institution.EditFieldOfStudyHasCourse(f.Database, fieldOfStudy_id, id, newFieldOfStudyHasCourse.Semester)
 	if err != nil {
 		log.Errorf("Unable to update fieldofstudy: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	newFieldOfStudyHasCourse.CourseID = id
 	newFieldOfStudyHasCourse.FieldOfStudyID = fieldOfStudy_id
-	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(http.StatusOK, newFieldOfStudyHasCourse)
 }
 
