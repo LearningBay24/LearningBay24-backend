@@ -414,8 +414,14 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 
 	_, err = dbi.GetUserById(f.Database, id)
 	if err != nil {
-		log.Errorf("No user with id %d", id)
-		c.Status(http.StatusNotFound)
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Errorf("User with id %d doesn't exist: %s", id, err.Error())
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		log.Errorf("Unable to get user with id %d", id)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
@@ -428,15 +434,21 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 }
 
 func (f *PublicController) GetUserById(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'id' to an integer")
+		log.Error("Unable to convert parameter 'user_id' to an integer")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	user, err := dbi.GetUserById(f.Database, id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Errorf("User with id %d doesn't exist: %s", id, err.Error())
+			c.Status(http.StatusNotFound)
+			return
+		}
+
 		log.Errorf("Unable to get user with id %d", id)
 		c.Status(http.StatusInternalServerError)
 		return
