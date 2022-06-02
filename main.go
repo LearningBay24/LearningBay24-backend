@@ -71,7 +71,7 @@ func main() {
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	// TODO: panics
-	router.GET("/users/:id", pCtrl.GetUserById)
+	router.GET("/users/:user_id", pCtrl.GetUserById)
 
 	router.Run("0.0.0.0:8080")
 }

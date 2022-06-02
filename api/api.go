@@ -412,6 +412,13 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 		log.Error("Unable to convert parameter 'id' to an integer")
 	}
 
+	_, err = dbi.GetUserById(f.Database, id)
+	if err != nil {
+		log.Errorf("No user with id %d", id)
+		c.Status(http.StatusNotFound)
+		return
+	}
+
 	err = dbi.DeleteUser(f.Database, id)
 	if err != nil {
 		log.Errorf("Unable to delete user from db: %s", err.Error())

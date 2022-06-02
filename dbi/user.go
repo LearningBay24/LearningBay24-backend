@@ -88,6 +88,7 @@ func DeleteUser(db *sql.DB, id int) error {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
+		return err
 	}
 	flog.Infof("Deleted %d entries from user_submission", us)
 
@@ -97,6 +98,7 @@ func DeleteUser(db *sql.DB, id int) error {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
+		return err
 	}
 	flog.Infof("Deleted %d entries from file", f)
 
@@ -108,6 +110,7 @@ func DeleteUser(db *sql.DB, id int) error {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
+		return err
 	}
 	flog.Infof("Deleted %d entries from notification", notif)
 
@@ -117,8 +120,19 @@ func DeleteUser(db *sql.DB, id int) error {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
+		return err
 	}
 	flog.Infof("Deleted %d entries from user_has_course", uhc)
+
+	user, err := models.Users(models.UserWhere.ID.EQ(id)).DeleteAll(context.Background(), tx, false)
+	if err != nil {
+		flog.Errorf("Unable to delete user with id %d: %s", id, err.Error())
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+		return err
+	}
+	flog.Infof("Deleted %d entries from user", user)
 
 	// TODO: user_has_field_of_study?
 
