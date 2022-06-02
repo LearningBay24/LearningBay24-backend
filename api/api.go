@@ -30,7 +30,7 @@ func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error
 	Cookie := c.Request.Header.Get("Cookie")
 	if Cookie == "" {
 		log.Errorf("Unable to get cookie")
-		c.IndentedJSON(http.StatusUnauthorized, "Unable to get cookie")
+		c.IndentedJSON(http.StatusBadRequest, "Unable to get cookie")
 		return nil, errors.New("Unable to get cookie")
 	}
 	tokenString := strings.Split(Cookie, "=")[1]
@@ -43,46 +43,47 @@ func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error
 		return nil, err
 	}
 	data, ok := token.Claims.(jwt.MapClaims)["data"]
-	if ok {
-		return data, err
+	if !ok {
+		return "", errors.New("Unable to map id from data interface")
 	}
-	return nil, errors.New("Unable to map id from data interface")
+	return data, err
 }
 
 func (f *PublicController) GetIdFromCookie(c *gin.Context) (int, error) {
 	data, err := f.GetDataFromCookie(c)
 	if err != nil {
-		log.Errorf("Error parsing token:  %s\n", err.Error())
+		log.Errorf("Unable to get Data from Cookie: %s\n", err.Error())
 		return 0, err
 	}
 	datamap, ok := data.(map[string]interface{})
-	if ok == true {
-		id, err := strconv.Atoi(datamap["id"].(string))
-		if err != nil {
-			log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
-			return -1, err
-		}
-		return id, err
+	if !ok {
+		return 0, errors.New("Unable to map id from data interface")
 	}
-	return -1, errors.New("Unable to map id from data interface")
+	id, err := strconv.Atoi(datamap["id"].(string))
+	if err != nil {
+		log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
+		return 0, err
+	}
+	return id, err
+
 }
 
 func (f *PublicController) GetRoleIdFromCookie(c *gin.Context) (int, error) {
 	data, err := f.GetDataFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get Data from Cookie: %s\n", err.Error())
-		return -1, err
+		return 0, err
 	}
 	datamap, ok := data.(map[string]interface{})
-	if ok == true {
-		id, err := strconv.Atoi(datamap["role_id"].(string))
-		if err != err {
-			log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
-			return -1, err
-		}
-		return id, err
+	if !ok {
+		return 0, errors.New("Unable to map id from data interface")
 	}
-	return -1, errors.New("Unable to map id from data interface")
+	id, err := strconv.Atoi(datamap["role_id"].(string))
+	if err != nil {
+		log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
+		return 0, err
+	}
+	return id, err
 }
 
 func (f *PublicController) GetCourseById(c *gin.Context) {
@@ -154,6 +155,7 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	// Fetch Data from Database with Backend function
@@ -191,6 +193,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Unable to get role_id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	if role_id == 2 {
 		var newCourse models.Course
@@ -214,6 +217,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		if err != nil {
 			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
 		}
 
 		name, ok := j["name"].(string)
@@ -243,10 +247,10 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		}
 		newCourse.ID = id
 		c.IndentedJSON(http.StatusOK, newCourse)
-	} else {
-		log.Errorf("no permission to create course")
-		c.IndentedJSON(http.StatusUnauthorized, "You are not allowed to create courses")
+		return
 	}
+	log.Errorf("no permission to create course")
+	c.IndentedJSON(http.StatusUnauthorized, "You are not allowed to create courses")
 }
 
 func (f *PublicController) EnrollUser(c *gin.Context) {
@@ -260,6 +264,7 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {
@@ -340,12 +345,17 @@ func (f *PublicController) Login(c *gin.Context) {
 	secretKey := config.Conf.Secrets.JWTSecret
 
 	tokenString, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		log.Errorf("Unable to sign token: %s\n", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 
 	// Set the cookie and add it to the response header
 	c.SetCookie("user_token", tokenString, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	// Return empty string
 
-	c.IndentedJSON(http.StatusOK, nil)
+	c.Status(http.StatusOK)
 }
 
 func (f *PublicController) Register(c *gin.Context) {
@@ -353,6 +363,7 @@ func (f *PublicController) Register(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Unable to get role_id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	if role_id == 2 {
@@ -367,6 +378,7 @@ func (f *PublicController) Register(c *gin.Context) {
 		if err != nil {
 			log.Errorf("Unable to create user: %s\n", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
 		}
 
 		newUser.ID = id
@@ -402,6 +414,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 		if err != nil {
 			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
 		}
 		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, id, false, nil)
 	} else {
@@ -423,6 +436,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 		if err != nil {
 			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
 		}
 		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", user_id, id, true, fi)
 		if err != nil {
