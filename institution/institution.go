@@ -50,24 +50,12 @@ func CreateFieldOfStudy(db *sql.DB, name null.String, semester null.Int) (int, e
 	if name.String == "" || semester.Int <= 0 {
 		return 0, errors.New("name cant be empty and semester has to be higher than 0")
 	}
-	// Begins the transaction
-	tx, err := db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return 0, err
-	}
 
 	fieldOfStudy := &models.FieldOfStudy{Name: name, Semesters: semester}
 
-	err = fieldOfStudy.Insert(context.Background(), tx, boil.Infer())
+	err := fieldOfStudy.Insert(context.Background(), db, boil.Infer())
 	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-		}
-
 		return 0, err
-	}
-	if e := tx.Commit(); e != nil {
-		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
 	return fieldOfStudy.ID, nil
 }
@@ -158,6 +146,9 @@ func AddFieldOfStudyHasCourse(db *sql.DB, fid int, cid int, semester int) error 
 	fosHasCourse := &models.FieldOfStudyHasCourse{FieldOfStudyID: fid, CourseID: cid, Semester: semester}
 
 	err = fosHasCourse.Insert(context.Background(), tx, boil.Infer())
+	if err != nil {
+		return err
+	}
 
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)

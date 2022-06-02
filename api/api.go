@@ -847,7 +847,7 @@ func (f *PublicController) EditFieldOfStudyHasCourseById(c *gin.Context) {
 	}
 	fieldOfStudy_id, err := strconv.Atoi(c.Param("fieldofstudy_id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	var newFieldOfStudyHasCourse models.FieldOfStudyHasCourse
