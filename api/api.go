@@ -656,7 +656,7 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 */
@@ -670,7 +670,7 @@ func (f *PublicController) GetUserCount(c *gin.Context) {
 		return
 	}
 	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(http.StatusOK, usercount)
 
 }
@@ -685,7 +685,7 @@ func (f *PublicController) GetAllFieldsOfStudy(c *gin.Context) {
 		return
 	}
 	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(http.StatusOK, fieldofstudies)
 
 }
@@ -729,7 +729,6 @@ func (f *PublicController) CreateFieldOfStudy(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, id)
 }
 
@@ -750,7 +749,7 @@ func (f *PublicController) DeleteFieldOfStudy(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
+
 	c.IndentedJSON(http.StatusOK, fos_id)
 }
 
@@ -774,7 +773,6 @@ func (f *PublicController) EditFieldOfStudyById(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, id)
 }
 
@@ -807,7 +805,6 @@ func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newfos_has_course)
 }
 
