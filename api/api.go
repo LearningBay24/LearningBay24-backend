@@ -442,7 +442,6 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 		return
 	}
 
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, user)
 }
 
