@@ -8,7 +8,7 @@ import (
 	"learningbay24.de/backend/dbi"
 
 	"github.com/gin-gonic/gin"
-	"github.com/rubenv/sql-migrate"
+	migrate "github.com/rubenv/sql-migrate"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -36,7 +36,8 @@ func setupEnvironment(db *sql.DB) {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PATCH, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://learningbay24.de")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 		} else {
@@ -57,7 +58,7 @@ func main() {
 	router.Use(CORSMiddleware())
 
 	router.GET("/courses/:id", pCtrl.GetCourseById)
-	router.GET("/users/:user_id/courses", pCtrl.GetCoursesFromUser)
+	router.GET("/users/courses", pCtrl.GetCoursesFromUser)
 	router.GET("/courses/:id/users", pCtrl.GetUsersInCourse)
 	router.DELETE("/courses/:id", pCtrl.DeleteCourse)
 	router.DELETE("/courses/:id/:user_id", pCtrl.DeleteUserFromCourse)
