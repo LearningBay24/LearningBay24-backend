@@ -415,7 +415,6 @@ func (f *PublicController) Login(c *gin.Context) {
 	// Return user with set cookie
 	newUser.Password = nil
 	newUser.ID = id
-
 	c.IndentedJSON(http.StatusOK, newUser)
 
 }
