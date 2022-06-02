@@ -31,7 +31,7 @@ func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error
 	if Cookie == "" {
 		log.Errorf("Unable to get cookie")
 		c.IndentedJSON(http.StatusUnauthorized, "Unable to get cookie")
-		return "", errors.New("Unable to get cookie")
+		return nil, errors.New("Unable to get cookie")
 	}
 	tokenString := strings.Split(Cookie, "=")[1]
 
@@ -40,20 +40,20 @@ func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error
 	})
 	if err != nil {
 		log.Errorf("Error parsing token: %s\n", err.Error())
-		return "", err
+		return nil, err
 	}
 	data, ok := token.Claims.(jwt.MapClaims)["data"]
 	if ok {
 		return data, err
 	}
-	return "", errors.New("Unable to map id from data interface")
+	return nil, errors.New("Unable to map id from data interface")
 }
 
 func (f *PublicController) GetIdFromCookie(c *gin.Context) (int, error) {
 	data, err := f.GetDataFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get Data from Cookie: %s\n", err.Error())
-		return -1, err
+		log.Errorf("Error parsing token:  %s\n", err.Error())
+		return 0, err
 	}
 	datamap, ok := data.(map[string]interface{})
 	if ok == true {
