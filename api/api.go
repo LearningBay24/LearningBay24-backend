@@ -26,58 +26,63 @@ type PublicController struct {
 	Database *sql.DB
 }
 
-func (f *PublicController) GetIdFromCookie(c *gin.Context) int {
+func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
 	Cookie := c.Request.Header.Get("Cookie")
 	if Cookie == "" {
 		log.Errorf("Unable to get cookie")
 		c.IndentedJSON(http.StatusUnauthorized, "Unable to get cookie")
-		return -1
+		return "", errors.New("Unable to get cookie")
 	}
 	tokenString := strings.Split(Cookie, "=")[1]
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte("foobar"), nil
+		return []byte(config.Conf.Secrets.JWTSecret), nil
 	})
 	if err != nil {
-		log.Errorf("Error parsing token: ", err)
-		return -1
+		log.Errorf("Error parsing token: %s\n", err.Error())
+		return "", err
 	}
-
-	data := token.Claims.(jwt.MapClaims)["data"].(map[string]interface{})
-	id, err := strconv.Atoi(data["id"].(string))
-	if err != nil {
-		log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
-		return -1
+	data, ok := token.Claims.(jwt.MapClaims)["data"]
+	if ok {
+		return data, err
 	}
-
-	return id
+	return "", errors.New("Unable to map id from data interface")
 }
 
-func (f *PublicController) GetRoleIdFromCookie(c *gin.Context) int {
-	Cookie := c.Request.Header.Get("Cookie")
-	if Cookie == "" {
-		log.Errorf("Unable to get cookie")
-		c.IndentedJSON(http.StatusUnauthorized, "Unable to get cookie")
-		return -1
-	}
-	tokenString := strings.Split(Cookie, "=")[1]
-
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-		return []byte("foobar"), nil
-	})
+func (f *PublicController) GetIdFromCookie(c *gin.Context) (int, error) {
+	data, err := f.GetDataFromCookie(c)
 	if err != nil {
-		log.Errorf("Error parsing token: ", err)
-		return -1
+		log.Errorf("Unable to get Data from Cookie: %s\n", err.Error())
+		return -1, err
 	}
+	datamap, ok := data.(map[string]interface{})
+	if ok == true {
+		id, err := strconv.Atoi(datamap["id"].(string))
+		if err != nil {
+			log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
+			return -1, err
+		}
+		return id, err
+	}
+	return -1, errors.New("Unable to map id from data interface")
+}
 
-	data := token.Claims.(jwt.MapClaims)["data"].(map[string]interface{})
-	id, err := strconv.Atoi(data["role_id"].(string))
+func (f *PublicController) GetRoleIdFromCookie(c *gin.Context) (int, error) {
+	data, err := f.GetDataFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
-		return -1
+		log.Errorf("Unable to get Data from Cookie: %s\n", err.Error())
+		return -1, err
 	}
-
-	return id
+	datamap, ok := data.(map[string]interface{})
+	if ok == true {
+		id, err := strconv.Atoi(datamap["role_id"].(string))
+		if err != err {
+			log.Errorf("Unable to convert idstring to int: %s\n", err.Error())
+			return -1, err
+		}
+		return id, err
+	}
+	return -1, errors.New("Unable to map id from data interface")
 }
 
 func (f *PublicController) GetCourseById(c *gin.Context) {
@@ -145,7 +150,11 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
-	user_id := f.GetIdFromCookie(c)
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 
 	// Fetch Data from Database with Backend function
 	courses, err := course.GetCoursesFromUser(f.Database, user_id)
@@ -178,7 +187,11 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 }
 
 func (f *PublicController) CreateCourse(c *gin.Context) {
-	role_id := f.GetRoleIdFromCookie(c)
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get role_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 	if role_id == 2 {
 		var newCourse models.Course
 
@@ -197,7 +210,11 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 			return
 		}
 
-		user_id := f.GetIdFromCookie(c)
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
 
 		name, ok := j["name"].(string)
 		if !ok {
@@ -239,7 +256,11 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	user_id := f.GetIdFromCookie(c)
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
 	var newCourse models.Course
 	if err := c.BindJSON(&newCourse); err != nil {
 		if err != nil {
@@ -316,7 +337,7 @@ func (f *PublicController) Login(c *gin.Context) {
 		jwt.SigningMethodHS256,
 		claims)
 
-	secretKey := "foobar"
+	secretKey := config.Conf.Secrets.JWTSecret
 
 	tokenString, err := token.SignedString([]byte(secretKey))
 
@@ -324,11 +345,17 @@ func (f *PublicController) Login(c *gin.Context) {
 	c.SetCookie("user_token", tokenString, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	// Return empty string
 
-	c.IndentedJSON(http.StatusOK, "")
+	c.IndentedJSON(http.StatusOK, nil)
 }
 
 func (f *PublicController) Register(c *gin.Context) {
-	if f.GetRoleIdFromCookie(c) == 2 {
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get role_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+	}
+
+	if role_id == 2 {
 		var newUser models.User
 		if err := c.BindJSON(&newUser); err != nil {
 			log.Errorf("Unable to bind json: %s\n", err.Error())
@@ -349,7 +376,6 @@ func (f *PublicController) Register(c *gin.Context) {
 }
 
 func (f *PublicController) UploadMaterial(c *gin.Context) {
-	// TODO: read user_id from cookie
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -372,7 +398,12 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 		}
 		log.Info(file)
 
-		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, f.GetIdFromCookie(c), id, false, nil)
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
+		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, id, false, nil)
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -388,7 +419,12 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			return
 		}
 
-		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", f.GetIdFromCookie(c), id, true, fi)
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+		}
+		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", user_id, id, true, fi)
 		if err != nil {
 			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
