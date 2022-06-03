@@ -19,7 +19,7 @@ func applyMigrations(db *sql.DB) {
 
 	n, err := migrate.Exec(db, "mysql", migrations, migrate.Up)
 	if err != nil {
-		log.Fatal("Unable to apply migrations. Aborting.")
+		log.Fatalf("Unable to apply migrations: %s. Aborting.", err.Error())
 	}
 
 	log.Infof("Applied %d migrations\n", n)

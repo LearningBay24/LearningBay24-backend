@@ -33,7 +33,8 @@ type PublicController struct {
 }
 
 func AuthorizeModerator(roleId int) bool {
-	return roleId == AdminRoleId || roleId == ModeratorRoleId
+	log.Infof("Authorizing with role id: %d", roleId)
+	return roleId <= ModeratorRoleId
 }
 
 func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
@@ -265,10 +266,8 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		return
 	}
 	newCourse.ID = id
-	c.IndentedJSON(http.StatusOK, newCourse)
 
-	log.Errorf("no permission to create course")
-	c.IndentedJSON(http.StatusUnauthorized, "You are not allowed to create courses")
+	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
 func (f *PublicController) EnrollUser(c *gin.Context) {
@@ -350,7 +349,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	user, err := dbi.GetUserById(f.Database, id)
 	if err != nil {
 		log.Errorf("Unable to get user by id: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -373,7 +372,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	tokenString, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		log.Errorf("Unable to sign token: %s\n", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -381,7 +380,7 @@ func (f *PublicController) Login(c *gin.Context) {
 	c.SetCookie("user_token", tokenString, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	// Return empty string
 
-	c.Status(http.StatusOK)
+	c.IndentedJSON(http.StatusOK, "")
 }
 
 func (f *PublicController) Register(c *gin.Context) {
