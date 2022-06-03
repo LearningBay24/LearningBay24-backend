@@ -36,6 +36,10 @@ func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error
 	tokenString := strings.Split(Cookie, "=")[1]
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+		}
+
 		return []byte(config.Conf.Secrets.JWTSecret), nil
 	})
 	if err != nil {
