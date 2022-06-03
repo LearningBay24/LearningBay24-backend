@@ -58,7 +58,7 @@ func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error
 	}
 	data, ok := token.Claims.(jwt.MapClaims)["data"]
 	if !ok {
-		return "", errors.New("Unable to map id from data interface")
+		return nil, errors.New("Unable to map id from data interface")
 	}
 	return data, err
 }
