@@ -346,12 +346,20 @@ func (f *PublicController) Login(c *gin.Context) {
 
 		return
 	}
+
+	user, err := dbi.GetUserById(f.Database, id)
+	if err != nil {
+		log.Errorf("Unable to get user by id: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	claims := &jwt.MapClaims{
 		"IssuedAt":  time.Now().Unix(),
 		"ExpiresAt": time.Now().Add(time.Hour * 24).Unix(),
 		"data": map[string]string{
 			"id":      strconv.Itoa(id),
-			"role_id": "9999", // TODO: Change this to the real role_id
+			"role_id": strconv.Itoa(user.RoleID),
 		},
 	}
 
