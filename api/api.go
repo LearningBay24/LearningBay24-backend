@@ -459,11 +459,135 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 
 	id, err := calender.AddCourseToCalender(f.Database, date, location, online, courseId, repeats, repeatDistance, repeatEnd)
 	if err != nil {
-		log.Errorf("Unable to create course: %s\n", err.Error())
+		log.Errorf("Unable to create appointment: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	newAppointment.ID = id
 	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newAppointment)
+}
+
+func (f *PublicController) AddSubmissionToCalender(c *gin.Context) {
+
+	var newAppointment models.Appointment
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	submDate, ok := j["submDate"].(time.Time)
+	if !ok {
+		log.Error("unable to convert submDate to time.Time")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	submName, ok := j["submName"].(null.String)
+	if !ok {
+		log.Error("unable to convert submName to null.String")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	courseId, ok := j["courseId"].(int)
+	if !ok {
+		log.Error("unable to convert courseId to int")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	id, err := calender.AddSubmissionToCalender(f.Database, submDate, submName, courseId)
+	if err != nil {
+		log.Errorf("Unable to add appointment of submission: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newAppointment.ID = id
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.IndentedJSON(http.StatusOK, newAppointment)
+}
+
+func (f *PublicController) DeactivateAppointment(c *gin.Context) {
+	// Get given ID from the Context
+	//Convert data type from str to int; bool to use ist as param
+	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	//Fetch Data from Database with Backend function
+	err = calender.DeactivateAppointment(f.Database, appointment_id)
+	if err != nil {
+		log.Errorf("Unable to delete appointment: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Return Status and Data in JSON-Format
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
+	// Get given ID from the Context
+	//Convert data type from str to int; bool to use ist as param
+	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	course_id, err := strconv.Atoi(c.Param("course_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	repeats, err := strconv.ParseBool(c.Param("repeats"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	//Fetch Data from Database with Backend function
+	err = calender.DeactivateCourseInCalender(f.Database, appointment_id, course_id, repeats)
+	if err != nil {
+		log.Errorf("Unable to delete appointment from course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Return Status and Data in JSON-Format
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
+	// Get given ID from the Context
+	//Convert data type from str to int; bool to use ist as param
+	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	exam_id, err := strconv.Atoi(c.Param("exam_id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	//Fetch Data from Database with Backend function
+	err = calender.DeactivateExamInCalender(f.Database, appointment_id, exam_id)
+	if err != nil {
+		log.Errorf("Unable to delete exam from calender: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Return Status and Data in JSON-Format
+	c.Header("Access-Control-Allow-Origin", "*")
+	c.Status(http.StatusNoContent)
 }
