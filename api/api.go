@@ -360,7 +360,6 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, id)
 	if err != nil {
 		log.Errorf("Unable to get all materials from course: %s", err.Error())
@@ -405,6 +404,59 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 
 	c.File(file.URI)
 	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) DeleteUser(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'id' to an integer")
+		return
+	}
+
+	_, err = dbi.GetUserById(f.Database, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Errorf("User with id %d doesn't exist: %s", id, err.Error())
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		log.Errorf("Unable to get user with id %d", id)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	err = dbi.DeleteUser(f.Database, id)
+	if err != nil {
+		log.Errorf("Unable to delete user from db: %s", err.Error())
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) GetUserById(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'user_id' to an integer")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	user, err := dbi.GetUserById(f.Database, id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Errorf("User with id %d doesn't exist: %s", id, err.Error())
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		log.Errorf("Unable to get user with id %d", id)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, user)
 }
 
 /* Uncomment, when calender.go is integrated into main branch
