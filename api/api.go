@@ -322,7 +322,8 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 		return
 	}
 
-	appointments, err := calender.GetAllAppointments(f.Database, user_id)
+	pCon := &calender.PublicController{Database: f.Database}
+	appointments, err := pCon.GetAllAppointments(user_id)
 	if err != nil {
 		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -367,7 +368,8 @@ func (f *PublicController) GetAppointments(c *gin.Context) {
 		return
 	}
 
-	appointments, err := calender.GetAppointments(f.Database, user_id, beforeDate, afterDate)
+	pCon := &calender.PublicController{Database: f.Database}
+	appointments, err := pCon.GetAppointments(user_id, beforeDate, afterDate)
 	if err != nil {
 		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -385,7 +387,8 @@ func (f *PublicController) GetAllSubmissions(c *gin.Context) {
 		return
 	}
 
-	appointments, err := calender.GetAllSubmissions(f.Database, user_id)
+	pCon := &calender.PublicController{Database: f.Database}
+	appointments, err := pCon.GetAllSubmissions(user_id)
 	if err != nil {
 		log.Errorf("Unable to get submissions from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -457,7 +460,8 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 		return
 	}
 
-	id, err := calender.AddCourseToCalender(f.Database, date, location, online, courseId, repeats, repeatDistance, repeatEnd)
+	pCon := &calender.PublicController{Database: f.Database}
+	id, err := pCon.AddCourseToCalender(date, location, online, courseId, repeats, repeatDistance, repeatEnd)
 	if err != nil {
 		log.Errorf("Unable to create appointment: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -506,7 +510,8 @@ func (f *PublicController) AddSubmissionToCalender(c *gin.Context) {
 		return
 	}
 
-	id, err := calender.AddSubmissionToCalender(f.Database, submDate, submName, courseId)
+	pCon := &calender.PublicController{Database: f.Database}
+	id, err := pCon.AddSubmissionToCalender(submDate, submName, courseId)
 	if err != nil {
 		log.Errorf("Unable to add appointment of submission: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -526,7 +531,8 @@ func (f *PublicController) DeactivateAppointment(c *gin.Context) {
 		return
 	}
 	//Fetch Data from Database with Backend function
-	err = calender.DeactivateAppointment(f.Database, appointment_id)
+	pCon := &calender.PublicController{Database: f.Database}
+	err = pCon.DeactivateAppointment(appointment_id)
 	if err != nil {
 		log.Errorf("Unable to delete appointment: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -556,7 +562,8 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 		return
 	}
 	//Fetch Data from Database with Backend function
-	err = calender.DeactivateCourseInCalender(f.Database, appointment_id, course_id, repeats)
+	pCon := &calender.PublicController{Database: f.Database}
+	err = pCon.DeactivateCourseInCalender(appointment_id, course_id, repeats)
 	if err != nil {
 		log.Errorf("Unable to delete appointment from course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -581,7 +588,8 @@ func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
 		return
 	}
 	//Fetch Data from Database with Backend function
-	err = calender.DeactivateExamInCalender(f.Database, appointment_id, exam_id)
+	pCon := &calender.PublicController{Database: f.Database}
+	err = pCon.DeactivateExamInCalender(appointment_id, exam_id)
 	if err != nil {
 		log.Errorf("Unable to delete exam from calender: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())

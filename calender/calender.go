@@ -20,9 +20,17 @@ import (
 	"learningbay24.de/backend/models"
 )
 
+type Calender interface {
+	// TODO
+}
+
+type PublicController struct {
+	Database *sql.DB
+}
+
 // Returns all appointments the user with the user-ID has
-func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
-	tx, err := db.BeginTx(context.Background(), nil)
+func (p *PublicController) GetAllAppointments(userId int) ([]*models.Appointment, error) {
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -70,13 +78,13 @@ func GetAllAppointments(db *sql.DB, userId int) ([]*models.Appointment, error) {
 }
 
 // Returns all appointments the user with the user-ID has, between the beforeDate and afterDate
-func GetAppointments(db *sql.DB, userId int, beforeDate time.Time, afterDate time.Time) ([]*models.Appointment, error) {
+func (p *PublicController) GetAppointments(userId int, beforeDate time.Time, afterDate time.Time) ([]*models.Appointment, error) {
 
 	if beforeDate.After(afterDate) {
 		return nil, fmt.Errorf("calender: incorrect parameter usage")
 	}
 
-	tx, err := db.BeginTx(context.Background(), nil)
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,8 +130,8 @@ func GetAppointments(db *sql.DB, userId int, beforeDate time.Time, afterDate tim
 }
 
 // Returns the dates of all submissions the user with the user-ID has
-func GetAllSubmissions(db *sql.DB, userId int) ([]*time.Time, error) {
-	tx, err := db.BeginTx(context.Background(), nil)
+func (p *PublicController) GetAllSubmissions(userId int) ([]*time.Time, error) {
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -168,8 +176,8 @@ func GetAllSubmissions(db *sql.DB, userId int) ([]*time.Time, error) {
 	return allSubmissions, nil
 }
 
-func AddCourseToCalender(db *sql.DB, date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) (int, error) {
-	tx, err := db.BeginTx(context.Background(), nil)
+func (p *PublicController) AddCourseToCalender(date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) (int, error) {
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -242,8 +250,8 @@ func AddCourseToCalender(db *sql.DB, date time.Time, location null.String, onlin
 	return newAppoint.ID, nil
 }
 
-func DeactivateCourseInCalender(db *sql.DB, appointmentId int, courseId int, repeats bool) error {
-	tx, err := db.BeginTx(context.Background(), nil)
+func (p *PublicController) DeactivateCourseInCalender(appointmentId int, courseId int, repeats bool) error {
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -257,7 +265,7 @@ func DeactivateCourseInCalender(db *sql.DB, appointmentId int, courseId int, rep
 		}
 		return err
 	}
-	appointment.Delete(context.Background(), db, false)
+	appointment.Delete(context.Background(), p.Database, false)
 
 	/* TODO - deactivate Appointment in course?
 	course, err := models.FindCourse(context.Background(), tx, courseId)
@@ -276,10 +284,10 @@ func DeactivateCourseInCalender(db *sql.DB, appointmentId int, courseId int, rep
 	return nil
 }
 
-func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.String, courseId int) (int, error) {
+func (p *PublicController) AddSubmissionToCalender(submDate time.Time, submName null.String, courseId int) (int, error) {
 	// uses location from Appointment as description for the submission-name, used F.A.'s: 300, 470
 
-	tx, err := db.BeginTx(context.Background(), nil)
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
 	}
@@ -310,8 +318,8 @@ func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.Strin
 	return newAppoint.ID, nil
 }
 
-func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
-	tx, err := db.BeginTx(context.Background(), nil)
+func (p *PublicController) DeactivateExamInCalender(appointmentId int, examId int) error {
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -323,7 +331,7 @@ func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
 		}
 		return err
 	}
-	appointment.Delete(context.Background(), db, false)
+	appointment.Delete(context.Background(), p.Database, false)
 
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
@@ -331,8 +339,8 @@ func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
 	return nil
 }
 
-func DeactivateAppointment(db *sql.DB, appointmentId int) error {
-	tx, err := db.BeginTx(context.Background(), nil)
+func (p *PublicController) DeactivateAppointment(appointmentId int) error {
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -344,7 +352,7 @@ func DeactivateAppointment(db *sql.DB, appointmentId int) error {
 		}
 		return err
 	}
-	appointment.Delete(context.Background(), db, false)
+	appointment.Delete(context.Background(), p.Database, false)
 
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
@@ -353,10 +361,10 @@ func DeactivateAppointment(db *sql.DB, appointmentId int) error {
 }
 
 /*
-func ChangeSubmissionDate(db *sql.DB, appointmentId int, courseId int, submDate time.Time, submName null.String, submId int) error {
+func (p *PublicController) (p *PublicController) ChangeSubmissionDate(appointmentId int, courseId int, submDate time.Time, submName null.String, submId int) error {
 	// used F.A.'s: 480
 
-	tx, err := db.BeginTx(context.Background(), nil)
+	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
