@@ -629,11 +629,20 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 
 func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
-	user_id, err := strconv.Atoi(c.Param("user_id"))
+	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
+
+	/*
+		user_id, err := strconv.Atoi(c.Param("user_id"))
+		if err != nil {
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	*/
 
 	pCon := &calender.PublicController{Database: f.Database}
 	appointments, err := pCon.GetAllAppointments(user_id)
@@ -647,9 +656,10 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
 func (f *PublicController) GetAppointments(c *gin.Context) {
 
-	user_id, err := strconv.Atoi(c.Param("user_id"))
+	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -693,9 +703,10 @@ func (f *PublicController) GetAppointments(c *gin.Context) {
 
 func (f *PublicController) GetAllSubmissions(c *gin.Context) {
 
-	user_id, err := strconv.Atoi(c.Param("user_id"))
+	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
