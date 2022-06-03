@@ -325,12 +325,30 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 }
 
 func (f *PublicController) Login(c *gin.Context) {
-	// Map the given user on json
-	var newUser models.User
-	if err := c.BindJSON(&newUser); err != nil {
+	type User struct {
+		Firstname           string `json:"firstname"`
+		Surname             string `json:"surname"`
+		Email               string `json:"email"`
+		Password            string `json:"password"`
+		RoleID              int    `json:"role_id"`
+		PreferredLanguageID int    `json:"preferred_language_id"`
+	}
+
+	var tmpUser User
+	if err := c.BindJSON(&tmpUser); err != nil {
 		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
+	}
+
+	pw := []byte(tmpUser.Password)
+	newUser := models.User{
+		Firstname:           tmpUser.Firstname,
+		Surname:             tmpUser.Surname,
+		Email:               tmpUser.Email,
+		Password:            pw,
+		RoleID:              tmpUser.RoleID,
+		PreferredLanguageID: tmpUser.PreferredLanguageID,
 	}
 
 	// Check if credentials of given user are valid
@@ -396,11 +414,30 @@ func (f *PublicController) Register(c *gin.Context) {
 		return
 	}
 
-	var newUser models.User
-	if err := c.BindJSON(&newUser); err != nil {
+	type User struct {
+		Firstname           string `json:"firstname"`
+		Surname             string `json:"surname"`
+		Email               string `json:"email"`
+		Password            string `json:"password"`
+		RoleID              int    `json:"role_id"`
+		PreferredLanguageID int    `json:"preferred_language_id"`
+	}
+
+	var tmpUser User
+	if err := c.BindJSON(&tmpUser); err != nil {
 		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
+	}
+
+	pw := []byte(tmpUser.Password)
+	newUser := models.User{
+		Firstname:           tmpUser.Firstname,
+		Surname:             tmpUser.Surname,
+		Email:               tmpUser.Email,
+		Password:            pw,
+		RoleID:              tmpUser.RoleID,
+		PreferredLanguageID: tmpUser.PreferredLanguageID,
 	}
 
 	id, err := dbi.CreateUser(f.Database, newUser)
