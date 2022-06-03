@@ -22,7 +22,7 @@ import (
 // Save a File to disk, creating a database entry alongside it.
 // The fileName can change, depending on if a file with the same name exists already. If the file is a web link (non local), the fileName will become the name given to the URL.
 // The file represents either a local file or a remote one
-func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *io.Reader) (int, error) {
+func SaveFile(db *sql.DB, fileName string, uri string, uploaderID int, isLocal bool, file *io.Reader) (int, error) {
 	filePath := config.Conf.Files.Path
 
 	var id int
@@ -30,21 +30,20 @@ func SaveFile(db *sql.DB, fileName string, uploaderID int, isLocal bool, file *i
 
 	if isLocal {
 		id, err = saveLocalFile(db, filePath, fileName, uploaderID, file)
+		if err != nil {
+			return 0, err
+		}
 	} else {
 		var u *url.URL
-		u, err = url.ParseRequestURI(fileName)
+		u, err = url.ParseRequestURI(uri)
 		if err != nil {
 			return 0, err
 		}
 
-		id, err = saveRemoteFile(db, fileName, filePath, u, uploaderID, file)
+		id, err = saveRemoteFile(db, fileName, u, uploaderID, file)
 		if err != nil {
 			return 0, err
 		}
-	}
-
-	if err != nil {
-		return 0, err
 	}
 
 	return id, nil
@@ -81,7 +80,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -91,7 +90,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	fp, err := os.Create(fullFile)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -102,7 +101,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	_, err = bufr.WriteTo(fp)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -111,7 +110,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -121,17 +120,17 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 }
 
 // Save a remote file, a.k.a. a web link, to the database.
-func saveRemoteFile(db *sql.DB, linkName string, url string, u *url.URL, uploaderID int, file *io.Reader) (int, error) {
+func saveRemoteFile(db *sql.DB, linkName string, u *url.URL, uploaderID int, file *io.Reader) (int, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
 	}
 
-	f := models.File{Name: linkName, URI: url, Local: 0, UploaderID: uploaderID}
+	f := models.File{Name: linkName, URI: u.String(), Local: 0, UploaderID: uploaderID}
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -140,7 +139,7 @@ func saveRemoteFile(db *sql.DB, linkName string, url string, u *url.URL, uploade
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err

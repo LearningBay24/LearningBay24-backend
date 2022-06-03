@@ -8,12 +8,14 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries"
 	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 )
 
 // GetMaterialFromCourse takes an ID and returns a struct of the file with the corresponding ID
-func GetMaterialFromCourse(db *sql.DB, fileId int) (*models.File, error) {
+func GetMaterialFromCourse(db *sql.DB, courseId int, fileId int) (*models.File, error) {
+	// TODO: use courseId to verify that the file is indeed in that course
 	cm, err := models.FindFile(context.Background(), db, fileId)
 	if err != nil {
 		return nil, err
@@ -22,8 +24,10 @@ func GetMaterialFromCourse(db *sql.DB, fileId int) (*models.File, error) {
 }
 
 // GetAllMaterialsFromCourse takes a courseID and returns a slice of files associated with it
-func GetAllMaterialsFromCourse(db *sql.DB, courseId int) (models.FileSlice, error) {
-	files, err := models.Files(models.CourseHasFileWhere.CourseID.EQ(courseId)).All(context.Background(), db)
+func GetAllMaterialsFromCourse(db *sql.DB, courseId int) ([]*models.File, error) {
+	var files []*models.File
+	// NOTE: raw query is used because sqlboiler seems to not be able to query the database properly in this case when used with query building
+	err := queries.Raw("select * from file, course_has_files where course_has_files.course_id=? AND course_has_files.file_id=file.id", courseId).Bind(context.Background(), db, &files)
 	if err != nil {
 		return nil, err
 	}
@@ -33,19 +37,10 @@ func GetAllMaterialsFromCourse(db *sql.DB, courseId int) (models.FileSlice, erro
 
 // CreateMaterial takes a fileName, URI, associated uploader-id, course, id and indicator if file is local or remote
 // Created struct gets inserted into database
-func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local int8, file *io.Reader) error {
+func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local bool, file io.Reader) error {
+	// TODO: max upload size
 
-	var isLocal bool
-	switch local {
-	case 0:
-		isLocal = false
-	case 1:
-		isLocal = true
-	default:
-		return fmt.Errorf("Invalid value for variable local: %d", local)
-	}
-
-	fileId, err := dbi.SaveFile(dbHandle, fileName, uploaderId, isLocal, file)
+	fileId, err := dbi.SaveFile(dbHandle, fileName, uri, uploaderId, local, &file)
 	if err != nil {
 		return err
 	}
@@ -112,7 +107,8 @@ func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) err
 		return err
 	}
 
-	materials, err := GetAllMaterialsFromCourse(db, courseId)
+	var materials models.FileSlice
+	materials, err = GetAllMaterialsFromCourse(db, courseId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
