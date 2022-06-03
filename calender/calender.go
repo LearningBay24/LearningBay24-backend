@@ -275,12 +275,12 @@ func DeactivateCourseInCalender(db *sql.DB, appointmentId int, courseId int, rep
 	return nil
 }
 
-func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.String, courseId int) error {
+func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.String, courseId int) (int, error) {
 	// uses location from Appointment as description for the submission-name, used F.A.'s: 300, 470
 
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	// TODO -> get submission object with submission.id as parameter, set submission.date to given Date, don't create a new appointment
@@ -290,23 +290,23 @@ func AddSubmissionToCalender(db *sql.DB, submDate time.Time, submName null.Strin
 	err = newAppoint.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
 		}
-		return err
+		return 0, err
 	}
 	course, err := models.FindCourse(context.Background(), tx, courseId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
 		}
-		return err
+		return 0, err
 	}
 	course.AddAppointments(context.Background(), tx, true, newAppoint)
 
 	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+		return 0, fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
 	}
-	return nil
+	return newAppoint.ID, nil
 }
 
 func DeactivateExamInCalender(db *sql.DB, appointmentId int, examId int) error {
