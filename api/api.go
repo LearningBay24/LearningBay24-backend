@@ -22,8 +22,18 @@ import (
 	"github.com/volatiletech/null/v8"
 )
 
+const (
+	AdminRoleId int = iota + 1
+	ModeratorRoleId
+	UserRoleId
+)
+
 type PublicController struct {
 	Database *sql.DB
+}
+
+func AuthorizeModerator(roleId int) bool {
+	return roleId == AdminRoleId || roleId == ModeratorRoleId
 }
 
 func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
@@ -196,63 +206,67 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 	role_id, err := f.GetRoleIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get role_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	if !AuthorizeModerator(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	var newCourse models.Course
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if role_id == 2 {
-		var newCourse models.Course
 
-		raw, err := c.GetRawData()
-		if err != nil {
-			log.Errorf("Unable to get raw data from request: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-
-		var j map[string]interface{}
-		err = json.Unmarshal(raw, &j)
-		if err != nil {
-			log.Errorf("Unable to unmarshal the json body: %+v", raw)
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-
-		user_id, err := f.GetIdFromCookie(c)
-		if err != nil {
-			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-
-		name, ok := j["name"].(string)
-		if !ok {
-			log.Error("unable to convert name to string")
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		description, ok := j["description"].(string)
-		if !ok {
-			log.Error("unable to convert description to string")
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-		enroll_key, ok := j["enroll_key"].(string)
-		if !ok {
-			log.Error("unable to convert enroll_key to string")
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-
-		id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id)
-		if err != nil {
-			log.Errorf("Unable to create course: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-		newCourse.ID = id
-		c.IndentedJSON(http.StatusOK, newCourse)
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	description, ok := j["description"].(string)
+	if !ok {
+		log.Error("unable to convert description to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	enroll_key, ok := j["enroll_key"].(string)
+	if !ok {
+		log.Error("unable to convert enroll_key to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id)
+	if err != nil {
+		log.Errorf("Unable to create course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	newCourse.ID = id
+	c.IndentedJSON(http.StatusOK, newCourse)
+
 	log.Errorf("no permission to create course")
 	c.IndentedJSON(http.StatusUnauthorized, "You are not allowed to create courses")
 }
@@ -366,29 +380,32 @@ func (f *PublicController) Register(c *gin.Context) {
 	role_id, err := f.GetRoleIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get role_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	if !AuthorizeModerator(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	var newUser models.User
+	if err := c.BindJSON(&newUser); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if role_id == 2 {
-		var newUser models.User
-		if err := c.BindJSON(&newUser); err != nil {
-			log.Errorf("Unable to bind json: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-
-		id, err := dbi.CreateUser(f.Database, newUser)
-		if err != nil {
-			log.Errorf("Unable to create user: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-
-		newUser.ID = id
-		newUser.Password = nil
-		c.IndentedJSON(http.StatusCreated, newUser)
+	id, err := dbi.CreateUser(f.Database, newUser)
+	if err != nil {
+		log.Errorf("Unable to create user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
+
+	newUser.ID = id
+	newUser.Password = nil
+	c.IndentedJSON(http.StatusCreated, newUser)
 }
 
 func (f *PublicController) UploadMaterial(c *gin.Context) {
