@@ -74,13 +74,13 @@ func main() {
 	// TODO: panics
 	router.GET("/users/:user_id", pCtrl.GetUserById)
 	router.GET("/courses/appointments", pCtrl.GetAllAppointments)
-	router.GET("/courses/appointments", pCtrl.GetAppointments)
+	router.GET("/courses/allappointments", pCtrl.GetAppointments)
 	router.GET("/users/courses/submissions", pCtrl.GetAllSubmissions)
-	router.POST("/appointments", pCtrl.AddCourseToCalender)
-	router.POST("/appointments", pCtrl.AddSubmissionToCalender)
-	router.DELETE("/appointments/:id", pCtrl.DeactivateAppointment)
-	router.DELETE("/appointments/:id", pCtrl.DeactivateCourseInCalender)
-	router.DELETE("/appointments/:id", pCtrl.DeactivateExamInCalender)
+	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
+	router.POST("/appointments/addsubmission", pCtrl.AddSubmissionToCalender)
+	router.DELETE("/appointments/:id/dlt", pCtrl.DeactivateAppointment)
+	router.DELETE("/appointments/:id/dlt/appointment/", pCtrl.DeactivateCourseInCalender)
+	router.DELETE("/appointments/:id/dlt/exam", pCtrl.DeactivateExamInCalender)
 
 	router.Run("0.0.0.0:8080")
 }

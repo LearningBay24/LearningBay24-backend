@@ -176,6 +176,7 @@ func (p *PublicController) GetAllSubmissions(userId int) ([]*time.Time, error) {
 	return allSubmissions, nil
 }
 
+// adds appointment/s to the course, repeatDistance: 1=week, 2=month, 3=year
 func (p *PublicController) AddCourseToCalender(date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) (int, error) {
 	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -250,6 +251,7 @@ func (p *PublicController) AddCourseToCalender(date time.Time, location null.Str
 	return newAppoint.ID, nil
 }
 
+// Soft-deletes the appointment, repeats=true, if its's a repeating appointment
 func (p *PublicController) DeactivateCourseInCalender(appointmentId int, courseId int, repeats bool) error {
 	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
