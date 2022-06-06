@@ -42,12 +42,12 @@ func TestAddCourseToCalender(t *testing.T) {
 
 	ctrl := &PublicController{db}
 
-	//query := "INSERT INTO appointments \\(ID, Date, Location, Online, CourseID\\) VALUES \\(\\?, \\?, \\?, \\?, \\?\\)"
-	query := regexp.QuoteMeta("INSERT INTO `appointments` (`ID`, `Date`, `Location`, `Online`, `CourseID`) VALUES (?,?,?,?,?)")
-	//mock.ExpectBegin()
-	prep := mock.ExpectPrepare(query)
-	prep.ExpectExec().WithArgs(1, AnyTime{}, AnyString{}, 1, 1).WillReturnResult(sqlmock.NewResult(0, 1))
-	//mock.ExpectCommit()
+	// start
+	mock.ExpectBegin()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `appointment` (`location`,`online`,`course_id`,`created_at`,`updated_at`,`deleted_at`) VALUES (?,?,?,?,?,?)")).WithArgs(1, AnyTime{}, AnyString{}, 1, 1).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectQuery(regexp.QuoteMeta("SELECT * FROM `course` WHERE `id`=? and `deleted_at` is null")).WithArgs(1).WillReturnRows().RowsWillBeClosed()
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO `appointment` (`location`,`online`,`course_id`,`created_at`,`updated_at`,`deleted_at`) VALUES (?,?,?,?,?,?)")).WithArgs(1, AnyTime{}, AnyString{}, 1, 1).WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
 
 	/*
 		ID        string
