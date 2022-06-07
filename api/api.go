@@ -647,7 +647,7 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 	pCon := &calender.PublicController{Database: f.Database}
 	appointments, err := pCon.GetAllAppointments(user_id)
 	if err != nil {
-		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
+		log.Errorf("Unable to get all appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -677,21 +677,21 @@ func (f *PublicController) GetAppointments(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	beforeDate, ok := j["beforeDate"].(time.Time)
-	if !ok {
-		log.Error("unable to convert beforeDate to time.Time")
+	startDate, err := time.Parse("2006-01-02", j["startDate"].(string))
+	if err != nil {
+		log.Error("unable to convert startDate to time.Time")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	afterDate, ok := j["afterDate"].(time.Time)
-	if !ok {
-		log.Error("unable to convert afterDate to time.Time")
+	endDate, err := time.Parse("2006-01-02", j["endDate"].(string))
+	if err != nil {
+		log.Error("unable to convert endDate to time.Time")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	pCon := &calender.PublicController{Database: f.Database}
-	appointments, err := pCon.GetAppointments(user_id, beforeDate, afterDate)
+	appointments, err := pCon.GetAppointments(user_id, startDate, endDate)
 	if err != nil {
 		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
