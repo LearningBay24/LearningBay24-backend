@@ -220,8 +220,6 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	var newCourse models.Course
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
@@ -262,13 +260,13 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	tmp, ok = j["role_id"].(float64)
+	tmp, ok := j["role_id"].(float64)
 	if !ok {
 		log.Error("unable to convert user_id to float64")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	role_id := int(tmp)
+	role_id = int(tmp)
 
 	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id, role_id)
 	if err != nil {
@@ -406,16 +404,10 @@ func (f *PublicController) Login(c *gin.Context) {
 	}
 
 	// Set the cookie and add it to the response header
-
 	c.SetCookie("user_token", tokenString, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
 	// Return empty string
 
 	c.IndentedJSON(http.StatusOK, "")
-	c.SetCookie("user_token", token, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
-	// Return user with set cookie
-	newUser.Password = nil
-	newUser.ID = id
-	c.IndentedJSON(http.StatusOK, newUser)
 
 }
 
