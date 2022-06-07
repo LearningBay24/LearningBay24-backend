@@ -32,9 +32,19 @@ type PublicController struct {
 	Database *sql.DB
 }
 
+func AuthorizeAdmin(roleId int) bool {
+	log.Infof("Authorizing with role id: %d", roleId)
+	return roleId <= AdminRoleId
+}
+
 func AuthorizeModerator(roleId int) bool {
 	log.Infof("Authorizing with role id: %d", roleId)
 	return roleId <= ModeratorRoleId
+}
+
+func AuthorizeUser(roleId int) bool {
+	log.Infof("Authorizing with role id: %d", roleId)
+	return roleId <= UserRoleId
 }
 
 func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
@@ -102,6 +112,15 @@ func (f *PublicController) GetRoleIdFromCookie(c *gin.Context) (int, error) {
 }
 
 func (f *PublicController) GetCourseById(c *gin.Context) {
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
 	id, err := strconv.Atoi(c.Param("id"))
@@ -123,6 +142,18 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
+
+	// TODO Issue #69
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeModerator(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -147,6 +178,17 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -166,6 +208,16 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
@@ -187,6 +239,18 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 func (f *PublicController) DeleteCourse(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
+
+	// TODO Issue #69
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeModerator(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -271,6 +335,16 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 }
 
 func (f *PublicController) EnrollUser(c *gin.Context) {
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
@@ -303,6 +377,18 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 }
 
 func (f *PublicController) UpdateCourseById(c *gin.Context) {
+
+	//TODO Issue #69
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeModerator(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
@@ -401,6 +487,22 @@ func (f *PublicController) Login(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, "")
 }
 
+func (f *PublicController) Logout(c *gin.Context) {
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	c.SetCookie("user_token", "", -1, "/", config.Conf.Domain, config.Conf.Secure, true)
+	c.IndentedJSON(http.StatusOK, "")
+}
+
 func (f *PublicController) Register(c *gin.Context) {
 	role_id, err := f.GetRoleIdFromCookie(c)
 	if err != nil {
@@ -453,6 +555,17 @@ func (f *PublicController) Register(c *gin.Context) {
 }
 
 func (f *PublicController) UploadMaterial(c *gin.Context) {
+
+	// TODO Issue #69
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeModerator(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -515,6 +628,17 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 }
 
 func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	type _file struct {
 		ID   int    `json:"id"`
 		Name string `json:"name"`
@@ -548,6 +672,17 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 }
 
 func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
@@ -574,6 +709,17 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 }
 
 func (f *PublicController) DeleteUser(c *gin.Context) {
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeAdmin(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Error("Unable to convert parameter 'id' to an integer")
@@ -603,22 +749,33 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 }
 
 func (f *PublicController) GetUserById(c *gin.Context) {
-	id, err := strconv.Atoi(c.Param("user_id"))
+
+	role_id, err := f.GetRoleIdFromCookie(c)
 	if err != nil {
-		log.Error("Unable to convert parameter 'user_id' to an integer")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	if !AuthorizeUser(role_id) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
 
-	user, err := dbi.GetUserById(f.Database, id)
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	user, err := dbi.GetUserById(f.Database, user_id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			log.Errorf("User with id %d doesn't exist: %s", id, err.Error())
+			log.Errorf("User with id %d doesn't exist: %s", user_id, err.Error())
 			c.Status(http.StatusNotFound)
 			return
 		}
 
-		log.Errorf("Unable to get user with id %d", id)
+		log.Errorf("Unable to get user with id %d", user_id)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
