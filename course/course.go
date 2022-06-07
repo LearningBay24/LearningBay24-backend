@@ -343,3 +343,18 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 	return u, nil
 
 }
+
+// EnrollUser takes a UserID, CourseID and Enrollkey and adds the User to the course if the enrollkey is correct
+func SearchCourse(db *sql.DB, searchterm string) ([]*models.Course, error) {
+	searchterm = "%" + searchterm + "%"
+	fmt.Println(searchterm)
+	courses, err := models.Courses(
+		qm.Where(models.CourseColumns.Name+" LIKE ?", searchterm),
+		qm.Or(models.CourseColumns.Description+" LIKE ?", searchterm),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+	return courses, nil
+
+}

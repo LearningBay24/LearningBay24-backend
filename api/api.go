@@ -855,3 +855,38 @@ func (f *PublicController) EditFieldOfStudyHasCourseById(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, newFieldOfStudyHasCourse)
 }
+
+func (f *PublicController) SearchCourse(c *gin.Context) {
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	searchterm, ok := j["searchterm"].(string)
+	if !ok {
+		log.Error("unable to convert searchterm to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	courses, err := course.SearchCourse(f.Database, searchterm)
+
+	if err != nil {
+		log.Errorf("Unable to search course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, courses)
+}
