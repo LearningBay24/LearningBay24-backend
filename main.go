@@ -81,6 +81,7 @@ func main() {
 	router.POST("/fieldofstudies", pCtrl.CreateFieldOfStudy)
 	router.DELETE("/fieldofstudies/:id", pCtrl.DeleteFieldOfStudy)
 	router.PATCH("/fieldofstudies/:id", pCtrl.EditFieldOfStudyById)
+	router.GET("/courses/:id/fieldofstudies", pCtrl.GetFieldOfStudiesFromCourse)
 	router.POST("/courses/:id/fieldofstudies/:fieldofstudy_id", pCtrl.AddFieldOfStudyHasCourse)
 	router.DELETE("/courses/:id/fieldofstudies/:fieldofstudy_id", pCtrl.DeleteFieldOfStudyHasCourse)
 	router.PATCH("/courses/:id/fieldofstudies/:fieldofstudy_id", pCtrl.EditFieldOfStudyHasCourseById)

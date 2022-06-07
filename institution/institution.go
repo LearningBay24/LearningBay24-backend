@@ -8,6 +8,7 @@ import (
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"learningbay24.de/backend/models"
 )
 
@@ -121,6 +122,21 @@ func DeleteFieldOfStudy(db *sql.DB, fid int) (int, error) {
 		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
 	return fieldOfStudy.ID, nil
+}
+
+// GetCoursesFromUser takes the ID of a User and returns a array of Courses in which he is enrolled
+func GetFieldOfStudiesFromCourse(db *sql.DB, cid int) ([]*models.FieldOfStudy, error) {
+
+	FieldOfStudies, err := models.FieldOfStudies(
+		qm.From(models.TableNames.FieldOfStudyHasCourse),
+		qm.Where(models.FieldOfStudyHasCourseColumns.CourseID+"=?", cid),
+		qm.And(models.FieldOfStudyHasCourseColumns.FieldOfStudyID+"="+models.FieldOfStudyColumns.ID),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return FieldOfStudies, nil
 }
 
 // AddFieldOfStudyHasCourse takes a FieldOfStudy ID, Course ID, and a Semester and adds them in the Database

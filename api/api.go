@@ -1051,6 +1051,26 @@ func (f *PublicController) EditFieldOfStudyById(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, id)
 }
 
+func (f *PublicController) GetFieldOfStudiesFromCourse(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use it as param
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	// Fetch Data from Database with Backend function
+	fieldofstudies, err := institution.GetFieldOfStudiesFromCourse(f.Database, id)
+	if err != nil {
+		log.Errorf("Unable to get field of studies from course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	//Return Status and Data in JSON-Format
+
+	c.IndentedJSON(http.StatusOK, fieldofstudies)
+}
+
 func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
@@ -1079,7 +1099,8 @@ func (f *PublicController) AddFieldOfStudyHasCourse(c *gin.Context) {
 		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-
+	newfos_has_course.CourseID = id
+	newfos_has_course.FieldOfStudyID = fieldOfStudy_id
 	c.IndentedJSON(http.StatusOK, newfos_has_course)
 }
 
