@@ -636,14 +636,6 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 		return
 	}
 
-	/*
-		user_id, err := strconv.Atoi(c.Param("user_id"))
-		if err != nil {
-			c.Status(http.StatusInternalServerError)
-			return
-		}
-	*/
-
 	pCon := &calender.PublicController{Database: f.Database}
 	appointments, err := pCon.GetAllAppointments(user_id)
 	if err != nil {
@@ -740,8 +732,8 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 		return
 	}
 
-	date, ok := j["date"].(time.Time)
-	if !ok {
+	date, err := time.Parse("2006-01-02", j["date"].(string))
+	if err != nil {
 		log.Error("unable to convert date to time.Time")
 		c.Status(http.StatusInternalServerError)
 		return
@@ -776,8 +768,8 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	repeatEnd, ok := j["repeatEnd"].(time.Time)
-	if !ok {
+	repeatEnd, err := time.Parse("2006-01-02", j["repeatEnd"].(string))
+	if err != nil {
 		log.Error("unable to convert repeatEnd to time.Time")
 		c.Status(http.StatusInternalServerError)
 		return
@@ -814,8 +806,8 @@ func (f *PublicController) AddSubmissionToCalender(c *gin.Context) {
 		return
 	}
 
-	submDate, ok := j["submDate"].(time.Time)
-	if !ok {
+	submDate, err := time.Parse("2006-01-02", j["submDate"].(string))
+	if err != nil {
 		log.Error("unable to convert submDate to time.Time")
 		c.Status(http.StatusInternalServerError)
 		return

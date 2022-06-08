@@ -30,60 +30,7 @@ type PublicController struct {
 }
 
 // Returns all appointments the user with the user-ID has
-func (p *PublicController) GetAllAppointments(userId int) ([]*models.Appointment, error) {
-	tx, err := p.Database.BeginTx(context.Background(), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := models.FindUser(context.Background(), tx, userId)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-		}
-		return nil, err
-	}
-	courseQuery := user.UserHasCourses()
-	courseSlice, err := courseQuery.All(context.Background(), tx)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
-		}
-		return nil, err
-	}
-	var allAppointments []*models.Appointment
-
-	// Collect all appointments from all courses of the user
-	for _, course := range courseSlice {
-		appointmentQuery := course.R.Course.Appointments()
-		appointmentSlice, err := appointmentQuery.All(context.Background(), tx)
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
-			}
-			return nil, err
-		}
-		for _, appointment := range appointmentSlice {
-			allAppointments = append(allAppointments, appointment)
-		}
-	}
-
-	// TODO: es werden für den user noch die Submissions und Exams geholt und returned
-	// 1. user.exams holen
-	// 2. user.course.submissions holen
-
-	if e := tx.Commit(); e != nil {
-		return nil, fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
-	}
-	return allAppointments, nil
-}
-
-// Returns all appointments the user with the user-ID has, exclusive between the startDate and endDate
-func (p *PublicController) GetAppointments(userId int, startDate time.Time, endDate time.Time) ([]models.AppointmentSlice, error) {
-
-	if startDate.After(endDate) {
-		return nil, fmt.Errorf("calender: incorrect parameter usage")
-	}
+func (p *PublicController) GetAllAppointments(userId int) ([]models.AppointmentSlice, error) {
 
 	courses, err := course.GetCoursesFromUser(p.Database, userId)
 	if err != nil {
@@ -97,19 +44,8 @@ func (p *PublicController) GetAppointments(userId int, startDate time.Time, endD
 			return nil, err
 		}
 
-		/* TODO Delete unneccessaray appointments from app
-		for _, a := range app {
-			if a.Date.After(startDate) && a.Date.Before(endDate) {
-				if !a.DeletedAt.IsZero()  {
-					Appoint = append(Appoint, a...)
-				}
-			}
-		}
-		*/
-
 		Appoint = append(Appoint, app)
 	}
-	return Appoint, nil
 
 	//Appointments, err := models.Courses(
 	//
@@ -166,6 +102,99 @@ func (p *PublicController) GetAppointments(userId int, startDate time.Time, endD
 		}
 		return allAppointments, nil
 	*/
+
+	return Appoint, nil
+}
+
+// Returns all appointments the user with the user-ID has, exclusive between the startDate and endDate
+func (p *PublicController) GetAppointments(userId int, startDate time.Time, endDate time.Time) ([]models.AppointmentSlice, error) {
+
+	if startDate.After(endDate) {
+		return nil, fmt.Errorf("calender: incorrect parameter usage")
+	}
+
+	courses, err := course.GetCoursesFromUser(p.Database, userId)
+	if err != nil {
+		return nil, err
+	}
+	var Appoint []models.AppointmentSlice
+	for _, course := range courses {
+		app, err := models.Appointments(models.AppointmentWhere.CourseID.EQ(course.ID)).All(context.Background(), p.Database)
+
+		if err != nil {
+			return nil, err
+		}
+
+		/* TODO Delete unneccessaray appointments from app
+		for _, a := range app {
+			if a.Date.After(startDate) && a.Date.Before(endDate) {
+				if !a.DeletedAt.IsZero()  {
+					Appoint = append(Appoint, a...)
+				}
+			}
+		}
+		*/
+
+		Appoint = append(Appoint, app)
+	}
+
+	//Appointments, err := models.Courses(
+	//
+	//).All(context.Background(), db)
+	//if err != nil {
+	//	return nil, err
+	//}
+	//
+	//return courses, nil
+
+	/*
+		tx, err := p.Database.BeginTx(context.Background(), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		user, err := models.FindUser(context.Background(), tx, userId)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			}
+			return nil, err
+		}
+		courseQuery := user.UserHasCourses()
+		courseSlice, err := courseQuery.All(context.Background(), tx)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
+			}
+			return nil, err
+		}
+		var allAppointments []*models.Appointment
+
+		// Collect all appointments from all courses of the user
+		for _, course := range courseSlice {
+			log.Println(course.R.Course.Appointments())
+			appointmentQuery := course.R.Course.Appointments()
+			appointmentSlice, err := appointmentQuery.All(context.Background(), tx)
+			if err != nil {
+				if e := tx.Rollback(); e != nil {
+					return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", e, e)
+				}
+				return nil, err
+			}
+			for _, appointment := range appointmentSlice {
+				if endDate.After(appointment.Date) && startDate.Before(appointment.Date) {
+					allAppointments = append(allAppointments, appointment)
+				}
+			}
+		}
+
+		if e := tx.Commit(); e != nil {
+			return nil, fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+		}
+		return allAppointments, nil
+	*/
+
+	return Appoint, nil
 }
 
 // Returns the dates of all submissions the user with the user-ID has
