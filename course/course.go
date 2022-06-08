@@ -337,7 +337,6 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 // Search in course_name and course_descripton for the searchterm
 func SearchCourse(db *sql.DB, searchterm string) ([]*models.Course, error) {
 	searchterm = "%" + searchterm + "%"
-	fmt.Println(searchterm)
 	courses, err := models.Courses(
 		qm.Where(models.CourseColumns.Name+" LIKE ?", searchterm),
 		qm.Or(models.CourseColumns.Description+" LIKE ?", searchterm),

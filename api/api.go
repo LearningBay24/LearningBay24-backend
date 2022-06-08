@@ -648,25 +648,9 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
 func (f *PublicController) SearchCourse(c *gin.Context) {
 
-	raw, err := c.GetRawData()
-	if err != nil {
-		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	var j map[string]interface{}
-	err = json.Unmarshal(raw, &j)
-	if err != nil {
-		log.Errorf("Unable to unmarshal the json body: %+v", raw)
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	searchterm, ok := j["searchterm"].(string)
-	if !ok {
-		log.Error("unable to convert searchterm to string")
-		c.Status(http.StatusInternalServerError)
+	searchterm, ok := c.GetQuery("searchterm")
+	if ok != false {
+		c.IndentedJSON(http.StatusBadRequest, errors.New("Query searchterm not found"))
 		return
 	}
 
