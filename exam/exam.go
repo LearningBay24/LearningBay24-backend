@@ -16,7 +16,13 @@ import (
 type ExamService interface {
 	GetExam(examId int) (*models.Exam, error)
 	GetAllExamsFromUser(userId int) (models.ExamSlice, error)
-	CreateExam(name, description string, date time.Time, duration, courseId, creatorId int, online, graded int8, location null.String, registerDeadLine null.Time) error
+	GetAttendedExamsFromUser(userId int) (models.ExamSlice, error)
+	GetPassedExamsFromUser(userId int) (models.ExamSlice, error)
+	GetCreatedExamsFromUser(userId int) (models.ExamSlice, error)
+	CreateExam(name, description string, date time.Time, duration, courseId, creatorId int, online int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) (int, error)
+	EditExam(fileName string, examId, creatorId int, local int8, file *io.Reader, date time.Time, duration int) (int, error)
+	RegisterToExam(userId, examId int) error
+	DeregisterFromExam(userId, examId int) error
 }
 
 type PublicController struct {
@@ -216,4 +222,39 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 	}
 	return fmt.Errorf("can't deregister from exam: DeregisterDeadline has passed")
 
+}
+
+func (p *PublicController) AttendExam(userId, examId int) (*models.File, error) {
+	ex, err := models.FindExam(context.Background(), p.Database, examId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Can attend to exam if exam start <= current time <= exam end
+	curTime := time.Now()
+	end := ex.Date.Add(time.Minute * time.Duration(ex.Duration))
+	diffBegin := curTime.Sub(ex.Date)
+	diffEnd := end.Sub(curTime)
+	if diffBegin.Minutes() >= 0 {
+		if diffEnd >= 0 {
+
+			uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
+			if err != nil {
+				return nil, err
+			}
+
+			uhex.Attended = 1
+			_, err = uhex.Update(context.Background(), p.Database, boil.Infer())
+			if err != nil {
+				return nil, err
+			}
+
+		}
+		return nil, fmt.Errorf("can't append exam: Duration has passed")
+	}
+	return nil, fmt.Errorf("can't append exam: exam hasn't started yet")
+}
+
+func (p *PublicController) SubmitAnswer(userId, examId int) error {
+	return nil
 }
