@@ -649,8 +649,8 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 func (f *PublicController) SearchCourse(c *gin.Context) {
 
 	searchterm, ok := c.GetQuery("searchterm")
-	if ok != false {
-		c.IndentedJSON(http.StatusBadRequest, errors.New("Query searchterm not found"))
+	if !ok {
+		c.IndentedJSON(http.StatusInternalServerError, errors.New("query searchterm not found"))
 		return
 	}
 
@@ -658,7 +658,7 @@ func (f *PublicController) SearchCourse(c *gin.Context) {
 
 	if err != nil {
 		log.Errorf("Unable to search course: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 
