@@ -74,7 +74,7 @@ func main() {
 	// TODO: panics
 	router.GET("/users/:user_id", pCtrl.GetUserById)
 	//router.GET("/courses/appointments", pCtrl.GetAllAppointments)
-	router.GET("/courses/appointments", pCtrl.GetAppointments)
+	router.POST("/appointments", pCtrl.GetAppointments)
 	router.GET("/users/courses/submissions", pCtrl.GetAllSubmissions)
 	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
 	router.POST("/appointments/addsubmission", pCtrl.AddSubmissionToCalender)
