@@ -36,7 +36,7 @@ func setupEnvironment(db *sql.DB) {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PATCH, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://learningbay24.local:3000")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "https://learningbay24.de")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -66,13 +66,12 @@ func main() {
 	router.POST("/logout", pCtrl.Logout)
 	router.POST("/register", pCtrl.Register)
 	router.POST("/courses", pCtrl.CreateCourse)
-	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
+	router.POST("/courses/:id", pCtrl.EnrollUser)
 	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
-	// TODO: panics
 	router.GET("/users", pCtrl.GetUserById)
 
 	router.Run("0.0.0.0:8080")

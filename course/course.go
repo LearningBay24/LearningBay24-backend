@@ -61,7 +61,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 		// TODO: Implement roles assigment for tutors
 		// TODO: remove hard coded role
 		// Gives the user with the ID in the 0 place in the array the role of the creator
-		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: 2}
+		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: 3}
 		err = shasc.Insert(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -307,10 +307,11 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		if e := tx.Rollback(); e != nil {
 			return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
 		}
+		fmt.Println("enrollkey:", enrollkey, "expected:", c.EnrollKey)
 		return nil, errors.New("wrong Enrollkey")
 
 	}
-	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: 3}
+	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: 1} // 1 = CourseUser
 	err = userhascourse.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
