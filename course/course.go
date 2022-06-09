@@ -12,6 +12,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	coursematerial "learningbay24.de/backend/courseMaterial"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 )
 
@@ -61,7 +62,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 		// TODO: Implement roles assigment for tutors
 		// TODO: remove hard coded role
 		// Gives the user with the ID in the 0 place in the array the role of the creator
-		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: 3}
+		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: dbi.CourseAdminRoleId}
 		err = shasc.Insert(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
@@ -311,7 +312,7 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		return nil, errors.New("wrong Enrollkey")
 
 	}
-	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: 1} // 1 = CourseUser
+	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: dbi.CourseUserRoleId}
 	err = userhascourse.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
