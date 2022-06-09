@@ -333,3 +333,12 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 	return u, nil
 
 }
+
+func GetCourseRole(db *sql.DB, user_id int, course_id int) (int, error) {
+
+	userhascourse, err := models.FindUserHasCourse(context.Background(), db, user_id, course_id)
+	if err != nil {
+		return 0, err
+	}
+	return userhascourse.RoleID, nil
+}

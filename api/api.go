@@ -28,6 +28,12 @@ const (
 	UserRoleId
 )
 
+const (
+	CourseAdminRoleId int = iota + 1
+	CourseModeratorRoleId
+	CourseUserRoleId
+)
+
 type PublicController struct {
 	Database *sql.DB
 }
@@ -45,6 +51,21 @@ func AuthorizeModerator(roleId int) bool {
 func AuthorizeUser(roleId int) bool {
 	log.Infof("Authorizing with role id: %d", roleId)
 	return roleId <= UserRoleId
+}
+
+func AuthorizeCourseAdmin(roleId int) bool {
+	log.Infof("Authorizing with role id: %d", roleId)
+	return roleId <= CourseAdminRoleId
+}
+
+func AuthorizeCourseModerator(roleId int) bool {
+	log.Infof("Authorizing with role id: %d", roleId)
+	return roleId <= CourseModeratorRoleId
+}
+
+func AuthorizeCourseUser(roleId int) bool {
+	log.Infof("Authorizing with role id: %d", roleId)
+	return roleId <= CourseUserRoleId
 }
 
 func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
@@ -121,15 +142,33 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-	// Get given ID from the Context
-	// Convert data type from str to int to use ist as param
-	id, err := strconv.Atoi(c.Param("id"))
+
+	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	// Fetch Data from Database with Backend function
-	course, err := course.GetCourse(f.Database, id)
+	course, err := course.GetCourse(f.Database, course_id)
 	if err != nil {
 		log.Errorf("Unable to get course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -143,29 +182,35 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
 
-	// TODO Issue #69
-	role_id, err := f.GetRoleIdFromCookie(c)
+	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	if !AuthorizeModerator(role_id) {
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseAdmin(course_role) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
 
-	user_id, err := strconv.Atoi(c.Param("user_id"))
+	user_to_delete_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
+
 	// Fetch Data from Database with Backend function
-	err = course.DeleteUserFromCourse(f.Database, id, user_id)
+	err = course.DeleteUserFromCourse(f.Database, course_id, user_to_delete_id)
 	if err != nil {
 		log.Errorf("Unable to delete user from course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
