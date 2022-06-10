@@ -21,6 +21,7 @@ func main() {
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
+	router.POST("/exams", pCtrl.CreateExam)
 
 	router.Run("0.0.0.0:8080")
 }
