@@ -996,14 +996,6 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		return
 	}
 
-	/*
-		duration, err := strconv.Atoi(c.Param("duration"))
-		if err != nil {
-			log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
-			c.Status(http.StatusBadRequest)
-			return
-		}
-	*/
 	durationStr, ok := j["duration"].(string)
 	if !ok {
 		log.Error("unable to convert duration to string")
@@ -1122,4 +1114,125 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 	}
 	// Return Status and Data in JSON-Format
 	c.IndentedJSON(http.StatusOK, course)
+}
+
+func (f *PublicController) GetExamsFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetAllExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetAttendedExamsFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetAttendedExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetPassedExamsFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetPassedExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetAllExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) RegisterToExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	var newExam models.Exam
+	if err := c.BindJSON(&newExam); err != nil {
+		if err != nil {
+			log.Errorf("Unable to bind json: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	_, err = pCtrl.RegisterToExam(user_id, examId)
+	if err != nil {
+		log.Errorf("Unable to register user to course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, newExam)
 }
