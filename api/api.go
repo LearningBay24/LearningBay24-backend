@@ -5,23 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-<<<<<<< HEAD
-	"strings"
-	"time"
-
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
-
-	"learningbay24.de/backend/config"
-	"learningbay24.de/backend/course"
-	coursematerial "learningbay24.de/backend/courseMaterial"
-	"learningbay24.de/backend/dbi"
-	"learningbay24.de/backend/exam"
-	"learningbay24.de/backend/models"
-
-=======
-	"learningbay24.de/backend/exam"
->>>>>>> 5beeb6f (Update api.go and courseMaterial.go)
 	"net/http"
 	"strconv"
 	"strings"
@@ -31,6 +14,7 @@ import (
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/dbi"
+	"learningbay24.de/backend/exam"
 	"learningbay24.de/backend/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -719,7 +703,6 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 }
 
 func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
-
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s", err.Error())
@@ -754,7 +737,6 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, course_id)
 	if err != nil {
 		log.Errorf("Unable to get all materials from course: %s", err.Error())
-		log.Errorf("Unable to unmarshal the json body: %+v", raw)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
