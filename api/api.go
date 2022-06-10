@@ -131,7 +131,7 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 	// Convert data type from str to int to use ist as param
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -170,7 +170,7 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 	}
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -189,6 +189,7 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 
 	user_to_delete_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
+		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -216,7 +217,7 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -287,7 +288,7 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -397,7 +398,7 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -436,7 +437,7 @@ func (f *PublicController) UpdateCourseById(c *gin.Context) {
 	}
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -625,7 +626,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 	}
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -705,7 +706,7 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 	}
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -758,7 +759,7 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 	}
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -809,7 +810,7 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		return
 	}
 
@@ -888,7 +889,7 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 
 	user_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
