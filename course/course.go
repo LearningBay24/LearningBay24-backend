@@ -342,6 +342,7 @@ func GetCourseRole(db *sql.DB, user_id int, course_id int) (int, error) {
 		return 0, err
 	}
 	return userhascourse.RoleID, nil
+}
 
 // Search in course_name and course_descripton for the searchterm
 func SearchCourse(db *sql.DB, searchterm string) ([]*models.Course, error) {
