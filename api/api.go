@@ -831,7 +831,7 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (f *PublicController) GetUserById(c *gin.Context) {
+func (f *PublicController) GetUserByCookie(c *gin.Context) {
 
 	role_id, err := f.GetRoleIdFromCookie(c)
 	if err != nil {
@@ -845,6 +845,42 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 	}
 
 	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user, err := dbi.GetUserById(f.Database, user_id)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			log.Errorf("User with id %d doesn't exist: %s", user_id, err.Error())
+			c.Status(http.StatusNotFound)
+			return
+		}
+
+		log.Errorf("Unable to get user with id %d", user_id)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, user)
+}
+
+func (f *PublicController) GetUserById(c *gin.Context) {
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeUser(role_id) {
+		log.Infof("User is not authorized: %s\n", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	user_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 		c.Status(http.StatusBadRequest)
