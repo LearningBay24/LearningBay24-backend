@@ -689,7 +689,6 @@ func (f *PublicController) GetAppointments(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 
@@ -709,7 +708,6 @@ func (f *PublicController) GetAllSubmissions(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 
@@ -783,7 +781,6 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 		return
 	}
 	newAppointment.ID = id
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newAppointment)
 }
 
@@ -833,7 +830,6 @@ func (f *PublicController) AddSubmissionToCalender(c *gin.Context) {
 		return
 	}
 	newAppointment.ID = id
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.IndentedJSON(http.StatusOK, newAppointment)
 }
 
@@ -854,11 +850,11 @@ func (f *PublicController) DeactivateAppointment(c *gin.Context) {
 		return
 	}
 	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.Status(http.StatusNoContent)
 }
 
 func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
+
 	// Get given ID from the Context
 	//Convert data type from str to int; bool to use ist as param
 	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
@@ -885,7 +881,6 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 		return
 	}
 	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.Status(http.StatusNoContent)
 }
 
@@ -911,6 +906,5 @@ func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
 		return
 	}
 	//Return Status and Data in JSON-Format
-	c.Header("Access-Control-Allow-Origin", "*")
 	c.Status(http.StatusNoContent)
 }
