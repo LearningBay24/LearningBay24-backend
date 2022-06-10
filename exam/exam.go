@@ -14,7 +14,7 @@ import (
 )
 
 type ExamService interface {
-	GetExam(examId int) (*models.Exam, error)
+	GetExamByID(examId int) (*models.Exam, error)
 	GetAllExamsFromUser(userId int) (models.ExamSlice, error)
 	GetAttendedExamsFromUser(userId int) (models.ExamSlice, error)
 	GetPassedExamsFromUser(userId int) (models.ExamSlice, error)
@@ -29,8 +29,8 @@ type PublicController struct {
 	Database *sql.DB
 }
 
-// GetExam takes an examId and returns a struct of the exam with this ID
-func (p *PublicController) GetExam(examId int) (*models.Exam, error) {
+// GetExamByID takes an examId and returns a struct of the exam with this ID
+func (p *PublicController) GetExamByID(examId int) (*models.Exam, error) {
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 
 // EditExam takes a fileName, examId, creatorId, file-handle, date, duration, and an indicator if the file is local
 func (p *PublicController) EditExam(fileName string, examId, creatorId int, local int8, file *io.Reader, date time.Time, duration int) (int, error) {
-	ex, err := p.GetExam(examId)
+	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return 0, err
 	}

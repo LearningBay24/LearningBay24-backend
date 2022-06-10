@@ -71,9 +71,7 @@ func main() {
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.GET("/courses/search", pCtrl.SearchCourse)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
-	router.DELETE("/users/:id", pCtrl.DeleteUser)
-	// TODO: panics
-	router.GET("/users/:user_id", pCtrl.GetUserById)
+	router.POST("/exams", pCtrl.CreateExam)
 
 	router.Run("0.0.0.0:8080")
 }
