@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
@@ -17,8 +18,9 @@ import (
 	"learningbay24.de/backend/exam"
 	"learningbay24.de/backend/models"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/gin-gonic/gin"
+	"net/http"
+	"strconv"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 )
@@ -738,6 +740,7 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, course_id)
 	if err != nil {
 		log.Errorf("Unable to get all materials from course: %s", err.Error())
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
 		c.Status(http.StatusInternalServerError)
 		return
 	}
