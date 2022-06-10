@@ -6,10 +6,13 @@ triggers:
 packages:
   - go
   - rsync
-sources:
-  - https://github.com/LearningBay24/LearningBay24-backend
 secrets:
   - 3a8daec5-761a-4c5f-951f-f6463081dce2 # learningbay24 deploy
+  - edda9cee-e1e4-4cd3-8096-7fc28363e0db # git.sr.ht-mirror
+environment:
+  GIT_SSH_COMMAND: ssh -o StrictHostKeyChecking=no -i ~/.ssh/edda9cee-e1e4-4cd3-8096-7fc28363e0db
+sources:
+  - https://github.com/LearningBay24/LearningBay24-backend
 tasks:
   - build: |
       cd LearningBay24-backend
@@ -20,6 +23,12 @@ tasks:
   - lint: |
       cd LearningBay24-backend
       go vet ./...
+  - nopr: |
+      # Don't run on GitHub PRs
+      [ "$BUILD_REASON" != 'github-pr' ] || complete-build
+  - mirror: |
+      cd LearningBay24-backend
+      git push -o skip-ci --force --mirror git@git.sr.ht:~witcher/LearningBay24-backend
   - deploy: |
       if [ "$GITHUB_REF" != "refs/heads/main" ]
       then

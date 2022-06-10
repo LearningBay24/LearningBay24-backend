@@ -70,6 +70,7 @@ func main() {
 	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
+	router.GET("/courses/search", pCtrl.SearchCourse)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)

@@ -333,7 +333,6 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		return nil, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
 	return u, nil
-
 }
 
 func GetCourseRole(db *sql.DB, user_id int, course_id int) (int, error) {
@@ -343,4 +342,16 @@ func GetCourseRole(db *sql.DB, user_id int, course_id int) (int, error) {
 		return 0, err
 	}
 	return userhascourse.RoleID, nil
+
+// Search in course_name and course_descripton for the searchterm
+func SearchCourse(db *sql.DB, searchterm string) ([]*models.Course, error) {
+	searchterm = "%" + searchterm + "%"
+	courses, err := models.Courses(
+		qm.Where(models.CourseColumns.Name+" LIKE ?", searchterm),
+		qm.Or(models.CourseColumns.Description+" LIKE ?", searchterm),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+	return courses, nil
 }
