@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"learningbay24.de/backend/exam"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"learningbay24.de/backend/exam"
 
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
@@ -695,38 +696,80 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		return
 	}
 
-	date, err := time.Parse(time.RFC3339, c.Param("date"))
+	dateStr, ok := j["date"].(string)
+	if !ok {
+		log.Error("unable to convert date to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	date, err := time.Parse(time.RFC3339, dateStr)
 	if err != nil {
 		log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	duration, err := strconv.Atoi(c.Param("duration"))
+	/*
+		duration, err := strconv.Atoi(c.Param("duration"))
+		if err != nil {
+			log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+	*/
+	durationStr, ok := j["duration"].(string)
+	if !ok {
+		log.Error("unable to convert duration to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	duration, err := strconv.Atoi(durationStr)
 	if err != nil {
 		log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	courseId, err := strconv.Atoi(c.Param("course_id"))
+	courseIdStr, ok := j["course_id"].(string)
+	if !ok {
+		log.Error("unable to convert course_id to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	courseId, err := strconv.Atoi(courseIdStr)
 	if err != nil {
 		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	creatorId, err := strconv.Atoi(c.Param("creator_id"))
-	if err != nil {
-		log.Errorf("Unable to convert parameter `creator_id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+	creatorIdStr, ok := j["creator_id"].(string)
+	if !ok {
+		log.Error("unable to convert creator_id to string")
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	online, err := strconv.Atoi(c.Param("online"))
+	creatorId, err := strconv.Atoi(creatorIdStr)
 	if err != nil {
+		log.Errorf("Unable to convert parameter `creator_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+	}
+
+	onlineStr, ok := j["online"].(string)
+	if !ok {
+		log.Error("unable to convert online to string")
 		c.Status(http.StatusInternalServerError)
 		return
+	}
+
+	online, err := strconv.Atoi(onlineStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `online` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
 	}
 
 	location, ok := j["location"].(string)
@@ -736,14 +779,28 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		return
 	}
 
-	registerDeadline, err := time.Parse(time.RFC3339, c.Param("register_deadline"))
+	registerDeadlineStr, ok := j["register_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert register_deadline to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	registerDeadline, err := time.Parse(time.RFC3339, registerDeadlineStr)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+		log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	deregisterDeadline, err := time.Parse(time.RFC3339, c.Param("deregister_deadline"))
+	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert deregister_deadline to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	deregisterDeadline, err := time.Parse(time.RFC3339, deregisterDeadlineStr)
 	if err != nil {
 		log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -761,4 +818,22 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	newExam.ID = id
 
 	c.IndentedJSON(http.StatusOK, newExam)
+}
+
+func (f *PublicController) GetExamById(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	course, err := pCtrl.GetExamByID(id)
+	if err != nil {
+		log.Errorf("Unable to get exam: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, course)
 }

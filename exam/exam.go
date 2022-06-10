@@ -4,13 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io"
+	"time"
+
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"io"
-	"learningbay24.de/backend/db"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
-	"time"
 )
 
 type ExamService interface {
@@ -104,7 +105,7 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 }
 
 // EditExam takes a fileName, examId, creatorId, file-handle, date, duration, and an indicator if the file is local
-func (p *PublicController) EditExam(fileName string, examId, creatorId int, local int8, file *io.Reader, date time.Time, duration int) (int, error) {
+func (p *PublicController) EditExam(fileName string, examId, creatorId int, local int8, uri string, file *io.Reader, date time.Time, duration int) (int, error) {
 	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return 0, err
@@ -114,7 +115,7 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 		if err != nil {
 			return 0, err
 		}
-		// if exam is online and has a name and file: upload file
+		// if exam is online and has a file and filename: upload file
 		// TODO: restrict to pdfs only
 		if ex.Online != 0 && fileName != "" && file != nil {
 			var isLocal bool
@@ -129,7 +130,7 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 				}
 				return 0, fmt.Errorf("invalid value for variable local: %d", local)
 			}
-			fileId, err := db.SaveFile(p.Database, fileName, creatorId, isLocal, file)
+			fileId, err := dbi.SaveFile(p.Database, fileName, uri, creatorId, isLocal, file)
 			if err != nil {
 				if e := tx.Rollback(); e != nil {
 					return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
