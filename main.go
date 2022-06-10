@@ -78,6 +78,7 @@ func main() {
 	// TODO: panics
 	router.GET("/users/:user_id", pCtrl.GetUserById)
 	router.POST("/exams", pCtrl.CreateExam)
+	router.GET("/exams/:id", pCtrl.GetExamById)
 
 	router.Run("0.0.0.0:8080")
 }
