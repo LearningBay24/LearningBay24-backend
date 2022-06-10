@@ -14,6 +14,7 @@ import (
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/dbi"
+	"learningbay24.de/backend/exam"
 	"learningbay24.de/backend/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -947,4 +948,97 @@ func (f *PublicController) SearchCourse(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, courses)
+}
+
+func (f *PublicController) CreateExam(c *gin.Context) {
+	var newExam models.Exam
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	description, ok := j["description"].(string)
+	if !ok {
+		log.Error("unable to convert description to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	date, err := time.Parse(time.RFC3339, c.Param("date"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	duration, err := strconv.Atoi(c.Param("duration"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	courseId, err := strconv.Atoi(c.Param("course_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	creatorId, err := strconv.Atoi(c.Param("creator_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `creator_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	online, err := strconv.Atoi(c.Param("online"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	location, ok := j["location"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	registerDeadline, err := time.Parse(time.RFC3339, c.Param("register_deadline"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	deregisterDeadline, err := time.Parse(time.RFC3339, c.Param("deregister_deadline"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	id, err := pCtrl.CreateExam(name, description, date, duration, courseId, creatorId, int8(online), null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	if err != nil {
+		log.Errorf("Unable to create exam: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	newExam.ID = id
+
+	c.IndentedJSON(http.StatusOK, newExam)
 }
