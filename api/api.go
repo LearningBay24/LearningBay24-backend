@@ -1106,14 +1106,14 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 	}
 	// Fetch Data from Database with Backend function
 	pCtrl := exam.PublicController{Database: f.Database}
-	course, err := pCtrl.GetExamByID(id)
+	co, err := pCtrl.GetExamByID(id)
 	if err != nil {
 		log.Errorf("Unable to get exam: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	// Return Status and Data in JSON-Format
-	c.IndentedJSON(http.StatusOK, course)
+	c.IndentedJSON(http.StatusOK, co)
 }
 
 func (f *PublicController) GetExamsFromUser(c *gin.Context) {
@@ -1211,7 +1211,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	user_id, err := f.GetIdFromCookie(c)
+	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -1227,7 +1227,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	_, err = pCtrl.RegisterToExam(user_id, examId)
+	_, err = pCtrl.RegisterToExam(userId, examId)
 	if err != nil {
 		log.Errorf("Unable to register user to course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
