@@ -1222,3 +1222,53 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, user)
 }
+
+func (f *PublicController) DeregisterFromExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	err = pCtrl.DeregisterFromExam(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to deregister user from course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) AttendExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	user, err := pCtrl.AttendExam(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to register user to course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, user)
+}

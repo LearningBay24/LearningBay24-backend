@@ -43,7 +43,7 @@ func (p *PublicController) GetExam(examId int) (*models.Exam, error) {
 // GetAllExamsFromUser takes a userId and returns a slice of exams associated with it
 func (p *PublicController) GetAllExamsFromUser(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
-	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id", userId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
 	//exams, err := models.Exams(models.UserHasExamWhere.UserID.EQ(userId)).All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
