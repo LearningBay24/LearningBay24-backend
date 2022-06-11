@@ -921,7 +921,7 @@ func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
 func (f *PublicController) RegisterToExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to string: %s\n", err.Error())
+		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -931,22 +931,14 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	var newExam models.Exam
-	if err := c.BindJSON(&newExam); err != nil {
-		if err != nil {
-			log.Errorf("Unable to bind json: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	_, err = pCtrl.RegisterToExam(userId, examId)
+	user, err := pCtrl.RegisterToExam(userId, examId)
 	if err != nil {
 		log.Errorf("Unable to register user to course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, newExam)
+	c.IndentedJSON(http.StatusOK, user)
 }

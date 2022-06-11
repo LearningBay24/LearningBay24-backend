@@ -80,6 +80,7 @@ func main() {
 	router.GET("/exams/attended", pCtrl.GetAttendedExamsFromUser)
 	router.GET("/exams/passed", pCtrl.GetPassedExamsFromUser)
 	router.GET("/exams/created", pCtrl.GetCreatedFromUser)
-	router.POST("users/exams", pCtrl.RegisterToExam)
+	router.POST("users/exams/:id", pCtrl.RegisterToExam)
+	//router.DELETE("users/exams/:exam_id", pCtrl.DeregisterFromExam)
 	router.Run("0.0.0.0:8080")
 }

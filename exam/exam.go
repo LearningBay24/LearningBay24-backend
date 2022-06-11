@@ -184,7 +184,7 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 		return nil, err
 	}
 
-	_, err = models.FindUser(context.Background(), p.Database, examId)
+	u, err := models.FindUser(context.Background(), p.Database, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -193,30 +193,10 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 	curTime := time.Now()
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
-		tx, err := p.Database.BeginTx(context.Background(), nil)
-		if err != nil {
-			return nil, err
-		}
-
 		uhex := models.UserHasExam{UserID: userId, ExamID: examId}
-		err = uhex.Insert(context.Background(), tx, boil.Infer())
+		err = uhex.Insert(context.Background(), p.Database, boil.Infer())
 		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-			}
-
 			return nil, err
-		}
-		u, err := models.FindUser(context.Background(), tx, userId)
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return nil, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
-			}
-
-			return nil, err
-		}
-		if e := tx.Commit(); e != nil {
-			return nil, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 		}
 		return u, nil
 	}
@@ -274,9 +254,9 @@ func (p *PublicController) AttendExam(userId, examId int) (*models.File, error) 
 			}
 
 		}
-		return nil, fmt.Errorf("can't append exam: Duration has passed")
+		return nil, fmt.Errorf("can't attend exam: Duration has passed")
 	}
-	return nil, fmt.Errorf("can't append exam: exam hasn't started yet")
+	return nil, fmt.Errorf("can't attend exam: exam hasn't started yet")
 }
 
 func (p *PublicController) SubmitAnswer(userId, examId int) error {
