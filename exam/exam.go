@@ -9,6 +9,7 @@ import (
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
@@ -41,7 +42,9 @@ func (p *PublicController) GetExam(examId int) (*models.Exam, error) {
 
 // GetAllExamsFromUser takes a userId and returns a slice of exams associated with it
 func (p *PublicController) GetAllExamsFromUser(userId int) (models.ExamSlice, error) {
-	exams, err := models.Exams(models.UserHasExamWhere.UserID.EQ(userId)).All(context.Background(), p.Database)
+	var exams []*models.Exam
+	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id", userId).Bind(context.Background(), p.Database, &exams)
+	//exams, err := models.Exams(models.UserHasExamWhere.UserID.EQ(userId)).All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
 	}
