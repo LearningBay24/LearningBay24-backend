@@ -80,10 +80,9 @@ func main() {
 	router.POST("/exams", pCtrl.CreateExam)
 	router.GET("/exams/:id", pCtrl.GetExamById)
 	router.GET("/users/exams", pCtrl.GetExamsFromUser)
-	/*
-		router.GET("/exams/:id", pCtrl.GetAttendedExamsFromUser)
-		router.GET("/exams/:id", pCtrl.GetPassedExamsFromUser)
-		router.GET("/exams/:id", pCtrl.GetCreatedFromUser)
-	*/
+	router.GET("/exams/attended", pCtrl.GetAttendedExamsFromUser)
+	router.GET("/exams/passed", pCtrl.GetPassedExamsFromUser)
+	router.GET("/exams/created", pCtrl.GetCreatedFromUser)
+	router.POST("users/exams", pCtrl.RegisterToExam)
 	router.Run("0.0.0.0:8080")
 }
