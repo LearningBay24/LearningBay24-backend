@@ -1024,17 +1024,11 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		return
 	}
 
-	creatorIdStr, ok := j["creator_id"].(string)
-	if !ok {
-		log.Error("unable to convert creator_id to string")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	creatorId, err := strconv.Atoi(creatorIdStr)
+	creatorId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `creator_id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	onlineStr, ok := j["online"].(string)
@@ -1194,7 +1188,7 @@ func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
 
 	// Fetch Data from Database with Backend function
 	pCtrl := exam.PublicController{Database: f.Database}
-	exams, err := pCtrl.GetAllExamsFromUser(user_id)
+	exams, err := pCtrl.GetCreatedExamsFromUser(user_id)
 	if err != nil {
 		log.Errorf("Unable to get exams from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
