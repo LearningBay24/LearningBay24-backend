@@ -58,6 +58,15 @@ func (p *PublicController) GetAllExamsFromUser(userId int) (models.ExamSlice, er
 	return exams, nil
 }
 
+func (p *PublicController) GetExamsFromCourse(courseId int) (models.ExamSlice, error) {
+	var exams []*models.Exam
+	err := queries.Raw("select * from exam where course_id=? AND deleted_at is null", courseId).Bind(context.Background(), p.Database, &exams)
+	if err != nil {
+		return nil, err
+	}
+	return exams, nil
+}
+
 // GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are attended
 func (p *PublicController) GetAttendedExamsFromUser(userId int) (models.ExamSlice, error) {
 	exams, err := models.Exams(
