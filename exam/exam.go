@@ -7,6 +7,7 @@ import (
 	"io"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
@@ -25,6 +26,12 @@ type ExamService interface {
 	EditExam(fileName string, examId, creatorId int, local int8, file *io.Reader, date time.Time, duration int) (int, error)
 	RegisterToExam(userId, examId int) (*models.User, error)
 	DeregisterFromExam(userId, examId int) error
+	AttendExam(userId, examId int) (*models.Exam, error)
+	GetFileFromExam(examId int) ([]*models.File, error)
+	SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error
+	GetAllAttendees(examId int) (models.UserHasExamSlice, error)
+	GetAnswerFromAttendee(fileId int) (*models.File, error)
+	GradeAnswer(examId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
 }
 
 type PublicController struct {
@@ -44,7 +51,6 @@ func (p *PublicController) GetExam(examId int) (*models.Exam, error) {
 func (p *PublicController) GetAllExamsFromUser(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
 	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
-	//exams, err := models.Exams(models.UserHasExamWhere.UserID.EQ(userId)).All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +63,8 @@ func (p *PublicController) GetAttendedExamsFromUser(userId int) (models.ExamSlic
 	exams, err := models.Exams(
 		qm.From(models.TableNames.UserHasExam),
 		qm.Where("user_has_exam.user_id=?", userId),
-		qm.And("user_has_exam.attended=?", 1)).
+		qm.And("user_has_exam.exam_id=exam.id"),
+		qm.And("user_has_exam.attended=1")).
 		All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
@@ -71,7 +78,8 @@ func (p *PublicController) GetPassedExamsFromUser(userId int) (models.ExamSlice,
 	exams, err := models.Exams(
 		qm.From(models.TableNames.UserHasExam),
 		qm.Where("user_has_exam.user_id=?", userId),
-		qm.And("user_has_exam.passed=?", null.Int8{Int8: 1})).
+		qm.And("user_has_exam.exam_id=exam.id"),
+		qm.And("user_has_exam.passed=?", null.Int8From(1))).
 		All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
@@ -121,19 +129,7 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 		// if exam is online and has a file and filename: upload file
 		// TODO: restrict to pdfs only
 		if ex.Online != 0 && fileName != "" && file != nil {
-			var isLocal bool
-			switch local {
-			case 0:
-				isLocal = false
-			case 1:
-				isLocal = true
-			default:
-				if e := tx.Rollback(); e != nil {
-					return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-				}
-				return 0, fmt.Errorf("invalid value for variable local: %d", local)
-			}
-			fileId, err := dbi.SaveFile(p.Database, fileName, uri, creatorId, isLocal, file)
+			fileId, err := dbi.SaveFile(p.Database, fileName, uri, creatorId, local, &file)
 			if err != nil {
 				if e := tx.Rollback(); e != nil {
 					return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
@@ -193,7 +189,8 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 	curTime := time.Now()
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
-		uhex := models.UserHasExam{UserID: userId, ExamID: examId}
+		uhex := models.UserHasExam{UserID: userId, ExamID: examId, Attended: 0}
+
 		err = uhex.Insert(context.Background(), p.Database, boil.Infer())
 		if err != nil {
 			return nil, err
@@ -228,7 +225,8 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 
 }
 
-func (p *PublicController) AttendExam(userId, examId int) (*models.File, error) {
+// AttendExam takes an userId and examId and marks the user's exam as attended
+func (p *PublicController) AttendExam(userId, examId int) (*models.Exam, error) {
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return nil, err
@@ -240,7 +238,7 @@ func (p *PublicController) AttendExam(userId, examId int) (*models.File, error) 
 	diffBegin := curTime.Sub(ex.Date)
 	diffEnd := end.Sub(curTime)
 	if diffBegin.Minutes() >= 0 {
-		if diffEnd >= 0 {
+		if diffEnd.Minutes() >= 0 {
 
 			uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
 			if err != nil {
@@ -252,13 +250,144 @@ func (p *PublicController) AttendExam(userId, examId int) (*models.File, error) 
 			if err != nil {
 				return nil, err
 			}
-
+			return ex, nil
 		}
-		return nil, fmt.Errorf("can't attend exam: Duration has passed")
+		return nil, fmt.Errorf("can't attend exam: exam ended at %s, current time: %s, diff: %f", end.String(), curTime.String(), diffEnd.Minutes())
 	}
 	return nil, fmt.Errorf("can't attend exam: exam hasn't started yet")
 }
 
-func (p *PublicController) SubmitAnswer(userId, examId int) error {
+// GetFileFromExam takes an examId and returns a slice with the file associated to the exam
+func (p *PublicController) GetFileFromExam(examId int) ([]*models.File, error) {
+	exists, err := models.ExamExists(context.Background(), p.Database, examId)
+	if !exists || err != nil {
+		return nil, err
+	}
+
+	var files []*models.File
+	// NOTE: raw query is used because sqlboiler seems to not be able to query the database properly in this case when used with query building
+	err = queries.Raw("select * from file, exam_has_files where exam_has_files.exam_id=? AND exam_has_files.file_id=file.id AND exam_has_files.deleted_at is null", examId).Bind(context.Background(), p.Database, &files)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
+// SubmitAnswer takes a filename, uri, local-indicator, file, examId, and userId and uploads the file as an answer
+func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error {
+	// TODO: max upload size
+
+	fileId, err := dbi.SaveFile(p.Database, fileName, uri, userId, local, &file)
+	if err != nil {
+		return err
+	}
+
+	uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
+	if err != nil {
+		return err
+	}
+	uhex.FileID = null.Int{Int: fileId}
+
+	err = uhex.Insert(context.Background(), p.Database, boil.Infer())
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+// GetAllAttendees takes an examId and returns a slice of relations between the exam and all of it's registered users
+func (p *PublicController) GetAllAttendees(examId int) (models.UserHasExamSlice, error) {
+	var attendees []*models.UserHasExam
+	err := queries.Raw("select * from user_has_exam where exam_id=? AND deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
+	/*attendees, err := models.UserHasExams(
+	qm.From(models.TableNames.UserHasExam),
+	qm.Where("user_has_exam.user_id=user.id"),
+	qm.And("user_has_exam.exam_id=?", examId)).
+	All(context.Background(), p.Database)
+	*/
+	if err != nil {
+		return nil, err
+	}
+
+	return attendees, nil
+}
+
+// GetAnswerFromAttendee takes a fileId and returns a struct of the file with the corresponding ID
+func (p *PublicController) GetAnswerFromAttendee(fileId int) (*models.File, error) {
+	cm, err := models.FindFile(context.Background(), p.Database, fileId)
+	if err != nil {
+		return nil, err
+	}
+
+	return cm, err
+}
+
+// GradeAnswer takes an examId, userId, grade, passed-indicator, and feedback and grades the associated answer
+// If every answer of an exam has a grade it sets itself to graded
+func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passed null.Int8, feedback null.String) error {
+	ex, err := models.FindExam(context.Background(), p.Database, examId)
+	if err != nil {
+		return err
+	}
+	log.Errorf("FIND EXAM: CHECK")
+
+	uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
+	if err != nil {
+		return err
+	}
+	log.Errorf("FIND USER HAS EXAM: CHECK")
+
+	tx, err := p.Database.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	uhex.Grade = grade
+	uhex.Passed = passed
+	uhex.Feedback = feedback
+	_, err = uhex.Update(context.Background(), tx, boil.Infer())
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return err
+	}
+	log.Errorf("UPDATE USER HAS EXAM: CHECK")
+
+	attendees, err := p.GetAllAttendees(examId)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return err
+	}
+	log.Errorf("GETTING ALL ATTENDEES: CHECK")
+
+	for _, att := range attendees {
+		if att.Grade.Int == 1 {
+			if e := tx.Commit(); e != nil {
+				return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+			}
+			log.Errorf("COMMIT: CHECK")
+			return nil
+		}
+	}
+
+	ex.Graded = 1
+	_, err = ex.Update(context.Background(), tx, boil.Infer())
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return err
+	}
+	log.Errorf("UPDATING EXAM: CHECK")
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+	return nil
+
 }
