@@ -1394,6 +1394,24 @@ func (f *PublicController) GetExamsFromCourse(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, exams)
 }
 
+func (f *PublicController) GetExamsFromCourse(c *gin.Context) {
+	courseId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetExamsFromCourse(courseId)
+	if err != nil {
+		log.Errorf("Unable to get exam: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
 func (f *PublicController) GetAttendedExamsFromUser(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
