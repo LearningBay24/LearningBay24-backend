@@ -75,12 +75,20 @@ func main() {
 	// TODO: panics
 	router.GET("/users/:user_id", pCtrl.GetUserById)
 	router.POST("/exams", pCtrl.CreateExam)
+	router.POST("/exams/:id/edit", pCtrl.EditExam)
 	router.GET("/exams/:id", pCtrl.GetExamById)
-	router.GET("/users/exams", pCtrl.GetExamsFromUser)
+	router.GET("/users/exams/", pCtrl.GetExamsFromUser)
 	router.GET("/exams/attended", pCtrl.GetAttendedExamsFromUser)
 	router.GET("/exams/passed", pCtrl.GetPassedExamsFromUser)
 	router.GET("/exams/created", pCtrl.GetCreatedFromUser)
-	router.POST("users/exams/:id", pCtrl.RegisterToExam)
-	router.DELETE("users/exams/:id", pCtrl.DeregisterFromExam)
+	router.POST("/users/exams/:id", pCtrl.RegisterToExam)
+	router.DELETE("/users/exams/:id", pCtrl.DeregisterFromExam)
+	router.PATCH("/users/exams/:id/attend", pCtrl.AttendExam)
+	router.GET("/exams/:id/files", pCtrl.GetFileFromExam)
+	router.POST("/users/exams/:id/submit", pCtrl.SubmitAnswerToExam)
+	router.GET("/users/exams/:id/attendees", pCtrl.GetAllAttendees)
+	router.GET("/users/exams/files/:id", pCtrl.GetFileFromAttendee)
+	router.POST("/users/exams/:id/grade", pCtrl.GradeAnswer)
+
 	router.Run("0.0.0.0:8080")
 }
