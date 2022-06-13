@@ -949,7 +949,7 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
 	// Get given ID from the Context
 	// Convert data type from str to int to use ist as param
-	user_id, err := f.GetIdFromCookie(c)
+	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -958,13 +958,31 @@ func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
 
 	// Fetch Data from Database with Backend function
 	pCtrl := exam.PublicController{Database: f.Database}
-	exams, err := pCtrl.GetAllExamsFromUser(user_id)
+	exams, err := pCtrl.GetAllExamsFromUser(userId)
 	if err != nil {
 		log.Errorf("Unable to get exams from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetUnregisteredExamsFromUser(c *gin.Context) {
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetUnregisteredExams(userId)
+	if err != nil {
+		log.Errorf("Unable to get exams: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
 	c.IndentedJSON(http.StatusOK, exams)
 }
 

@@ -415,3 +415,20 @@ func (p *PublicController) SetAttended(examId, userId int) error {
 	}
 	return nil
 }
+
+func (p *PublicController) GetUnregisteredExams(userId int) (models.ExamSlice, error) {
+	var exams []*models.Exam
+
+	//err := queries.Raw("select * from exam, user_has_exam, user_has_course, course where user_has_course.user_id=? AND user_has_course.course_id=course.id AND  user_has_exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select distinct exam.* from user_has_course, exam, user_has_exam "+
+		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND user_has_course.deleted_at is null "+
+		"AND exam.id not in( "+
+		"select distinct exam.id from user_has_course, exam, user_has_exam "+
+		"where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null)", userId, userId).Bind(context.Background(), p.Database, &exams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return exams, nil
+}
