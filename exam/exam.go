@@ -400,3 +400,18 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 	return nil
 
 }
+
+// SetAttended takes an examId and userId and sets the corresponding registered exam of the user to attended
+func (p *PublicController) SetAttended(examId, userId int) error {
+	uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
+	if err != nil {
+		return err
+	}
+
+	uhex.Attended = 1
+	_, err = uhex.Update(context.Background(), p.Database, boil.Infer())
+	if err != nil {
+		return err
+	}
+	return nil
+}
