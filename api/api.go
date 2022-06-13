@@ -1509,7 +1509,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 	c.Status(http.StatusCreated)
 }
 
-func (f *PublicController) GetAllAttendees(c *gin.Context) {
+func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Error("Unable to convert parameter 'id' to an int: %s", err.Error())
@@ -1517,7 +1517,7 @@ func (f *PublicController) GetAllAttendees(c *gin.Context) {
 		return
 	}
 	pCtrl := exam.PublicController{Database: f.Database}
-	attendees, err := pCtrl.GetAllAttendees(examId)
+	attendees, err := pCtrl.GetRegisteredUsersFromExam(examId)
 	if err != nil {
 		log.Errorf("Unable to fetch attendees from exam: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())

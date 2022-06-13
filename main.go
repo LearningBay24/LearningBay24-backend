@@ -90,7 +90,7 @@ func main() {
 	router.PATCH("/users/exams/:id/attend", pCtrl.AttendExam)
 	router.GET("/exams/:id/files", pCtrl.GetFileFromExam)
 	router.POST("/users/exams/:id/submit", pCtrl.SubmitAnswerToExam)
-	router.GET("/users/exams/:id/attendees", pCtrl.GetAllAttendees)
+	router.GET("/exams/:id/users", pCtrl.GetRegisteredUsersFromExam)
 	router.GET("/users/exams/files/:id", pCtrl.GetFileFromAttendee)
 	router.POST("/users/exams/:id/grade", pCtrl.GradeAnswer)
 	router.PATCH("/users/:user_id/exams/:exam_id/attend", pCtrl.SetAttended)
