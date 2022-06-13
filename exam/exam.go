@@ -29,7 +29,7 @@ type ExamService interface {
 	AttendExam(userId, examId int) (*models.Exam, error)
 	GetFileFromExam(examId int) ([]*models.File, error)
 	SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error
-	GetAllAttendees(examId int) (models.UserHasExamSlice, error)
+	GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error)
 	GetAnswerFromAttendee(fileId int) (*models.File, error)
 	GradeAnswer(examId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
 }
@@ -306,7 +306,7 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file i
 }
 
 // GetAllAttendees takes an examId and returns a slice of relations between the exam and all of it's registered users
-func (p *PublicController) GetAllAttendees(examId int) (models.UserHasExamSlice, error) {
+func (p *PublicController) GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error) {
 	var attendees []*models.UserHasExam
 	err := queries.Raw("select * from user_has_exam where exam_id=? AND deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
 	/*attendees, err := models.UserHasExams(
@@ -364,7 +364,7 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 	}
 	log.Errorf("UPDATE USER HAS EXAM: CHECK")
 
-	attendees, err := p.GetAllAttendees(examId)
+	attendees, err := p.GetRegisteredUsersFromExam(examId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
