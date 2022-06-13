@@ -8,6 +8,8 @@ package calender
 //	"Endnutzer sieht auf seinem Dashboard und über den Navigationspunkt „Stundenplan“ seinen Kalender"
 //	"Durch Drücken auf einer der Deadlines für seine Abgaben,
 //		öffnet sich für den Endnutzer ein Formular zu dieser Abgabe mit dazugehörigen Informationen (siehe andere F.A.)"
+//
+// json.Unmarshal() in api.go -> switch to BindJSON() (see AddCourseToCalender)
 
 import (
 	"context"
@@ -28,6 +30,15 @@ type Calender interface {
 type PublicController struct {
 	Database *sql.DB
 }
+
+type RepeatDistance int
+
+const (
+	None RepeatDistance = iota
+	Week
+	Month
+	Year
+)
 
 // Returns all appointments the user with the user-ID has
 func (p *PublicController) GetAllAppointments(userId int) ([]models.AppointmentSlice, error) {
@@ -244,7 +255,7 @@ func (p *PublicController) GetAllSubmissions(userId int) ([]*time.Time, error) {
 	return allSubmissions, nil
 }
 
-// adds appointment/s to the course, repeatDistance: 1=week, 2=month, 3=year
+// adds appointment/s to the course; appointments may repeat
 func (p *PublicController) AddCourseToCalender(date time.Time, location null.String, online int8, courseId int, repeats bool, repeatDistance int, repeatEnd time.Time) (int, error) {
 	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -286,11 +297,11 @@ func (p *PublicController) AddCourseToCalender(date time.Time, location null.Str
 
 			// go to next appointment
 			switch repeatDistance {
-			case 1:
+			case int(Week):
 				checkDate = nextDate.AddDate(0, 0, 7) // add seven days
-			case 2:
+			case int(Month):
 				checkDate = nextDate.AddDate(0, 1, 0) // add one month
-			case 3:
+			case int(Year):
 				checkDate = nextDate.AddDate(1, 0, 0) // add a year
 			default:
 				if e := tx.Rollback(); e != nil {
