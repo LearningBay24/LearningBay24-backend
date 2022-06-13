@@ -81,7 +81,7 @@ func main() {
 	router.POST("/exams/:id/edit", pCtrl.EditExam)
 	router.GET("/exams/:id", pCtrl.GetExamById)
 	router.GET("/courses/:id/exams", pCtrl.GetExamsFromCourse)
-	router.GET("/users/exams/", pCtrl.GetRegisteredExamsFromUser)
+	router.GET("/users/exams/registered", pCtrl.GetRegisteredExamsFromUser)
 	router.GET("/users/exams/attended", pCtrl.GetAttendedExamsFromUser)
 	router.GET("/users/exams/passed", pCtrl.GetPassedExamsFromUser)
 	router.GET("/users/exams/created", pCtrl.GetCreatedFromUser)
