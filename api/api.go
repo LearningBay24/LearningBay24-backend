@@ -907,4 +907,24 @@ func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
 	}
 	//Return Status and Data in JSON-Format
 	c.Status(http.StatusNoContent)
+
+}
+
+func (f *PublicController) SearchCourse(c *gin.Context) {
+
+	searchterm, ok := c.GetQuery("searchterm")
+	if !ok {
+		c.IndentedJSON(http.StatusInternalServerError, errors.New("query searchterm not found"))
+		return
+	}
+
+	courses, err := course.SearchCourse(f.Database, searchterm)
+
+	if err != nil {
+		log.Errorf("Unable to search course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, courses)
 }
