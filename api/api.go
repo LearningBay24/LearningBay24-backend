@@ -1335,3 +1335,28 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 	}
 	c.Status(http.StatusOK)
 }
+
+func (f *PublicController) SetAttended(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("exam_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `exam_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	userId, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	err = pCtrl.SetAttended(examId, userId)
+	if err != nil {
+		log.Errorf("Unable to set user's exam to attended: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Status(http.StatusOK)
+}
