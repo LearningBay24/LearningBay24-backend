@@ -79,8 +79,8 @@ func main() {
 	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
 	router.POST("/appointments/addsubmission", pCtrl.AddSubmissionToCalender)
 	router.DELETE("/appointments/:id", pCtrl.DeactivateAppointment)
-	router.DELETE("/appointments/:id/appointment/", pCtrl.DeactivateCourseInCalender)
-	router.DELETE("/appointments/:id/exam", pCtrl.DeactivateExamInCalender)
+	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
+	router.DELETE("/appointments/exam", pCtrl.DeactivateExamInCalender)
 	//router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
 

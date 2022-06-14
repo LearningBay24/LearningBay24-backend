@@ -629,17 +629,15 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 
 func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
-	/*
-		user_id, err := f.GetIdFromCookie(c)
-		if err != nil {
-			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
-	*/
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
 
 	pCon := &calender.PublicController{Database: f.Database}
-	appointments, err := pCon.GetAllAppointments(9999) // for testing, use 9999 instead of user_id
+	appointments, err := pCon.GetAllAppointments(user_id) // for testing, use 9999 instead of user_id
 	if err != nil {
 		log.Errorf("Unable to get all appointments from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -805,7 +803,6 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 	}
 
 	c.Status(http.StatusOK)
-
 }
 
 func (f *PublicController) AddSubmissionToCalender(c *gin.Context) {
@@ -879,36 +876,64 @@ func (f *PublicController) DeactivateAppointment(c *gin.Context) {
 
 func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 
-	// Get given ID from the Context
-	//Convert data type from str to int; bool to use ist as param
-	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	course_id, err := strconv.Atoi(c.Param("course_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	repeats, err := strconv.ParseBool(c.Param("repeats"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	//Fetch Data from Database with Backend function
-	pCon := &calender.PublicController{Database: f.Database}
-	err = pCon.DeactivateCourseInCalender(appointment_id, course_id, repeats)
-	if err != nil {
-		log.Errorf("Unable to delete appointment from course: %s\n", err.Error())
+	var j map[string]interface{}
+
+	if err := c.BindJSON(&j); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	//Return Status and Data in JSON-Format
-	c.Status(http.StatusNoContent)
+
+	appointment_idStr, ok := j["appointment_id"].(string)
+	if !ok {
+		log.Error("unable to convert date to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	appointment_id, err := strconv.Atoi(appointment_idStr)
+	if err != nil {
+		log.Error("unable to convert string to time.Time")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_idStr, ok := j["course_id"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_id, err := strconv.Atoi(course_idStr)
+	if err != nil {
+		log.Error("unable to convert string to time.Time")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeatsStr, ok := j["repeats"].(string)
+	if !ok {
+		log.Error("unable to convert repeats to bool")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeats, err := strconv.ParseBool(repeatsStr)
+	if err != nil {
+		log.Error("unable to convert string to bool")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCon := &calender.PublicController{Database: f.Database}
+	err = pCon.DeactivateCourseInCalender(appointment_id, course_id, repeats)
+	if err != nil {
+		log.Errorf("Unable to create course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
 }
 
 func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
+
 	// Get given ID from the Context
 	//Convert data type from str to int; bool to use ist as param
 	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
@@ -931,7 +956,6 @@ func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
 	}
 	//Return Status and Data in JSON-Format
 	c.Status(http.StatusNoContent)
-
 }
 
 func (f *PublicController) SearchCourse(c *gin.Context) {
