@@ -33,11 +33,7 @@ type ExamService interface {
 	AttendExam(examId, userId int) error
 	GetFileFromExam(examId int) ([]*models.File, error)
 	SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error
-<<<<<<< HEAD
 	GetRegisteredUsersFromExam(examId, userId int) (models.UserHasExamSlice, error)
-=======
-	GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error)
->>>>>>> e3cdc82 (Changed GetAllAttendees to GetRegisteredUsersFromExam)
 	GetAnswerFromAttendee(fileId int) (*models.File, error)
 	GradeAnswer(examId, creatorId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
 	SetAttended(examId, userId int) error
