@@ -1094,6 +1094,8 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 
 func (f *PublicController) EditExam(c *gin.Context) {
 	var editedExam models.Exam
+	var date time.Time
+	var duration int
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
@@ -1115,14 +1117,14 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
-	date, err := time.Parse(time.RFC3339, dateStr)
-	if err != nil {
-		log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
-		c.Status(http.StatusBadRequest)
-		return
+	if dateStr != "" {
+		date, err = time.Parse(time.RFC3339, dateStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
 	}
-
 	durationStr, ok := j["duration"].(string)
 	if !ok {
 		log.Error("unable to convert duration to string")
@@ -1130,11 +1132,13 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 
-	duration, err := strconv.Atoi(durationStr)
-	if err != nil {
-		log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
-		return
+	if durationStr != "" {
+		duration, err = strconv.Atoi(durationStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
 	}
 
 	examId, err := strconv.Atoi(c.Param("id"))
