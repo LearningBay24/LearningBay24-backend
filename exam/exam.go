@@ -3,6 +3,7 @@ package exam
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -47,7 +48,7 @@ func (p *PublicController) GetExam(examId int) (*models.Exam, error) {
 	return ex, nil
 }
 
-// GetAllExamsFromUser takes a userId and returns a slice of exams associated with it
+// GetAllExamsFromUser takes a userId and returns a slice of exams associated with it where the user is registered in
 func (p *PublicController) GetAllExamsFromUser(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
 	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
@@ -88,7 +89,8 @@ func (p *PublicController) GetPassedExamsFromUser(userId int) (models.ExamSlice,
 		qm.From(models.TableNames.UserHasExam),
 		qm.Where("user_has_exam.user_id=?", userId),
 		qm.And("user_has_exam.exam_id=exam.id"),
-		qm.And("user_has_exam.passed=?", null.Int8From(1))).
+		qm.And("user_has_exam.passed=?", null.Int8From(1)),
+		qm.And("user_has_exam.deleted_at is null")).
 		All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
@@ -308,13 +310,7 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file i
 // GetAllAttendees takes an examId and returns a slice of relations between the exam and all of it's registered users
 func (p *PublicController) GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error) {
 	var attendees []*models.UserHasExam
-	err := queries.Raw("select * from user_has_exam where exam_id=? AND deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
-	/*attendees, err := models.UserHasExams(
-	qm.From(models.TableNames.UserHasExam),
-	qm.Where("user_has_exam.user_id=user.id"),
-	qm.And("user_has_exam.exam_id=?", examId)).
-	All(context.Background(), p.Database)
-	*/
+	err := queries.Raw("select * from user_has_exam, exam where exam_id=? AND user_has_exam.deleted_at is null AND exam.deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
 	if err != nil {
 		return nil, err
 	}
@@ -416,12 +412,12 @@ func (p *PublicController) SetAttended(examId, userId int) error {
 	return nil
 }
 
+// GetUnregisteredExams takes an userId and returns a slice of exams associated with it
 func (p *PublicController) GetUnregisteredExams(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
 
-	//err := queries.Raw("select * from exam, user_has_exam, user_has_course, course where user_has_course.user_id=? AND user_has_course.course_id=course.id AND  user_has_exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
 	err := queries.Raw("select distinct exam.* from user_has_course, exam, user_has_exam "+
-		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND user_has_course.deleted_at is null "+
+		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND user_has_course.deleted_at is null AND exam.deleted_at is null "+
 		"AND exam.id not in( "+
 		"select distinct exam.id from user_has_course, exam, user_has_exam "+
 		"where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null)", userId, userId).Bind(context.Background(), p.Database, &exams)
@@ -431,4 +427,27 @@ func (p *PublicController) GetUnregisteredExams(userId int) (models.ExamSlice, e
 	}
 
 	return exams, nil
+}
+
+// DeleteExam takes an examId and soft-deletes the associated exam
+func (p *PublicController) DeleteExam(examId int) (int, error) {
+	uhex, err := models.UserHasExams(models.UserHasExamWhere.ExamID.EQ(examId)).Count(context.Background(), p.Database)
+	if err != nil {
+		return 0, err
+	}
+	if uhex > 0 {
+		return 0, errors.New("there are still people registered into the exam")
+	}
+
+	ex, err := models.FindExam(context.Background(), p.Database, examId)
+	if err != nil {
+		return 0, err
+	}
+
+	_, err = ex.Delete(context.Background(), p.Database, false)
+	if err != nil {
+		return 0, err
+	}
+
+	return ex.ID, nil
 }
