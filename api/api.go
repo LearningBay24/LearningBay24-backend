@@ -958,7 +958,7 @@ func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
 
 	// Fetch Data from Database with Backend function
 	pCtrl := exam.PublicController{Database: f.Database}
-	exams, err := pCtrl.GetAllExamsFromUser(userId)
+	exams, err := pCtrl.GetRegisteredExamsFromUser(userId)
 	if err != nil {
 		log.Errorf("Unable to get exams from user: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -1387,12 +1387,12 @@ func (f *PublicController) DeleteExam(c *gin.Context) {
 	}
 	// Deactivate Data from Database with Backend function
 	pCtrl := exam.PublicController{Database: f.Database}
-	exam, err := pCtrl.DeleteExam(id)
+	ex, err := pCtrl.DeleteExam(id)
 	// Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to delete course: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.IndentedJSON(http.StatusOK, exam)
+	c.IndentedJSON(http.StatusOK, ex)
 }

@@ -8,7 +8,6 @@ import (
 	"io"
 	"time"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
@@ -48,10 +47,10 @@ func (p *PublicController) GetExamByID(examId int) (*models.Exam, error) {
 	return ex, nil
 }
 
-// GetAllExamsFromUser takes a userId and returns a slice of exams associated with it where the user is registered in
-func (p *PublicController) GetAllExamsFromUser(userId int) (models.ExamSlice, error) {
+// GetRegisteredExamsFromUser takes a userId and returns a slice of exams associated with it where the user is registered in
+func (p *PublicController) GetRegisteredExamsFromUser(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
-	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.attended=0 AND user_has_exam.passed is null AND user_has_exam.deleted_at is null AND exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
 	if err != nil {
 		return nil, err
 	}
@@ -70,11 +69,13 @@ func (p *PublicController) GetExamsFromCourse(courseId int) (models.ExamSlice, e
 
 // GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are attended
 func (p *PublicController) GetAttendedExamsFromUser(userId int) (models.ExamSlice, error) {
+	// TODO: add a grade to the model
 	exams, err := models.Exams(
 		qm.From(models.TableNames.UserHasExam),
 		qm.Where("user_has_exam.user_id=?", userId),
 		qm.And("user_has_exam.exam_id=exam.id"),
-		qm.And("user_has_exam.attended=1")).
+		qm.And("user_has_exam.attended=1"),
+		qm.And("user_has_exam.passed is null")).
 		All(context.Background(), p.Database)
 	if err != nil {
 		return nil, err
@@ -85,6 +86,8 @@ func (p *PublicController) GetAttendedExamsFromUser(userId int) (models.ExamSlic
 
 // GetPassedExamsFromUser GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are passed
 func (p *PublicController) GetPassedExamsFromUser(userId int) (models.ExamSlice, error) {
+	// TODO: add a grade to the model
+
 	exams, err := models.Exams(
 		qm.From(models.TableNames.UserHasExam),
 		qm.Where("user_has_exam.user_id=?", userId),
@@ -335,13 +338,11 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 	if err != nil {
 		return err
 	}
-	log.Errorf("FIND EXAM: CHECK")
 
 	uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
 	if err != nil {
 		return err
 	}
-	log.Errorf("FIND USER HAS EXAM: CHECK")
 
 	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -358,7 +359,6 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 
 		return err
 	}
-	log.Errorf("UPDATE USER HAS EXAM: CHECK")
 
 	attendees, err := p.GetRegisteredUsersFromExam(examId)
 	if err != nil {
@@ -368,14 +368,12 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 
 		return err
 	}
-	log.Errorf("GETTING ALL ATTENDEES: CHECK")
 
 	for _, att := range attendees {
 		if att.Grade.Int == 1 {
 			if e := tx.Commit(); e != nil {
 				return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 			}
-			log.Errorf("COMMIT: CHECK")
 			return nil
 		}
 	}
@@ -389,7 +387,6 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 
 		return err
 	}
-	log.Errorf("UPDATING EXAM: CHECK")
 	if e := tx.Commit(); e != nil {
 		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
@@ -416,7 +413,7 @@ func (p *PublicController) SetAttended(examId, userId int) error {
 func (p *PublicController) GetUnregisteredExams(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
 
-	err := queries.Raw("select distinct exam.* from user_has_course, exam, user_has_exam "+
+	err := queries.Raw("select distinct exam.* from user_has_course, exam "+
 		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND user_has_course.deleted_at is null AND exam.deleted_at is null "+
 		"AND exam.id not in( "+
 		"select distinct exam.id from user_has_course, exam, user_has_exam "+
