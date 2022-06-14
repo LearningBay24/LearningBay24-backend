@@ -1664,3 +1664,21 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 	}
 	c.Status(http.StatusOK)
 }
+
+func (f *PublicController) DeleteExam(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	// Deactivate Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exam, err := pCtrl.DeleteExam(id)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, exam)
+}

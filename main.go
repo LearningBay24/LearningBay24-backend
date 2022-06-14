@@ -95,6 +95,7 @@ func main() {
 	router.GET("/users/exams/files/:id", pCtrl.GetFileFromAttendee)
 	router.POST("/users/exams/:id/grade", pCtrl.GradeAnswer)
 	router.PATCH("/users/:user_id/exams/:exam_id/attend", pCtrl.SetAttended)
+	router.DELETE("/exams/:id", pCtrl.DeleteExam)
 
 	router.Run("0.0.0.0:8080")
 }
