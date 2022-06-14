@@ -75,12 +75,8 @@ func main() {
 	// TODO: panics
 	router.GET("/courses/appointments", pCtrl.GetAllAppointments)
 	router.GET("/appointments", pCtrl.GetAppointments)
-	router.GET("/users/courses/submissions", pCtrl.GetAllSubmissions)
 	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
-	router.POST("/appointments/addsubmission", pCtrl.AddSubmissionToCalender)
-	router.DELETE("/appointments/:id", pCtrl.DeactivateAppointment)
 	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
-	router.DELETE("/appointments/exam", pCtrl.DeactivateExamInCalender)
 	//router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
 

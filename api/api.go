@@ -692,25 +692,6 @@ func (f *PublicController) GetAppointments(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 
-func (f *PublicController) GetAllSubmissions(c *gin.Context) {
-
-	user_id, err := f.GetIdFromCookie(c)
-	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	pCon := &calender.PublicController{Database: f.Database}
-	appointments, err := pCon.GetAllSubmissions(user_id) // for testing, use 9999 instead of user_id
-	if err != nil {
-		log.Errorf("Unable to get submissions from user: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	c.IndentedJSON(http.StatusOK, appointments)
-}
-
 func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 
 	var j map[string]interface{}
@@ -805,75 +786,6 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
-func (f *PublicController) AddSubmissionToCalender(c *gin.Context) {
-
-	var newAppointment models.Appointment
-
-	raw, err := c.GetRawData()
-	if err != nil {
-		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	var j map[string]interface{}
-	err = json.Unmarshal(raw, &j)
-	if err != nil {
-		log.Errorf("Unable to unmarshal the json body: %+v", raw)
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	submDate, err := time.Parse("2006-01-02", j["submDate"].(string))
-	if err != nil {
-		log.Error("unable to convert submDate to time.Time")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	submName, ok := j["submName"].(null.String)
-	if !ok {
-		log.Error("unable to convert submName to null.String")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	courseId, ok := j["courseId"].(int)
-	if !ok {
-		log.Error("unable to convert courseId to int")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	pCon := &calender.PublicController{Database: f.Database}
-	id, err := pCon.AddSubmissionToCalender(submDate, submName, courseId)
-	if err != nil {
-		log.Errorf("Unable to add appointment of submission: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	newAppointment.ID = id
-	c.IndentedJSON(http.StatusOK, newAppointment)
-}
-
-func (f *PublicController) DeactivateAppointment(c *gin.Context) {
-	// Get given ID from the Context
-	//Convert data type from str to int; bool to use ist as param
-	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	//Fetch Data from Database with Backend function
-	pCon := &calender.PublicController{Database: f.Database}
-	err = pCon.DeactivateAppointment(appointment_id)
-	if err != nil {
-		log.Errorf("Unable to delete appointment: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	//Return Status and Data in JSON-Format
-	c.Status(http.StatusNoContent)
-}
-
 func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 
 	var j map[string]interface{}
@@ -930,32 +842,6 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 	}
 
 	c.Status(http.StatusOK)
-}
-
-func (f *PublicController) DeactivateExamInCalender(c *gin.Context) {
-
-	// Get given ID from the Context
-	//Convert data type from str to int; bool to use ist as param
-	appointment_id, err := strconv.Atoi(c.Param("appointment_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	exam_id, err := strconv.Atoi(c.Param("exam_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	//Fetch Data from Database with Backend function
-	pCon := &calender.PublicController{Database: f.Database}
-	err = pCon.DeactivateExamInCalender(appointment_id, exam_id)
-	if err != nil {
-		log.Errorf("Unable to delete exam from calender: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	//Return Status and Data in JSON-Format
-	c.Status(http.StatusNoContent)
 }
 
 func (f *PublicController) SearchCourse(c *gin.Context) {
