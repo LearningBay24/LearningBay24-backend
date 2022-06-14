@@ -310,15 +310,23 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file i
 	return nil
 }
 
-// GetAllAttendees takes an examId and returns a slice of relations between the exam and all of it's registered users
-func (p *PublicController) GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error) {
-	var attendees []*models.UserHasExam
-	err := queries.Raw("select * from user_has_exam, exam where exam_id=? AND user_has_exam.deleted_at is null AND exam.deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
+// GetRegisteredUsersFromExam takes an examId and userId and returns a slice of relations between the exam and all of it's registered users
+func (p *PublicController) GetRegisteredUsersFromExam(examId, userId int) (models.UserHasExamSlice, error) {
+	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return nil, err
 	}
 
-	return attendees, nil
+	if userId == ex.CreatorID {
+		var attendees []*models.UserHasExam
+		err = queries.Raw("select * from user_has_exam, exam where exam_id=? AND user_has_exam.deleted_at is null AND exam.deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
+		if err != nil {
+			return nil, err
+		}
+
+		return attendees, nil
+	}
+	return nil, fmt.Errorf("only the exam-creator can see the registered users")
 }
 
 // GetAnswerFromAttendee takes a fileId and returns a struct of the file with the corresponding ID
@@ -331,9 +339,9 @@ func (p *PublicController) GetAnswerFromAttendee(fileId int) (*models.File, erro
 	return cm, err
 }
 
-// GradeAnswer takes an examId, userId, grade, passed-indicator, and feedback and grades the associated answer
+// GradeAnswer takes an examId, creatorId, userId, grade, passed-indicator, and feedback and grades the associated answer
 // If every answer of an exam has a grade it sets itself to graded
-func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passed null.Int8, feedback null.String) error {
+func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null.Int, passed null.Int8, feedback null.String) error {
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return err
@@ -360,7 +368,7 @@ func (p *PublicController) GradeAnswer(examId, userId int, grade null.Int, passe
 		return err
 	}
 
-	attendees, err := p.GetRegisteredUsersFromExam(examId)
+	attendees, err := p.GetRegisteredUsersFromExam(examId, creatorId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
@@ -414,7 +422,7 @@ func (p *PublicController) GetUnregisteredExams(userId int) (models.ExamSlice, e
 	var exams []*models.Exam
 
 	err := queries.Raw("select distinct exam.* from user_has_course, exam "+
-		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND user_has_course.deleted_at is null AND exam.deleted_at is null "+
+		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND exam.creator_id!=? user_has_course.deleted_at is null AND exam.deleted_at is null "+
 		"AND exam.id not in( "+
 		"select distinct exam.id from user_has_course, exam, user_has_exam "+
 		"where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null)", userId, userId).Bind(context.Background(), p.Database, &exams)

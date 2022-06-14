@@ -1248,8 +1248,16 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
+	creatorId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	attendees, err := pCtrl.GetRegisteredUsersFromExam(examId)
+	attendees, err := pCtrl.GetRegisteredUsersFromExam(examId, creatorId)
 	if err != nil {
 		log.Errorf("Unable to fetch attendees from exam: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -1280,17 +1288,24 @@ func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
 }
 
 func (f *PublicController) GradeAnswer(c *gin.Context) {
-	examId, err := strconv.Atoi(c.Param("id"))
+	examId, err := strconv.Atoi(c.Param("exam_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `exam_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	userId, err := f.GetIdFromCookie(c)
+	creatorId, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userId, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1345,7 +1360,7 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	err = pCtrl.GradeAnswer(examId, userId, null.IntFrom(grade), null.Int8From(int8(passed)), null.StringFrom(feedback))
+	err = pCtrl.GradeAnswer(examId, creatorId, userId, null.IntFrom(grade), null.Int8From(int8(passed)), null.StringFrom(feedback))
 	if err != nil {
 		log.Errorf("Unable to grade answer: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
