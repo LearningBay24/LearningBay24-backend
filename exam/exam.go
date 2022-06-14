@@ -32,6 +32,14 @@ type ExamService interface {
 	GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error)
 	GetAnswerFromAttendee(fileId int) (*models.File, error)
 	GradeAnswer(examId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
+	DeleteExam(examId int) (int, error)
+	GetUnregisteredExams(userId int) (models.ExamSlice, error)
+	SetAttended(examId, userId int) error
+}
+
+type GradedExam struct {
+	models.Exam        `boil:",bind"`
+	models.UserHasExam `boil:",bind"`
 }
 
 type PublicController struct {
@@ -68,38 +76,43 @@ func (p *PublicController) GetExamsFromCourse(courseId int) (models.ExamSlice, e
 }
 
 // GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are attended
-func (p *PublicController) GetAttendedExamsFromUser(userId int) (models.ExamSlice, error) {
+func (p *PublicController) GetAttendedExamsFromUser(userId int) ([]*GradedExam, error) {
 	// TODO: add a grade to the model
-	exams, err := models.Exams(
-		qm.From(models.TableNames.UserHasExam),
-		qm.Where("user_has_exam.user_id=?", userId),
-		qm.And("user_has_exam.exam_id=exam.id"),
-		qm.And("user_has_exam.attended=1"),
-		qm.And("user_has_exam.passed is null")).
-		All(context.Background(), p.Database)
+	var gex []*GradedExam
+
+	err := models.NewQuery(
+		qm.Select("exam.*", "user_has_exam.*"),
+		qm.From(models.TableNames.Exam),
+		qm.InnerJoin("user_has_exam on exam.id = user_has_exam.exam_id"),
+		qm.Where("user_has_exam.attended=1"),
+		qm.And("user_has_exam.user_id = ?", userId),
+		qm.And("user_has_exam.passed is null"),
+	).Bind(context.Background(), p.Database, &gex)
 	if err != nil {
 		return nil, err
 	}
 
-	return exams, nil
+	return gex, nil
 }
 
 // GetPassedExamsFromUser GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are passed
-func (p *PublicController) GetPassedExamsFromUser(userId int) (models.ExamSlice, error) {
+func (p *PublicController) GetPassedExamsFromUser(userId int) ([]*GradedExam, error) {
 	// TODO: add a grade to the model
+	var gex []*GradedExam
 
-	exams, err := models.Exams(
-		qm.From(models.TableNames.UserHasExam),
-		qm.Where("user_has_exam.user_id=?", userId),
-		qm.And("user_has_exam.exam_id=exam.id"),
-		qm.And("user_has_exam.passed=?", null.Int8From(1)),
-		qm.And("user_has_exam.deleted_at is null")).
-		All(context.Background(), p.Database)
+	err := models.NewQuery(
+		qm.Select("exam.*", "user_has_exam.*"),
+		qm.From(models.TableNames.Exam),
+		qm.InnerJoin("user_has_exam on exam.id = user_has_exam.exam_id"),
+		qm.Where("user_has_exam.attended=1"),
+		qm.And("user_has_exam.user_id = ?", userId),
+		qm.And("user_has_exam.passed = 1"),
+	).Bind(context.Background(), p.Database, &gex)
 	if err != nil {
 		return nil, err
 	}
 
-	return exams, nil
+	return gex, nil
 }
 
 // GetCreatedExamsFromUser takes a userId and returns a slice of exams associated with it that got created by the user
@@ -167,8 +180,12 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 				return 0, err
 			}
 		}
-		ex.Date = date
-		ex.Duration = duration
+		if !date.IsZero() {
+			ex.Date = date
+		}
+		if duration != 0 {
+			ex.Duration = duration
+		}
 
 		_, err = ex.Update(context.Background(), tx, boil.Infer())
 		if err != nil {
@@ -421,11 +438,11 @@ func (p *PublicController) SetAttended(examId, userId int) error {
 func (p *PublicController) GetUnregisteredExams(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
 
-	err := queries.Raw("select distinct exam.* from user_has_course, exam "+
-		"where user_has_course.user_id=? AND user_has_course.course_id=exam.course_id AND exam.creator_id!=? user_has_course.deleted_at is null AND exam.deleted_at is null "+
-		"AND exam.id not in( "+
-		"select distinct exam.id from user_has_course, exam, user_has_exam "+
-		"where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null)", userId, userId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select distinct exam.* from user_has_course, exam \n"+
+		"where user_has_course.user_id=? \nAND user_has_course.course_id=exam.course_id \nAND exam.creator_id !=? \nAND user_has_course.deleted_at is null \nAND exam.deleted_at is null \n"+
+		"AND exam.id not in( \n"+
+		"select distinct exam.id from user_has_course, exam, user_has_exam \n"+
+		"where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.deleted_at is null)", userId, userId, userId).Bind(context.Background(), p.Database, &exams)
 
 	if err != nil {
 		return nil, err
