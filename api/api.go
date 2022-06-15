@@ -948,3 +948,92 @@ func (f *PublicController) SearchCourse(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, courses)
 }
+
+func (f *PublicController) GetSubmission(c *gin.Context) {
+	submission_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	submission, err := course.GetSubmission(f.Database, submission_id)
+	if err != nil {
+		log.Errorf("Unable to create course: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, submission)
+}
+
+func (f *PublicController) CreateSubmission(c *gin.Context) {
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get role_id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	if !AuthorizeModerator(role_id) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	deadline, ok := j["deadline"].(string)
+	if !ok {
+		log.Error("unable to convert deadline to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	visible_from, ok := j["visible_from"].(string)
+	if !ok {
+		log.Error("unable to convert visible_from to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	max_filesize, err := strconv.Atoi(j["max_filesize"].(string))
+	//max_filesize, ok := j["max_filesize"].(int)
+	if err != nil {
+		log.Error("unable to convert maxfilesize to int")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	id, err := course.CreateSubmission(f.Database, name, deadline, course_id, max_filesize, visible_from)
+	if err != nil {
+		log.Errorf("Unable to create course: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, id)
+}

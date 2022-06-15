@@ -68,6 +68,8 @@ func main() {
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id", pCtrl.EnrollUser)
 	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
+	router.GET("/submission/:id", pCtrl.GetSubmission)
+	router.POST("/courses/:id/submission", pCtrl.CreateSubmission)
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.GET("/courses/search", pCtrl.SearchCourse)
