@@ -1156,66 +1156,78 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	ex, err := pCtrl.GetExamByID(examId)
+	id, err := pCtrl.EditExam(examId, userId, date, duration)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		log.Errorf("Unable to edit exam: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
 		return
 	}
-	if ex.Online == 1 {
-		if c.ContentType() == "text/plain" {
-			type _file struct {
-				Name string `json:"name"`
-				Uri  string `json:"uri"`
-			}
+	editedExam.ID = id
+	c.IndentedJSON(http.StatusOK, editedExam)
+}
 
-			var file _file
-			if err := c.BindJSON(&file); err != nil {
-				log.Errorf("Unable to bind json: %s\n", err.Error())
-				c.IndentedJSON(http.StatusBadRequest, err.Error())
-				return
-			}
-			log.Info(file)
+func (f *PublicController) UploadExamFile(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
 
-			id, err := pCtrl.EditExam(file.Name, file.Uri, false, nil, examId, userId, date, duration)
-			if err != nil {
-				log.Errorf("Unable to edit exam: %s", err.Error())
-				c.Status(http.StatusInternalServerError)
-				return
-			}
-			editedExam.ID = id
-		} else {
-			file, err := c.FormFile("file")
-			if err != nil {
-				log.Errorf("No file found in request: %s", err.Error())
-				c.Status(http.StatusBadRequest)
-				return
-			}
-
-			fi, err := file.Open()
-			if err != nil {
-				log.Errorf("Unable to open file: %s", err.Error())
-				c.Status(http.StatusInternalServerError)
-				return
-			}
-			id, err := pCtrl.EditExam(file.Filename, "", true, fi, examId, userId, date, duration)
-			if err != nil {
-				log.Errorf("Unable to edit exam: %s", err.Error())
-				c.Status(http.StatusInternalServerError)
-				return
-			}
-			editedExam.ID = id
+	if c.ContentType() == "text/plain" {
+		type _file struct {
+			Name string `json:"name"`
+			Uri  string `json:"uri"`
 		}
-	} else {
-		id, err := pCtrl.EditExam("", "", false, nil, examId, userId, date, duration)
+
+		var file _file
+		if err := c.BindJSON(&file); err != nil {
+			log.Errorf("Unable to bind json: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		log.Info(file)
+
+		user_id, err := f.GetIdFromCookie(c)
 		if err != nil {
-			log.Errorf("Unable to edit exam: %s", err.Error())
+			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		pCtrl := exam.PublicController{Database: f.Database}
+		pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("No file found in request: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		fi, err := file.Open()
+		if err != nil {
+			log.Errorf("Unable to open file: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		editedExam.ID = id
+
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+
+			return
+		}
+		pCtrl := exam.PublicController{Database: f.Database}
+		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi)
+		if err != nil {
+			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	}
-	c.IndentedJSON(http.StatusOK, editedExam)
+
+	c.Status(http.StatusCreated)
 }
 
 func (f *PublicController) GetExamById(c *gin.Context) {

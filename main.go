@@ -79,6 +79,7 @@ func main() {
 	router.GET("/users/:user_id", pCtrl.GetUserById)
 	router.POST("/exams", pCtrl.CreateExam)
 	router.POST("/exams/:id/edit", pCtrl.EditExam)
+	router.POST("/exams/:id/files", pCtrl.UploadExamFile)
 	router.GET("/exams/:id", pCtrl.GetExamById)
 	router.GET("/courses/:id/exams", pCtrl.GetExamsFromCourse)
 	router.GET("/users/exams/registered", pCtrl.GetRegisteredExamsFromUser)
