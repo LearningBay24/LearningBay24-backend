@@ -666,7 +666,16 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
+<<<<<<< HEAD
 		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil)
+=======
+		err = coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, id, false, nil)
+		if err != nil {
+			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+>>>>>>> 70367fe (Add and fix error-handling for file-upload-methods)
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -1195,7 +1204,12 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 			return
 		}
 		pCtrl := exam.PublicController{Database: f.Database}
-		pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
+		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
+		if err != nil {
+			log.Errorf("Unable to create ExamFile: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -1221,7 +1235,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi)
 		if err != nil {
-			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
+			log.Errorf("Unable to create ExamFile: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
 			return
 		}
