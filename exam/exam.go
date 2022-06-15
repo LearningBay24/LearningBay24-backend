@@ -24,7 +24,7 @@ type ExamService interface {
 	GetPassedExamsFromUser(userId int) (models.ExamSlice, error)
 	GetCreatedExamsFromUser(userId int) (models.ExamSlice, error)
 	CreateExam(name, description string, date time.Time, duration, courseId, creatorId int, online int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) (int, error)
-	EditExam(fileName string, examId, creatorId int, local int8, file *io.Reader, date time.Time, duration int) (int, error)
+	EditExam(date time.Time, duration int) (int, error)
 	RegisterToExam(userId, examId int) (*models.User, error)
 	DeregisterFromExam(userId, examId int) error
 	AttendExam(userId, examId int) (*models.Exam, error)
@@ -161,31 +161,7 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 		}
 		// if exam is online and has a file and filename: upload file
 		// TODO: restrict to pdfs only
-		if ex.Online != 0 && fileName != "" && file != nil {
-			fileId, err := dbi.SaveFile(p.Database, fileName, uri, creatorId, local, &file)
-			if err != nil {
-				if e := tx.Rollback(); e != nil {
-					return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-				}
-				return 0, err
-			}
 
-			f, err := models.FindFile(context.Background(), p.Database, fileId)
-			if err != nil {
-				if e := tx.Rollback(); e != nil {
-					return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-				}
-				return 0, err
-			}
-
-			err = ex.SetFiles(context.Background(), tx, false, f)
-			if err != nil {
-				if e := tx.Rollback(); e != nil {
-					return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-				}
-				return 0, err
-			}
-		}
 		if !date.IsZero() {
 			ex.Date = date
 		}
@@ -209,6 +185,43 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 	return 0, fmt.Errorf("invalid value for variable creatorId: %d doesn't match exam's creatorId", creatorId)
 }
 
+// UploadExamFile takes a fileName, URI, associated uploaderId, examId and indicator if file is local or remote
+// Created struct gets inserted into database
+func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderId, examId int, local bool, file io.Reader) error {
+	// TODO: max upload size and restrict to pdf only
+	ex, err := p.GetExamByID(examId)
+	if err != nil {
+		return err
+	}
+	if uploaderId == ex.CreatorID {
+		if ex.Online != 0 {
+			if fileName != "" && file != nil {
+				fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file)
+				if err != nil {
+					return err
+				}
+
+				f, err := models.FindFile(context.Background(), p.Database, fileId)
+				if err != nil {
+					return err
+				}
+
+				err = ex.SetFiles(context.Background(), p.Database, false, f)
+				if err != nil {
+					return err
+				}
+			} else {
+				return fmt.Errorf("invalid value for fileName and file: file can't be empty")
+			}
+		} else {
+			return fmt.Errorf("error: exam needs to be online")
+		}
+	} else {
+		return fmt.Errorf("invalid value for uploaderId: only the exam's creator can upload files")
+	}
+	return nil
+}
+
 // RegisterToExam takes a userId and examId
 // Created struct gets inserted into database
 func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, error) {
@@ -226,8 +239,10 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 	curTime := time.Now()
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
-		uhex := models.UserHasExam{UserID: userId, ExamID: examId, Attended: 0}
-
+		// need to set DeletedAt back to zero-value if row already exists
+		//var zeroTime null.Time
+		uhex := models.UserHasExam{UserID: userId, ExamID: examId}
+		//err = uhex.Upsert(context.Background(), p.Database, boil.Infer())
 		err = uhex.Insert(context.Background(), p.Database, boil.Infer())
 		if err != nil {
 			return nil, err
