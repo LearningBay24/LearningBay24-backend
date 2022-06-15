@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"time"
 
 	"github.com/volatiletech/null/v8"
@@ -132,7 +133,12 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 		return 0, err
 	}
 	if name == "" {
-		name = c.Name
+		y, m, d := date.Date()
+		creator, err := models.FindUser(context.Background(), p.Database, creatorId)
+		if err != nil {
+			return 0, err
+		}
+		name = c.Name + ", " + strconv.Itoa(d) + "." + strconv.Itoa(int(m)) + "." + strconv.Itoa(y) + ", " + creator.Surname
 	}
 	ex := &models.Exam{Name: name, Description: description, Date: date, Duration: duration, CourseID: courseId, CreatorID: creatorId, Online: online, Location: location, RegisterDeadline: registerDeadLine, DeregisterDeadline: deregisterDeadLine}
 	err = ex.Insert(context.Background(), p.Database, boil.Infer())
