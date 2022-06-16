@@ -1450,7 +1450,7 @@ func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
 func (f *PublicController) RegisterToExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -1475,7 +1475,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 func (f *PublicController) DeregisterFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -1602,7 +1602,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'id' to an int: %s", err.Error())
+		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -1628,7 +1628,7 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'id' to an int: %s", err.Error())
+		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -1661,7 +1661,7 @@ func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
 
 	examId, err := strconv.Atoi(c.Param("exam_id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
