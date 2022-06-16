@@ -454,6 +454,34 @@ func (p *PublicController) GetRegisteredUsersFromExam(examId, userId int) ([]*At
 	return nil, fmt.Errorf("only the exam-creator can see the registered users")
 }
 
+// GetAttendeesFromExam takes an examId and userId and returns a slice of relations between the exam and all of it's registered users
+func (p *PublicController) GetAttendeesFromExam(examId, userId int) ([]*Attendee, error) {
+	ex, err := models.FindExam(context.Background(), p.Database, examId)
+	if err != nil {
+		return nil, err
+	}
+
+	if userId == ex.CreatorID {
+		var attendees []*Attendee
+
+		err := models.NewQuery(
+			qm.Select("user.*", "user_has_exam.*"),
+			qm.From(models.TableNames.User),
+			qm.InnerJoin("user_has_exam on user.id = user_has_exam.user_id"),
+			qm.Where("user_has_exam.exam_id=?", examId),
+			qm.And("user_has_exam.attended=1"),
+			qm.And("user_has_exam.deleted_at is null"),
+			qm.And("user.deleted_at is null"),
+		).Bind(context.Background(), p.Database, &attendees)
+		if err != nil {
+			return nil, err
+		}
+
+		return attendees, nil
+	}
+	return nil, fmt.Errorf("only the exam-creator can see the registered users")
+}
+
 // GetAnswerFromAttendee takes a fileId and returns a struct of the file with the corresponding ID
 func (p *PublicController) GetAnswerFromAttendee(fileId int) (*models.File, error) {
 	cm, err := models.FindFile(context.Background(), p.Database, fileId)

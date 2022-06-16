@@ -1345,6 +1345,32 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, attendees)
 }
 
+func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Error("Unable to convert parameter 'id' to an int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	creatorId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	attendees, err := pCtrl.GetAttendeesFromExam(examId, creatorId)
+	if err != nil {
+		log.Errorf("Unable to fetch attendees from exam: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, attendees)
+}
+
 func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
 	file_id, err := strconv.Atoi(c.Param("file_id"))
 	if err != nil {
