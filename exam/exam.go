@@ -222,19 +222,58 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 		if err != nil {
 			return fmt.Errorf("error at saving file: %s", err)
 		}
-
-		f, err := models.FindFile(context.Background(), p.Database, fileId)
+		tx, err := p.Database.BeginTx(context.Background(), nil)
 		if err != nil {
+			return err
+		}
+
+		f, err := models.FindFile(context.Background(), tx, fileId)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			}
 			return fmt.Errorf("cannot find saved file: %s", err)
 		}
 
-		err = ex.SetFiles(context.Background(), p.Database, false, f)
+		err = p.DeleteExamFile(tx, examId)
 		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			}
+			return fmt.Errorf("cannot delete previous file: %s", err)
+		}
+
+		err = ex.SetFiles(context.Background(), tx, false, f)
+		if err != nil {
+			if e := tx.Rollback(); e != nil {
+				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			}
 			return fmt.Errorf("cannot set file to exam:  %s", err)
+		}
+		if e := tx.Commit(); e != nil {
+			return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 		}
 	} else {
 		return fmt.Errorf("invalid value for uploaderId: only the exam's creator can upload files")
 	}
+	return nil
+}
+
+func (p *PublicController) DeleteExamFile(tx *sql.Tx, examId int) error {
+	var files []*models.File
+	err := queries.Raw("select * from file, exam_has_files where exam_has_files.exam_id=? AND exam_has_files.file_id = file.id AND file.id is null", examId).Bind(context.Background(), p.Database, &files)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+		return err
+	}
+
+	_, err = files[0].Delete(context.Background(), tx, false)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
