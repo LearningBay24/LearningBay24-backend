@@ -406,7 +406,7 @@ func (p *PublicController) GetFileFromExam(examId int) ([]*models.File, error) {
 }
 
 // SubmitAnswer takes a filename, uri, local-indicator, file, examId, and userId and uploads the file as an answer
-func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error {
+func (p *PublicController) SubmitAnswer(fileName, uri string, examId, userId int, local bool, file io.Reader) error {
 	// TODO: max upload size
 
 	fileId, err := dbi.SaveFile(p.Database, fileName, uri, userId, local, &file)
@@ -418,7 +418,7 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file i
 	if err != nil {
 		return err
 	}
-	uhex.FileID = null.Int{Int: fileId}
+	uhex.FileID.Int = fileId
 
 	_, err = uhex.Update(context.Background(), p.Database, boil.Infer())
 	if err != nil {
