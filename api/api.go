@@ -812,8 +812,6 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 }
 
 func (f *PublicController) EditExam(c *gin.Context) {
-	var editedExam models.Exam
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
@@ -865,7 +863,6 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
 	var duration int
 	if durationStr != "" {
 		duration, err = strconv.Atoi(durationStr)
@@ -906,7 +903,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		online.Int8 = int8(onlineInt)
 		online.Valid = true
 	} else {
-
+		online.Valid = false
 	}
 
 	location, ok := j["location"].(string)
@@ -922,7 +919,6 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
 	var registerDeadline time.Time
 	if registerDeadlineStr != "" {
 		registerDeadline, err = time.ParseInLocation(time.RFC3339, registerDeadlineStr, time.Local)
@@ -931,11 +927,12 @@ func (f *PublicController) EditExam(c *gin.Context) {
 			c.Status(http.StatusBadRequest)
 			return
 		}
+		registerDeadline = registerDeadline.Local()
 	}
 
 	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
 	if !ok {
-		log.Error("unable to convert deregister_deadline to string")
+		log.Error("unable to convert register_deadline to string")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
@@ -947,17 +944,17 @@ func (f *PublicController) EditExam(c *gin.Context) {
 			c.Status(http.StatusBadRequest)
 			return
 		}
+		deregisterDeadline = deregisterDeadline.Local()
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	id, err := pCtrl.EditExam(name, description, date, duration, examId, userId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	err = pCtrl.EditExam(name, description, date, duration, examId, userId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
 	if err != nil {
 		log.Errorf("Unable to edit exam: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	editedExam.ID = id
-	c.IndentedJSON(http.StatusOK, editedExam)
+	c.Status(http.StatusOK)
 }
 
 func (f *PublicController) UploadExamFile(c *gin.Context) {

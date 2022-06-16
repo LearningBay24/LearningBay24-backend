@@ -149,15 +149,15 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 }
 
 // EditExam takes a fileName, examId, creatorId, file-handle, date, duration, and an indicator if the file is local
-func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId, creatorId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) (int, error) {
+func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId, creatorId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) error {
 	ex, err := p.GetExamByID(examId)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	if creatorId == ex.CreatorID {
 		tx, err := p.Database.BeginTx(context.Background(), nil)
 		if err != nil {
-			return 0, err
+			return err
 		}
 		// if exam is online and has a file and filename: upload file
 		// TODO: restrict to pdfs only
@@ -186,27 +186,27 @@ func (p *PublicController) EditExam(name, description string, date time.Time, du
 		}
 
 		if !registerDeadLine.IsZero() {
-			ex.RegisterDeadline = registerDeadLine
+			ex.RegisterDeadline.Time = registerDeadLine.Time
 		}
 
 		if !deregisterDeadLine.IsZero() {
-			ex.DeregisterDeadline = deregisterDeadLine
+			ex.DeregisterDeadline.Time = deregisterDeadLine.Time
 		}
 
 		_, err = ex.Update(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 			}
 
-			return 0, err
+			return err
 		}
 		if e := tx.Commit(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+			return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 		}
-		return ex.ID, nil
+		return nil
 	}
-	return 0, fmt.Errorf("invalid value for variable creatorId: %d doesn't match exam's creatorId", creatorId)
+	return fmt.Errorf("invalid value for variable creatorId: %d doesn't match exam's creatorId", creatorId)
 }
 
 // UploadExamFile takes a fileName, URI, associated uploaderId, examId and indicator if file is local or remote
