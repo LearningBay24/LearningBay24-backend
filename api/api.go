@@ -1531,6 +1531,7 @@ func (f *PublicController) GetFileFromExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
 	err = pCtrl.AttendExam(examId, userId)
 	if err != nil {
 		log.Errorf("Unable to get file from exam: %s", err.Error())
