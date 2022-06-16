@@ -304,10 +304,24 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		// need to set DeletedAt back to zero-value if row already exists
-		//var zeroTime null.Time
-		uhex := models.UserHasExam{UserID: userId, ExamID: examId}
-		//err = uhex.Upsert(context.Background(), p.Database, nil, boil.Infer())
-		err = uhex.Insert(context.Background(), p.Database, boil.Infer())
+
+		var uhex models.UserHasExamSlice
+		// first check if relation already exists in the database and either insert a new row or reset deleted_at
+		err = queries.Raw("select * from user_has_exam where exam_id=? AND user_id=?", examId, userId).Bind(context.Background(), p.Database, &uhex)
+		if err != nil {
+			return nil, err
+		}
+		if len(uhex) > 0 {
+			uhex[0].DeletedAt = null.TimeFromPtr(nil)
+			_, err = uhex[0].Update(context.Background(), p.Database, boil.Infer())
+			if err != nil {
+				return nil, err
+			}
+			return u, nil
+		}
+
+		newUhex := models.UserHasExam{UserID: userId, ExamID: examId}
+		err = newUhex.Insert(context.Background(), p.Database, boil.Infer())
 		if err != nil {
 			return nil, err
 		}
