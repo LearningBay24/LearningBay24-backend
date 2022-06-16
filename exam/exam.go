@@ -69,11 +69,6 @@ type Attendee struct {
 	FileID null.Int `boil:"file_id" json:"file_id,omitempty" toml:"file_id" yaml:"file_id,omitempty"`
 }
 
-type Attendee struct {
-	models.User        `boil:",bind"`
-	models.UserHasExam `boil:",bind"`
-}
-
 type PublicController struct {
 	Database *sql.DB
 }

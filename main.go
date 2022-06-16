@@ -75,8 +75,6 @@ func main() {
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
-	// TODO: panics
-	router.GET("/users/:user_id", pCtrl.GetUserById)
 	router.POST("/exams", pCtrl.CreateExam)
 	router.POST("/exams/:id/edit", pCtrl.EditExam)
 	router.POST("/exams/:id/files", pCtrl.UploadExamFile)
