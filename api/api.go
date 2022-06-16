@@ -1367,7 +1367,7 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 }
 
 func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
-	file_id, err := strconv.Atoi(c.Param("file_id"))
+	file_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `file_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
