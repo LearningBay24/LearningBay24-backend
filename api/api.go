@@ -1138,20 +1138,6 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 
-	name, ok := j["name"].(string)
-	if !ok {
-		log.Error("unable to convert name to string")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	description, ok := j["description"].(string)
-	if !ok {
-		log.Error("unable to convert description to string")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
 	dateStr, ok := j["date"].(string)
 	if !ok {
 		log.Error("unable to convert date to string")
@@ -1545,7 +1531,6 @@ func (f *PublicController) GetFileFromExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
 	err = pCtrl.AttendExam(examId, userId)
 	if err != nil {
 		log.Errorf("Unable to get file from exam: %s", err.Error())
