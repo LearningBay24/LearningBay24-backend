@@ -19,27 +19,35 @@ import (
 
 type ExamService interface {
 	GetExamByID(examId int) (*models.Exam, error)
-	GetAllExamsFromUser(userId int) (models.ExamSlice, error)
-	GetAttendedExamsFromUser(userId int) (models.ExamSlice, error)
-	GetPassedExamsFromUser(userId int) (models.ExamSlice, error)
+	GetRegisteredExamsFromUser(userId int) (models.ExamSlice, error)
+	GetExamsFromCourse(courseId int) (models.ExamSlice, error)
+	GetAttendedExamsFromUser(userId int) ([]*GradedExam, error)
+	GetPassedExamsFromUser(userId int) ([]*GradedExam, error)
 	GetCreatedExamsFromUser(userId int) (models.ExamSlice, error)
 	CreateExam(name, description string, date time.Time, duration, courseId, creatorId int, online int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) (int, error)
-	EditExam(date time.Time, duration int) (int, error)
+	EditExam(name, description string, date time.Time, duration, examId, creatorId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) error
+	UploadExamFile(fileName string, uri string, uploaderId, examId int, local bool, file io.Reader) error
+	DeleteExamFile(tx *sql.Tx, examId int) error
 	RegisterToExam(userId, examId int) (*models.User, error)
 	DeregisterFromExam(userId, examId int) error
-	AttendExam(userId, examId int) (*models.Exam, error)
+	AttendExam(examId, userId int) error
 	GetFileFromExam(examId int) ([]*models.File, error)
 	SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error
-	GetRegisteredUsersFromExam(examId int) (models.UserHasExamSlice, error)
+	GetRegisteredUsersFromExam(examId, userId int) (models.UserHasExamSlice, error)
 	GetAnswerFromAttendee(fileId int) (*models.File, error)
-	GradeAnswer(examId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
-	DeleteExam(examId int) (int, error)
-	GetUnregisteredExams(userId int) (models.ExamSlice, error)
+	GradeAnswer(examId, creatorId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
 	SetAttended(examId, userId int) error
+	GetUnregisteredExams(userId int) (models.ExamSlice, error)
+	DeleteExam(examId int) (int, error)
 }
 
 type GradedExam struct {
 	models.Exam        `boil:",bind"`
+	models.UserHasExam `boil:",bind"`
+}
+
+type Attendee struct {
+	models.User        `boil:",bind"`
 	models.UserHasExam `boil:",bind"`
 }
 
@@ -259,6 +267,7 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 	return nil
 }
 
+// DeleteExamFile takes a transaction and examId and deletes the file associated to the exam
 func (p *PublicController) DeleteExamFile(tx *sql.Tx, examId int) error {
 	var files []*models.File
 	err := queries.Raw("select * from file, exam_has_files where exam_has_files.exam_id=? AND exam_has_files.file_id = file.id AND file.id is null", examId).Bind(context.Background(), p.Database, &files)
@@ -404,15 +413,23 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file i
 }
 
 // GetRegisteredUsersFromExam takes an examId and userId and returns a slice of relations between the exam and all of it's registered users
-func (p *PublicController) GetRegisteredUsersFromExam(examId, userId int) (models.UserHasExamSlice, error) {
+func (p *PublicController) GetRegisteredUsersFromExam(examId, userId int) ([]*Attendee, error) {
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return nil, err
 	}
 
 	if userId == ex.CreatorID {
-		var attendees []*models.UserHasExam
-		err = queries.Raw("select * from user_has_exam, exam where exam_id=? AND user_has_exam.deleted_at is null AND exam.deleted_at is null", examId).Bind(context.Background(), p.Database, &attendees)
+		var attendees []*Attendee
+
+		err := models.NewQuery(
+			qm.Select("user.*", "user_has_exam.*"),
+			qm.From(models.TableNames.User),
+			qm.InnerJoin("user_has_exam on user.id = user_has_exam.user_id"),
+			qm.Where("user_has_exam.exam_id=?", examId),
+			qm.And("user_has_exam.deleted_at is null"),
+			qm.And("user.deleted_at is null"),
+		).Bind(context.Background(), p.Database, &attendees)
 		if err != nil {
 			return nil, err
 		}
