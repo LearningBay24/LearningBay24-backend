@@ -813,8 +813,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 
 func (f *PublicController) EditExam(c *gin.Context) {
 	var editedExam models.Exam
-	var date time.Time
-	var duration int
+
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
@@ -830,19 +829,35 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	description, ok := j["description"].(string)
+	if !ok {
+		log.Error("unable to convert description to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
 	dateStr, ok := j["date"].(string)
 	if !ok {
 		log.Error("unable to convert date to string")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+	var date time.Time
 	if dateStr != "" {
-		date, err = time.Parse(time.RFC3339, dateStr)
+		date, err = time.ParseInLocation(time.RFC3339, dateStr, time.Local)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
 			c.Status(http.StatusBadRequest)
 			return
 		}
+		date = date.Local()
 	}
 	durationStr, ok := j["duration"].(string)
 	if !ok {
@@ -851,6 +866,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 
+	var duration int
 	if durationStr != "" {
 		duration, err = strconv.Atoi(durationStr)
 		if err != nil {
@@ -874,8 +890,67 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 
+	onlineStr, ok := j["online"].(string)
+	if !ok {
+		log.Error("unable to convert online to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	var online null.Int8
+	if onlineStr != "" {
+		onlineInt, err := strconv.Atoi(onlineStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `online` to int: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+		}
+		online.Int8 = int8(onlineInt)
+		online.Valid = true
+	} else {
+
+	}
+
+	location, ok := j["location"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	registerDeadlineStr, ok := j["register_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert register_deadline to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	var registerDeadline time.Time
+	if registerDeadlineStr != "" {
+		registerDeadline, err = time.Parse(time.RFC3339, registerDeadlineStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+	}
+
+	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert deregister_deadline to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	var deregisterDeadline time.Time
+	if deregisterDeadlineStr != "" {
+		deregisterDeadline, err = time.Parse(time.RFC3339, deregisterDeadlineStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+	}
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	id, err := pCtrl.EditExam(examId, userId, date, duration)
+	id, err := pCtrl.EditExam(name, description, date, duration, examId, userId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
 	if err != nil {
 		log.Errorf("Unable to edit exam: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
