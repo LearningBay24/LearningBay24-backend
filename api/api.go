@@ -1218,11 +1218,11 @@ func (f *PublicController) DeregisterFromExam(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (f *PublicController) AttendExam(c *gin.Context) {
+func (f *PublicController) GetFileFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Error("Unable to convert parameter 'id' to an int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	userId, err := f.GetIdFromCookie(c)
@@ -1233,26 +1233,13 @@ func (f *PublicController) AttendExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	user, err := pCtrl.AttendExam(userId, examId)
-	if err != nil {
-		log.Errorf("Unable to attend user to exam: %s\n", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	c.IndentedJSON(http.StatusOK, user)
-}
-
-func (f *PublicController) GetFileFromExam(c *gin.Context) {
-	examId, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
-		return
-	}
-
-	pCtrl := exam.PublicController{Database: f.Database}
 	file, err := pCtrl.GetFileFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get file from exam: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	err = pCtrl.AttendExam(examId, userId)
 	if err != nil {
 		log.Errorf("Unable to get file from exam: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
@@ -1319,6 +1306,14 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	err = pCtrl.AttendExam(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to attend user to exam: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
 	}
 
 	c.Status(http.StatusCreated)
