@@ -9,6 +9,7 @@ import (
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"learningbay24.de/backend/models"
 )
 
@@ -203,6 +204,29 @@ func DeleteSubmissionHasFiles(db *sql.DB, sid int, fid int) error {
 	}
 
 	return nil
+}
+
+func GetSubmissionsFromUser(db *sql.DB, user_id int) ([]*models.Submission, error) {
+
+	submissions, err := models.Submissions(
+		qm.From(models.TableNames.UserSubmission+","+models.TableNames.Course),
+		qm.Where(models.UserSubmissionColumns.SubmitterID+"=?", user_id),
+		qm.And("submission.course_id = course.id"),
+		qm.And("submission.id = user_submission.submission_id"),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return submissions, nil
+}
+
+func GetUserSubmission(db *sql.DB, user_submission_id int) (*models.UserSubmission, error) {
+	user_submission, err := models.FindUserSubmission(context.Background(), db, user_submission_id)
+	if err != nil {
+		return nil, err
+	}
+	return user_submission, nil
 }
 
 func CreateUserSubmission(db *sql.DB, name string, submitter_id int, submission_id int, ignores_submission_deadline int8) (int, error) {

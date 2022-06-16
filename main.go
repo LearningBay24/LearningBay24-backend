@@ -77,6 +77,9 @@ func main() {
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
+	router.GET("user/submissions", pCtrl.GetSubmissionFromUser)
+	// TODO: DeleteSubmission
+	// TODO: EditSubmissionById
 
 	router.Run("0.0.0.0:8080")
 }

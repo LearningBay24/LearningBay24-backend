@@ -1037,3 +1037,79 @@ func (f *PublicController) CreateSubmission(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, id)
 }
+
+func (f *PublicController) DeleteSubmission(c *gin.Context) {
+
+	//Get given ID from the Context
+	//Convert data type from str to int to use ist as param
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get role_id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	if !AuthorizeModerator(role_id) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	//Deactivate Data from Database with Backend function
+	fos_id, err := course.DeleteSubmission(f.Database, id)
+	//Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete submission: %s\n", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, fos_id)
+}
+
+func (f *PublicController) EditSubmissionById(c *gin.Context) {
+
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	var newSubmission models.Submission
+	if err := c.BindJSON(&newSubmission); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	_, err = course.EditSubmission(f.Database, id, newSubmission.Name, newSubmission.Deadline.Time.String(), newSubmission.MaxFilesize, newSubmission.VisibleFrom.String())
+	if err != nil {
+		log.Errorf("Unable to update fieldofstudy: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, id)
+}
+
+func (f *PublicController) GetSubmissionFromUser(c *gin.Context) {
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Fetch Data from Database with Backend function
+	users, err := course.GetSubmissionsFromUser(f.Database, user_id)
+	if err != nil {
+		log.Errorf("Unable to get submissions from user: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, users)
+}
