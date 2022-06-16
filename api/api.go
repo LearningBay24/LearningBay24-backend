@@ -965,6 +965,14 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		return
 	}
 
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+
+		return
+	}
+
 	if c.ContentType() == "text/plain" {
 		type _file struct {
 			Name string `json:"name"`
@@ -979,12 +987,6 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		}
 		log.Info(file)
 
-		user_id, err := f.GetIdFromCookie(c)
-		if err != nil {
-			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-			return
-		}
 		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
 		if err != nil {
@@ -1007,13 +1009,6 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 			return
 		}
 
-		user_id, err := f.GetIdFromCookie(c)
-		if err != nil {
-			log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
-			c.IndentedJSON(http.StatusBadRequest, err.Error())
-
-			return
-		}
 		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi)
 		if err != nil {
@@ -1279,7 +1274,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 		log.Info(file)
 
 		pCtrl := exam.PublicController{Database: f.Database}
-		err = pCtrl.SubmitAnswer(file.Name, file.Uri, false, nil, examId, userId)
+		err = pCtrl.SubmitAnswer(file.Name, file.Uri, examId, userId, false, nil)
 		if err != nil {
 			log.Errorf("Unable to submit answer: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -1300,7 +1295,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 			return
 		}
 		pCtrl := exam.PublicController{Database: f.Database}
-		err = pCtrl.SubmitAnswer(file.Filename, "", true, fi, examId, userId)
+		err = pCtrl.SubmitAnswer(file.Filename, "", examId, userId, true, fi)
 		if err != nil {
 			log.Errorf("Unable to submit answer: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
