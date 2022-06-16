@@ -925,7 +925,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 
 	var registerDeadline time.Time
 	if registerDeadlineStr != "" {
-		registerDeadline, err = time.Parse(time.RFC3339, registerDeadlineStr)
+		registerDeadline, err = time.ParseInLocation(time.RFC3339, registerDeadlineStr, time.Local)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
 			c.Status(http.StatusBadRequest)
@@ -941,7 +941,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	}
 	var deregisterDeadline time.Time
 	if deregisterDeadlineStr != "" {
-		deregisterDeadline, err = time.Parse(time.RFC3339, deregisterDeadlineStr)
+		deregisterDeadline, err = time.ParseInLocation(time.RFC3339, deregisterDeadlineStr, time.Local)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
 			c.Status(http.StatusBadRequest)
