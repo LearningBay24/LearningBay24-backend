@@ -365,12 +365,12 @@ func (p *PublicController) AttendExam(examId, userId int) error {
 
 	// Can attend to exam if exam start <= current time <= exam end
 	curTime := time.Now()
+	curTime = curTime.Add(time.Minute * 120)
 	end := ex.Date.Add(time.Minute * time.Duration(ex.Duration))
 	diffBegin := curTime.Sub(ex.Date)
 	diffEnd := end.Sub(curTime)
 	if diffBegin.Minutes() >= 0 {
 		if diffEnd.Minutes() >= 0 {
-
 			uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
 			if err != nil {
 				return err
