@@ -484,8 +484,13 @@ func (p *PublicController) GetAttendeesFromExam(examId, userId int) ([]*Attendee
 }
 
 // GetAnswerFromAttendee takes a fileId and returns a struct of the file with the corresponding ID
-func (p *PublicController) GetAnswerFromAttendee(fileId int) (*models.File, error) {
-	cm, err := models.FindFile(context.Background(), p.Database, fileId)
+func (p *PublicController) GetAnswerFromAttendee(userId, examId int) (*models.File, error) {
+	uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
+	if err != nil {
+		return nil, err
+	}
+
+	cm, err := models.FindFile(context.Background(), p.Database, uhex.FileID.Int)
 	if err != nil {
 		return nil, err
 	}
