@@ -294,10 +294,10 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 }
 
 // AttendExam takes an userId and examId and marks the user's exam as attended
-func (p *PublicController) AttendExam(userId, examId int) (*models.Exam, error) {
+func (p *PublicController) AttendExam(examId, userId int) error {
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Can attend to exam if exam start <= current time <= exam end
@@ -310,19 +310,19 @@ func (p *PublicController) AttendExam(userId, examId int) (*models.Exam, error) 
 
 			uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			uhex.Attended = 1
 			_, err = uhex.Update(context.Background(), p.Database, boil.Infer())
 			if err != nil {
-				return nil, err
+				return err
 			}
-			return ex, nil
+			return nil
 		}
-		return nil, fmt.Errorf("can't attend exam: exam ended at %s, current time: %s, diff: %f", end.String(), curTime.String(), diffEnd.Minutes())
+		return fmt.Errorf("can't attend exam: exam ended at %s, current time: %s, diff: %f", end.String(), curTime.String(), diffEnd.Minutes())
 	}
-	return nil, fmt.Errorf("can't attend exam: exam hasn't started yet")
+	return fmt.Errorf("can't attend exam: exam hasn't started yet")
 }
 
 // GetFileFromExam takes an examId and returns a slice with the file associated to the exam
