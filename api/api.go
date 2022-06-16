@@ -1528,37 +1528,22 @@ func (f *PublicController) AttendExam(c *gin.Context) {
 }
 
 func (f *PublicController) GetFileFromExam(c *gin.Context) {
-	type _file struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-		URI  string `json:"uri"`
-	}
-
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	files, err := pCtrl.GetFileFromExam(examId)
+	file, err := pCtrl.GetFileFromExam(examId)
 	if err != nil {
 		log.Errorf("Unable to get file from exam: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
-	var _files []_file
-	for _, file := range files {
-		uri := ""
-		if file.Local == 0 {
-			uri = file.URI
-		}
-
-		_files = append(_files, _file{file.ID, file.Name, uri})
-	}
-
-	c.IndentedJSON(http.StatusOK, _files)
+	c.File(file[0].URI)
+	c.Status(http.StatusOK)
 }
 
 func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
