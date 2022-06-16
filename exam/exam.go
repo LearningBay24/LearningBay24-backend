@@ -357,7 +357,7 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, local bool, file i
 	}
 	uhex.FileID = null.Int{Int: fileId}
 
-	err = uhex.Insert(context.Background(), p.Database, boil.Infer())
+	_, err = uhex.Update(context.Background(), p.Database, boil.Infer())
 	if err != nil {
 		return err
 	}
