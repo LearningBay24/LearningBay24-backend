@@ -94,7 +94,7 @@ func main() {
 	router.POST("/users/exams/:id/submit", pCtrl.SubmitAnswerToExam)
 	router.GET("/exams/:id/users", pCtrl.GetRegisteredUsersFromExam)
 	router.GET("exams/:id/users/attended", pCtrl.GetAttendeesFromExam)
-	router.GET("/users/exams/files/:id", pCtrl.GetFileFromAttendee)
+	router.GET("/users/:id/exams/:exam_id/files/", pCtrl.GetFileFromAttendee)
 	router.PATCH("/users/:user_id/exams/:exam_id/grade", pCtrl.GradeAnswer)
 	router.DELETE("/exams/:id", pCtrl.DeleteExam)
 
