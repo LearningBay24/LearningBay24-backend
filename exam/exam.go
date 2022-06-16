@@ -95,7 +95,8 @@ func (p *PublicController) GetAttendedExamsFromUser(userId int) ([]*GradedExam, 
 		qm.InnerJoin("user_has_exam on exam.id = user_has_exam.exam_id"),
 		qm.Where("user_has_exam.attended=1"),
 		qm.And("user_has_exam.user_id = ?", userId),
-		qm.And("user_has_exam.passed is null"),
+		qm.And("(user_has_exam.passed is null"),
+		qm.Or("user_has_exam.passed = 0)"),
 	).Bind(context.Background(), p.Database, &gex)
 	if err != nil {
 		return nil, err
