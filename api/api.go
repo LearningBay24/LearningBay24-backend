@@ -1367,17 +1367,24 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 }
 
 func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
-	file_id, err := strconv.Atoi(c.Param("id"))
+	userId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `file_id` to int: %s", err.Error())
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	pCtrl := exam.PublicController{Database: f.Database}
-	file, err := pCtrl.GetAnswerFromAttendee(file_id)
+	examId, err := strconv.Atoi(c.Param("exam_id"))
 	if err != nil {
-		log.Errorf("Unable to get file with id %d from answer: %s", file_id, err.Error())
+		log.Error("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	file, err := pCtrl.GetAnswerFromAttendee(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to get file from answer: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
