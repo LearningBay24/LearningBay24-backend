@@ -273,17 +273,15 @@ func (p *PublicController) DeleteExamFile(tx *sql.Tx, examId int) error {
 	var files []*models.File
 	err := queries.Raw("select * from file, exam_has_files where exam_has_files.exam_id=? AND exam_has_files.file_id = file.id AND file.id is null", examId).Bind(context.Background(), p.Database, &files)
 	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		return err
+	}
+
+	if len(files) != 0 {
+		_, err = files[0].Delete(context.Background(), tx, false)
+		if err != nil {
+			return err
 		}
-		return err
 	}
-
-	_, err = files[0].Delete(context.Background(), tx, false)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -402,6 +400,9 @@ func (p *PublicController) GetFileFromExam(examId int) ([]*models.File, error) {
 		return nil, err
 	}
 
+	if len(files) == 0 {
+		return nil, fmt.Errorf("couldn't retreive file from exam: exam doesn't have any associated file")
+	}
 	return files, nil
 }
 
