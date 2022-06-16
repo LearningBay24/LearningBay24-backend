@@ -42,13 +42,31 @@ type ExamService interface {
 }
 
 type GradedExam struct {
-	models.Exam        `boil:",bind"`
-	models.UserHasExam `boil:",bind"`
+	models.Exam `boil:",bind"`
+	UserID      int `boil:"user_id" json:"user_id" toml:"user_id" yaml:"user_id"`
+	ExamID      int `boil:"exam_id" json:"exam_id" toml:"exam_id" yaml:"exam_id"`
+	// Whether the user has attended the exam or not.
+	Attended int8     `boil:"attended" json:"attended" toml:"attended" yaml:"attended"`
+	Grade    null.Int `boil:"grade" json:"grade,omitempty" toml:"grade" yaml:"grade,omitempty"`
+	// If the user that attended the exam passed it or not.
+	Passed null.Int8 `boil:"passed" json:"passed,omitempty" toml:"passed" yaml:"passed,omitempty"`
+	// The feedback given to the user about their solution to the exam.
+	Feedback null.String `boil:"feedback" json:"feedback,omitempty" toml:"feedback" yaml:"feedback,omitempty"`
+
+	FileID null.Int `boil:"file_id" json:"file_id,omitempty" toml:"file_id" yaml:"file_id,omitempty"`
 }
 
 type Attendee struct {
-	models.User        `boil:",bind"`
-	models.UserHasExam `boil:",bind"`
+	models.User `boil:",bind"`
+	// Whether the user has attended the exam or not.
+	Attended int8     `boil:"attended" json:"attended" toml:"attended" yaml:"attended"`
+	Grade    null.Int `boil:"grade" json:"grade,omitempty" toml:"grade" yaml:"grade,omitempty"`
+	// If the user that attended the exam passed it or not.
+	Passed null.Int8 `boil:"passed" json:"passed,omitempty" toml:"passed" yaml:"passed,omitempty"`
+	// The feedback given to the user about their solution to the exam.
+	Feedback null.String `boil:"feedback" json:"feedback,omitempty" toml:"feedback" yaml:"feedback,omitempty"`
+
+	FileID null.Int `boil:"file_id" json:"file_id,omitempty" toml:"file_id" yaml:"file_id,omitempty"`
 }
 
 type PublicController struct {
