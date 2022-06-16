@@ -1272,7 +1272,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
 		if err != nil {
-			log.Errorf("Unable to create ExamFile: %s", err.Error())
+			log.Errorf("Unable to create Exam-URI: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
 			return
 		}
