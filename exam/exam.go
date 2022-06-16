@@ -218,23 +218,19 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 		return err
 	}
 	if uploaderId == ex.CreatorID {
-		if fileName != "" && file != nil {
-			fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file)
-			if err != nil {
-				return err
-			}
+		fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file)
+		if err != nil {
+			return fmt.Errorf("error at saving file: %s", err)
+		}
 
-			f, err := models.FindFile(context.Background(), p.Database, fileId)
-			if err != nil {
-				return err
-			}
+		f, err := models.FindFile(context.Background(), p.Database, fileId)
+		if err != nil {
+			return fmt.Errorf("cannot find saved file: %s", err)
+		}
 
-			err = ex.SetFiles(context.Background(), p.Database, false, f)
-			if err != nil {
-				return err
-			}
-		} else {
-			return fmt.Errorf("invalid value for fileName and file: file can't be empty")
+		err = ex.SetFiles(context.Background(), p.Database, false, f)
+		if err != nil {
+			return fmt.Errorf("cannot set file to exam:  %s", err)
 		}
 	} else {
 		return fmt.Errorf("invalid value for uploaderId: only the exam's creator can upload files")
