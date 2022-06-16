@@ -666,16 +666,12 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-<<<<<<< HEAD
-		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil)
-=======
-		err = coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, id, false, nil)
+		err = coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil)
 		if err != nil {
 			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
 			return
 		}
->>>>>>> 70367fe (Add and fix error-handling for file-upload-methods)
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {

@@ -18,7 +18,7 @@ import (
 )
 
 type ExamService interface {
-	GetExam(examId int) (*models.Exam, error)
+	GetExamByID(examId int) (*models.Exam, error)
 	GetAllExamsFromUser(userId int) (models.ExamSlice, error)
 	GetAttendedExamsFromUser(userId int) (models.ExamSlice, error)
 	GetPassedExamsFromUser(userId int) (models.ExamSlice, error)
@@ -48,7 +48,7 @@ type PublicController struct {
 }
 
 // GetExam takes an examId and returns a struct of the exam with this ID
-func (p *PublicController) GetExam(examId int) (*models.Exam, error) {
+func (p *PublicController) GetExamByID(examId int) (*models.Exam, error) {
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return nil, err
@@ -149,8 +149,8 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 }
 
 // EditExam takes a fileName, examId, creatorId, file-handle, date, duration, and an indicator if the file is local
-func (p *PublicController) EditExam(fileName string, examId, creatorId int, local int8, file *io.Reader, date time.Time, duration int) (int, error) {
-	ex, err := p.GetExam(examId)
+func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId, creatorId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) (int, error) {
+	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return 0, err
 	}
@@ -162,11 +162,35 @@ func (p *PublicController) EditExam(fileName string, examId, creatorId int, loca
 		// if exam is online and has a file and filename: upload file
 		// TODO: restrict to pdfs only
 
+		if name != "" {
+			ex.Name = name
+		}
+
+		if description != "" {
+			ex.Description = description
+		}
+
 		if !date.IsZero() {
 			ex.Date = date
 		}
 		if duration != 0 {
 			ex.Duration = duration
+		}
+
+		if online.Valid {
+			ex.Online = online.Int8
+		}
+
+		if location.String != "" {
+			ex.Location.String = location.String
+		}
+
+		if !registerDeadLine.IsZero() {
+			ex.RegisterDeadline = registerDeadLine
+		}
+
+		if !deregisterDeadLine.IsZero() {
+			ex.DeregisterDeadline = deregisterDeadLine
 		}
 
 		_, err = ex.Update(context.Background(), tx, boil.Infer())
@@ -194,27 +218,23 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 		return err
 	}
 	if uploaderId == ex.CreatorID {
-		if ex.Online != 0 {
-			if fileName != "" && file != nil {
-				fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file)
-				if err != nil {
-					return err
-				}
+		if fileName != "" && file != nil {
+			fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file)
+			if err != nil {
+				return err
+			}
 
-				f, err := models.FindFile(context.Background(), p.Database, fileId)
-				if err != nil {
-					return err
-				}
+			f, err := models.FindFile(context.Background(), p.Database, fileId)
+			if err != nil {
+				return err
+			}
 
-				err = ex.SetFiles(context.Background(), p.Database, false, f)
-				if err != nil {
-					return err
-				}
-			} else {
-				return fmt.Errorf("invalid value for fileName and file: file can't be empty")
+			err = ex.SetFiles(context.Background(), p.Database, false, f)
+			if err != nil {
+				return err
 			}
 		} else {
-			return fmt.Errorf("error: exam needs to be online")
+			return fmt.Errorf("invalid value for fileName and file: file can't be empty")
 		}
 	} else {
 		return fmt.Errorf("invalid value for uploaderId: only the exam's creator can upload files")
