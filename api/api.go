@@ -1593,7 +1593,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	err = pCtrl.AttendExam(userId, examId)
+	err = pCtrl.AttendExam(examId, userId)
 	if err != nil {
 		log.Errorf("Unable to attend user to exam: %s\n", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
