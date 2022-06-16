@@ -418,7 +418,8 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, examId, userId int
 	if err != nil {
 		return err
 	}
-	uhex.FileID.Int = fileId
+	fid := null.IntFrom(fileId)
+	uhex.FileID = fid
 
 	_, err = uhex.Update(context.Background(), p.Database, boil.Infer())
 	if err != nil {
