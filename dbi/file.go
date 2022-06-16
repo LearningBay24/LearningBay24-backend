@@ -65,7 +65,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 				}
 				break
 			} else {
-				return 0, err
+				return 0, fmt.Errorf("file type is invalid: %s", err)
 			}
 		}
 	}
@@ -83,7 +83,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
-		return 0, err
+		return 0, fmt.Errorf("cannot insert file into database: %s", err)
 	}
 
 	// create file on disk
@@ -93,7 +93,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
-		return 0, err
+		return 0, fmt.Errorf("cannot create file on disk: %s", err)
 	}
 	defer fp.Close()
 	// write to the file on disk
@@ -104,7 +104,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
-		return 0, err
+		return 0, fmt.Errorf("cannot write to file on disk: %s", err)
 	}
 
 	err = tx.Commit()
@@ -113,7 +113,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
-		return 0, err
+		return 0, fmt.Errorf("unable to commit: %s", err)
 	}
 
 	return f.ID, nil
