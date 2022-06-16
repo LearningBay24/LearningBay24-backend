@@ -258,7 +258,7 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 		// need to set DeletedAt back to zero-value if row already exists
 		//var zeroTime null.Time
 		uhex := models.UserHasExam{UserID: userId, ExamID: examId}
-		//err = uhex.Upsert(context.Background(), p.Database, boil.Infer())
+		//err = uhex.Upsert(context.Background(), p.Database, nil, boil.Infer())
 		err = uhex.Insert(context.Background(), p.Database, boil.Infer())
 		if err != nil {
 			return nil, err
@@ -334,7 +334,7 @@ func (p *PublicController) GetFileFromExam(examId int) ([]*models.File, error) {
 
 	var files []*models.File
 	// NOTE: raw query is used because sqlboiler seems to not be able to query the database properly in this case when used with query building
-	err = queries.Raw("select * from file, exam_has_files where exam_has_files.exam_id=? AND exam_has_files.file_id=file.id AND exam_has_files.deleted_at is null", examId).Bind(context.Background(), p.Database, &files)
+	err = queries.Raw("select * from file, exam_has_files where exam_has_files.exam_id=? AND exam_has_files.file_id=file.id", examId).Bind(context.Background(), p.Database, &files)
 	if err != nil {
 		return nil, err
 	}
