@@ -159,7 +159,6 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 	if err != nil {
 		return 0, err
 	}
-
 	if name == "" {
 		y, m, d := date.Date()
 		creator, err := models.FindUser(context.Background(), p.Database, creatorId)
