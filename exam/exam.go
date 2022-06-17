@@ -159,6 +159,13 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 	if err != nil {
 		return 0, err
 	}
+	uhc, err := models.FindUserHasCourse(context.Background(), p.Database, creatorId, c.ID)
+	if err != nil {
+		return 0, err
+	}
+	if uhc.RoleID != 2 {
+		return 0, fmt.Errorf("unable to create course: only the course's creator can create exams")
+	}
 	if name == "" {
 		y, m, d := date.Date()
 		creator, err := models.FindUser(context.Background(), p.Database, creatorId)
