@@ -962,7 +962,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 
 	raw, err := c.GetRawData()
 	if err != nil {
-		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -976,21 +976,21 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	name, ok := j["name"].(string)
 	if !ok {
 		log.Error("unable to convert name to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	description, ok := j["description"].(string)
 	if !ok {
 		log.Error("unable to convert description to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	dateStr, ok := j["date"].(string)
 	if !ok {
 		log.Error("unable to convert date to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1004,7 +1004,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	durationStr, ok := j["duration"].(string)
 	if !ok {
 		log.Error("unable to convert duration to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1018,7 +1018,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	courseIdStr, ok := j["course_id"].(string)
 	if !ok {
 		log.Error("unable to convert course_id to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1031,7 +1031,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 
 	creatorId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1039,7 +1039,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	onlineStr, ok := j["online"].(string)
 	if !ok {
 		log.Error("unable to convert online to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1052,14 +1052,14 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	location, ok := j["location"].(string)
 	if !ok {
 		log.Error("unable to convert location to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	registerDeadlineStr, ok := j["register_deadline"].(string)
 	if !ok {
 		log.Error("unable to convert register_deadline to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1073,7 +1073,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
 	if !ok {
 		log.Error("unable to convert deregister_deadline to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1087,7 +1087,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	id, err := pCtrl.CreateExam(name, description, date, duration, courseId, creatorId, int8(online), null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
 	if err != nil {
-		log.Errorf("Unable to create exam: %s\n", err.Error())
+		log.Errorf("Unable to create exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1103,7 +1103,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	var duration int
 	raw, err := c.GetRawData()
 	if err != nil {
-		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1166,7 +1166,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1251,7 +1251,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 
 		return
@@ -1265,7 +1265,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
-			log.Errorf("Unable to bind json: %s\n", err.Error())
+			log.Errorf("Unable to bind json: %s", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
@@ -1315,7 +1315,7 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	co, err := pCtrl.GetExamByID(id)
 	if err != nil {
-		log.Errorf("Unable to get exam: %s\n", err.Error())
+		log.Errorf("Unable to get exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1328,7 +1328,7 @@ func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
 	// Convert data type from str to int to use ist as param
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1337,7 +1337,7 @@ func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	exams, err := pCtrl.GetRegisteredExamsFromUser(userId)
 	if err != nil {
-		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		log.Errorf("Unable to get exams from user: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1348,7 +1348,7 @@ func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
 func (f *PublicController) GetUnregisteredExamsFromUser(c *gin.Context) {
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1373,7 +1373,7 @@ func (f *PublicController) GetExamsFromCourse(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	exams, err := pCtrl.GetExamsFromCourse(courseId)
 	if err != nil {
-		log.Errorf("Unable to get exam: %s\n", err.Error())
+		log.Errorf("Unable to get exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1386,7 +1386,7 @@ func (f *PublicController) GetAttendedExamsFromUser(c *gin.Context) {
 	// Convert data type from str to int to use ist as param
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1395,7 +1395,7 @@ func (f *PublicController) GetAttendedExamsFromUser(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	exams, err := pCtrl.GetAttendedExamsFromUser(user_id)
 	if err != nil {
-		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		log.Errorf("Unable to get exams from user: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1408,7 +1408,7 @@ func (f *PublicController) GetPassedExamsFromUser(c *gin.Context) {
 	// Convert data type from str to int to use ist as param
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1417,7 +1417,7 @@ func (f *PublicController) GetPassedExamsFromUser(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	exams, err := pCtrl.GetPassedExamsFromUser(user_id)
 	if err != nil {
-		log.Errorf("Unable to get exams from user: %s\n", err.Error())
+		log.Errorf("Unable to get exams from user: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1430,7 +1430,7 @@ func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
 	// Convert data type from str to int to use ist as param
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1439,7 +1439,7 @@ func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	exams, err := pCtrl.GetCreatedExamsFromUser(user_id)
 	if err != nil {
-		log.Errorf("Unable to get exams from exam: %s\n", err.Error())
+		log.Errorf("Unable to get exams from exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1456,7 +1456,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 	}
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1464,7 +1464,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	user, err := pCtrl.RegisterToExam(userId, examId)
 	if err != nil {
-		log.Errorf("Unable to register user to course: %s\n", err.Error())
+		log.Errorf("Unable to register user to course: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1481,7 +1481,7 @@ func (f *PublicController) DeregisterFromExam(c *gin.Context) {
 	}
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1489,7 +1489,7 @@ func (f *PublicController) DeregisterFromExam(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	err = pCtrl.DeregisterFromExam(userId, examId)
 	if err != nil {
-		log.Errorf("Unable to deregister user from exam: %s\n", err.Error())
+		log.Errorf("Unable to deregister user from exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1506,7 +1506,7 @@ func (f *PublicController) GetFileFromExam(c *gin.Context) {
 	}
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get user_id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1539,7 +1539,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 
 	userId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1552,7 +1552,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
-			log.Errorf("Unable to bind json: %s\n", err.Error())
+			log.Errorf("Unable to bind json: %s", err.Error())
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
@@ -1591,7 +1591,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	err = pCtrl.AttendExam(examId, userId)
 	if err != nil {
-		log.Errorf("Unable to attend user to exam: %s\n", err.Error())
+		log.Errorf("Unable to attend user to exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1609,7 +1609,7 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 
 	creatorId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1617,7 +1617,7 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	attendees, err := pCtrl.GetRegisteredUsersFromExam(examId, creatorId)
 	if err != nil {
-		log.Errorf("Unable to fetch attendees from exam: %s\n", err.Error())
+		log.Errorf("Unable to fetch attendees from exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1635,7 +1635,7 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 
 	creatorId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1643,7 +1643,7 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 	pCtrl := exam.PublicController{Database: f.Database}
 	attendees, err := pCtrl.GetAttendeesFromExam(examId, creatorId)
 	if err != nil {
-		log.Errorf("Unable to fetch attendees from exam: %s\n", err.Error())
+		log.Errorf("Unable to fetch attendees from exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1688,7 +1688,7 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 
 	creatorId, err := f.GetIdFromCookie(c)
 	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1702,7 +1702,7 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 
 	raw, err := c.GetRawData()
 	if err != nil {
-		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -1796,7 +1796,7 @@ func (f *PublicController) DeleteExam(c *gin.Context) {
 	ex, err := pCtrl.DeleteExam(id)
 	// Return Status and Data in JSON-Format
 	if err != nil {
-		log.Errorf("Unable to delete course: %s\n", err.Error())
+		log.Errorf("Unable to delete course: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}

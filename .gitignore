@@ -1,5 +1,2 @@
 config.toml
-.idea/LearningBay24-backend.iml
-.idea/modules.xml
-.idea/vcs.xml
-.idea/workspace.xml
+.idea
