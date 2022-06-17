@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/models"
 )
 
@@ -171,31 +173,48 @@ func DeleteSubmission(db *sql.DB, sid int) (int, error) {
 	return s.ID, nil
 }
 
-func CreateSubmissionHasFiles(db *sql.DB, sid int, fid int) (int, error) {
+func CreateSubmissionHasFiles(db *sql.DB, submission_id int, fileName string, uri string, uploaderId int, local bool, file io.Reader) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return 0, err
+		return err
 	}
-	// TODO: ADD FILE TO SUBMISSION_HAS_FILES
-	_, err = tx.Exec("INSERT INTO submission_has_files(submission_id,file_id) VALUES (?,?);", sid, fid)
+	file_id, err := dbi.SaveFile(db, fileName, uri, uploaderId, local, &file)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("INSERT INTO submission_has_files(submission_id,file_id) VALUES (?,?);", submission_id, file_id)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
-		return 0, err
+		return err
 	}
 	if e := tx.Commit(); e != nil {
-		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
-	return 0, err
+	return err
 }
-func DeleteSubmissionHasFiles(db *sql.DB, sid int, fid int) error {
+func DeleteSubmissionHasFiles(db *sql.DB, submission_id int, file_id int) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec("DELETE FROM submission_has_files WHERE submission_id = ? AND file_id = ? ;", sid, fid)
+	file, err := models.FindFile(context.Background(), tx, file_id)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+
+	_, err = file.Delete(context.Background(), tx, false)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+
+	_, err = tx.Exec("DELETE FROM submission_has_files WHERE submission_id = ? AND file_id = ? ;", submission_id, file_id)
 	if err != nil {
 		return err
 	}
@@ -251,6 +270,7 @@ func CreateUserSubmission(db *sql.DB, name string, submitter_id int, submission_
 	if err != nil {
 		return 0, err
 	}
+
 	uhassubmission := models.UserSubmission{Name: nullname, SubmitterID: submitter_id, SubmissionID: submission_id, IgnoresSubmissionDeadline: ignores_submission_deadline, SubmissionTime: null.NewTime(curtime, true)}
 
 	err = uhassubmission.Insert(context.Background(), tx, boil.Infer())
@@ -260,13 +280,16 @@ func CreateUserSubmission(db *sql.DB, name string, submitter_id int, submission_
 		}
 		return 0, err
 	}
+
 	if e := tx.Commit(); e != nil {
 		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
 
 	return uhassubmission.ID, nil
 }
-func EditUserSubmission(db *sql.DB, user_submission_id int, name string) (int, error) {
+
+/*
+func EditUserSubmission(db *sql.DB, user_submission_id int, file_id int, name string) (int, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
@@ -285,18 +308,34 @@ func EditUserSubmission(db *sql.DB, user_submission_id int, name string) (int, e
 	if e := tx.Commit(); e != nil {
 		return 0, fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
 	}
+	file, err := models.FindFile(context.Background(), tx, file_id)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+	file.Name = name
+	_, err = file.Update(context.Background(), tx, boil.Infer())
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
 
 	return uhassubmission.ID, nil
-}
+}*/
+
 func DeleteUserSubmission(db *sql.DB, user_submission_id int) (int, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
 	}
+
 	uhassubmission, err := models.FindUserSubmission(context.Background(), db, user_submission_id)
 	if err != nil {
 		return 0, err
 	}
+
 	_, err = uhassubmission.Delete(context.Background(), db, false)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
@@ -309,4 +348,57 @@ func DeleteUserSubmission(db *sql.DB, user_submission_id int) (int, error) {
 	}
 
 	return uhassubmission.ID, nil
+}
+
+func CreateUserSubmissionHasFiles(db *sql.DB, user_submission_id int, fileName string, uri string, uploaderId int, local bool, file io.Reader) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	file_id, err := dbi.SaveFile(db, fileName, uri, uploaderId, local, &file)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec("INSERT INTO user_submission_has_files(user_submission_id,file_id) VALUES (?,?);", user_submission_id, file_id)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+		return err
+	}
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+	return err
+}
+
+func DeleteUserSubmissionHasFiles(db *sql.DB, user_submission_id int, file_id int) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	file, err := models.FindFile(context.Background(), tx, file_id)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+
+	_, err = file.Delete(context.Background(), tx, false)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+	}
+
+	_, err = tx.Exec("DELETE FROM user_submission_has_files WHERE user_submission_id = ? AND file_id = ? ;", user_submission_id, file_id)
+	if err != nil {
+		return err
+	}
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+
+	return nil
 }

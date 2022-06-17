@@ -68,8 +68,16 @@ func main() {
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id", pCtrl.EnrollUser)
 	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
-	router.GET("/submission/:id", pCtrl.GetSubmission)
-	router.POST("/courses/:id/submission", pCtrl.CreateSubmission)
+	router.GET("/courses/submissions/:id", pCtrl.GetSubmission)
+	router.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
+	router.DELETE("/submissions/:id", pCtrl.DeleteSubmission)
+	router.PATCH("/submissions/:id", pCtrl.EditSubmissionById)
+	router.POST("/courses/submissions/:id/files", pCtrl.CreateSubmissionHasFiles)
+	router.DELETE("/courses/submissions/:id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
+	router.POST("/courses/submissions/:id/usersubmissions", pCtrl.CreateUserSubmission)
+	router.DELETE("/courses/submissions/usersubmissions/:id", pCtrl.DeleteUserSubmission)
+	router.POST("/courses/submissions/usersubmissions/:id/files", pCtrl.CreateUserSubmissionHasFiles)
+	router.DELETE("/courses/submissions/usersubmissions/:id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.GET("/courses/search", pCtrl.SearchCourse)
@@ -77,9 +85,8 @@ func main() {
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
-	router.GET("user/submissions", pCtrl.GetSubmissionFromUser)
-	// TODO: DeleteSubmission
-	// TODO: EditSubmissionById
+	router.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
+	router.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 
 	router.Run("0.0.0.0:8080")
 }
