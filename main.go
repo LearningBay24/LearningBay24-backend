@@ -63,17 +63,18 @@ func main() {
 	router.DELETE("/courses/:id", pCtrl.DeleteCourse)
 	router.DELETE("/courses/:id/:user_id", pCtrl.DeleteUserFromCourse)
 	router.POST("/login", pCtrl.Login)
+	router.POST("/logout", pCtrl.Logout)
 	router.POST("/register", pCtrl.Register)
 	router.POST("/courses", pCtrl.CreateCourse)
-	router.POST("/courses/:id/:user_id", pCtrl.EnrollUser)
+	router.POST("/courses/:id", pCtrl.EnrollUser)
 	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.GET("/courses/search", pCtrl.SearchCourse)
 	router.PATCH("/courses/:id", pCtrl.UpdateCourseById)
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
-	// TODO: panics
-	router.GET("/users/:user_id", pCtrl.GetUserById)
+	router.GET("/users/cookie", pCtrl.GetUserByCookie)
+	router.GET("/users/:id", pCtrl.GetUserById)
 
 	router.Run("0.0.0.0:8080")
 }
