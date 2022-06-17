@@ -66,8 +66,6 @@ func CreateSubmission(db *sql.DB, name string, deadline string, cid int, maxfile
 		}
 	}
 
-	// Begins the transaction
-
 	s := &models.Submission{Name: name, Deadline: dtime, CourseID: cid, MaxFilesize: maxfilesize, VisibleFrom: vtime}
 
 	// Inserts into database
@@ -263,7 +261,7 @@ func CreateUserSubmission(db *sql.DB, name string, submitter_id int, submission_
 		}
 
 		if subm.Deadline.Time.Sub(curtime) < 0 {
-			return 0, errors.New("past Deadline time")
+			return 0, errors.New("submission time is past Deadline time of this submission")
 		}
 	}
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -325,7 +323,7 @@ func EditUserSubmission(db *sql.DB, user_submission_id int, file_id int, name st
 	return uhassubmission.ID, nil
 }*/
 
-func DeleteUserSubmission(db *sql.DB, user_submission_id int) (int, error) {
+func DeleteUserSubmission(db *sql.DB, user_submission_id int, user_id int) (int, error) {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
@@ -334,6 +332,9 @@ func DeleteUserSubmission(db *sql.DB, user_submission_id int) (int, error) {
 	uhassubmission, err := models.FindUserSubmission(context.Background(), db, user_submission_id)
 	if err != nil {
 		return 0, err
+	}
+	if uhassubmission.SubmitterID != user_id {
+		return 0, errors.New("not the submission of this user (wrong user_id)")
 	}
 
 	_, err = uhassubmission.Delete(context.Background(), db, false)
@@ -372,7 +373,15 @@ func CreateUserSubmissionHasFiles(db *sql.DB, user_submission_id int, fileName s
 	return err
 }
 
-func DeleteUserSubmissionHasFiles(db *sql.DB, user_submission_id int, file_id int) error {
+func DeleteUserSubmissionHasFiles(db *sql.DB, user_submission_id int, file_id int, user_id int) error {
+
+	uhassubmission, err := models.FindUserSubmission(context.Background(), db, user_submission_id)
+	if err != nil {
+		return err
+	}
+	if uhassubmission.SubmitterID != user_id {
+		return errors.New("not the submission of this user (wrong user_id)")
+	}
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
@@ -401,4 +410,27 @@ func DeleteUserSubmissionHasFiles(db *sql.DB, user_submission_id int, file_id in
 	}
 
 	return nil
+}
+
+func GetSubmissionsFromCourse(db *sql.DB, course_id int) ([]*models.Submission, error) {
+	submissions, err := models.Submissions(models.SubmissionWhere.CourseID.EQ(course_id)).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+	return submissions, err
+}
+
+func GradeUserSubmission(db *sql.DB, user_submission_id int, grade int) error {
+	submission, err := models.FindUserSubmission(context.Background(), db, user_submission_id)
+	if err != nil {
+		return err
+	}
+	submission.Grade = null.NewInt(grade, true)
+
+	_, err = submission.Update(context.Background(), db, boil.Infer())
+	if err != nil {
+		return err
+	}
+
+	return err
 }
