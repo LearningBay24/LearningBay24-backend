@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"learningbay24.de/backend/calender"
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
@@ -910,17 +911,63 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, user)
 }
 
-/* Uncomment, when calender.go is integrated into main branch
-
 func (f *PublicController) GetAllAppointments(c *gin.Context) {
 
-	user_id, err := strconv.Atoi(c.Param("user_id"))
+	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCon := &calender.PublicController{Database: f.Database}
+	appointments, err := pCon.GetAllAppointments(user_id) // for testing, use 9999 instead of user_id
+	if err != nil {
+		log.Errorf("Unable to get all appointments from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, appointments)
+}
+
+func (f *PublicController) GetAppointments(c *gin.Context) {
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	startDate, err := time.Parse("2006-01-02", j["startDate"].(string))
+	if err != nil {
+		log.Error("unable to convert startDate to time.Time")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	endDate, err := time.Parse("2006-01-02", j["endDate"].(string))
+	if err != nil {
+		log.Error("unable to convert endDate to time.Time")
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	appointments, err := calender.GetAllAppointments(f.Database, user_id)
+	pCon := &calender.PublicController{Database: f.Database}
+	appointments, err := pCon.GetAppointments(user_id, startDate, endDate) // for testing, use 9999 instead of user_id
 	if err != nil {
 		log.Errorf("Unable to get appointments from user: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
@@ -928,7 +975,158 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusOK, appointments)
 }
-*/
+
+func (f *PublicController) AddCourseToCalender(c *gin.Context) {
+
+	var j map[string]interface{}
+
+	if err := c.BindJSON(&j); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	dateStr, ok := j["date"].(string)
+	if !ok {
+		log.Error("unable to convert date to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		log.Error("unable to convert string to time.Time")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	location, ok := j["location"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	onlineStr, ok := j["online"].(string)
+	if !ok {
+		log.Error("unable to convert online to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	online, err := strconv.ParseInt(onlineStr, 10, 8)
+	if err != nil {
+		log.Error("unable to convert string to int8")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	courseIdStr, ok := j["courseId"].(string)
+	if !ok {
+		log.Error("unable to convert courseId to int")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	courseId, err := strconv.ParseInt(courseIdStr, 10, 64)
+	if err != nil {
+		log.Error("unable to convert string to int64")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeatsStr, ok := j["repeats"].(string)
+	if !ok {
+		log.Error("unable to convert repeats to bool")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeats, err := strconv.ParseBool(repeatsStr)
+	if err != nil {
+		log.Error("unable to convert string to bool")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeatDistanceStr, ok := j["repeatDistance"].(string)
+	if !ok {
+		log.Error("unable to convert repeatDistance to int")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeatDistance, err := strconv.ParseInt(repeatDistanceStr, 10, 64)
+	if err != nil {
+		log.Error("unable to convert string to int64")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeatEnd, err := time.Parse("2006-01-02", j["repeatEnd"].(string))
+	if err != nil {
+		log.Error("unable to convert repeatEnd to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCon := &calender.PublicController{Database: f.Database}
+	_, err = pCon.AddCourseToCalender(date, null.StringFrom(location), int8(online), int(courseId), repeats, int(repeatDistance), repeatEnd)
+	if err != nil {
+		log.Errorf("Unable to create course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
+
+	var j map[string]interface{}
+
+	if err := c.BindJSON(&j); err != nil {
+		log.Errorf("Unable to bind json: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	appointment_idStr, ok := j["appointment_id"].(string)
+	if !ok {
+		log.Error("unable to convert date to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	appointment_id, err := strconv.Atoi(appointment_idStr)
+	if err != nil {
+		log.Error("unable to convert string to time.Time")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_idStr, ok := j["course_id"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_id, err := strconv.Atoi(course_idStr)
+	if err != nil {
+		log.Error("unable to convert string to time.Time")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeatsStr, ok := j["repeats"].(string)
+	if !ok {
+		log.Error("unable to convert repeats to bool")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	repeats, err := strconv.ParseBool(repeatsStr)
+	if err != nil {
+		log.Error("unable to convert string to bool")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCon := &calender.PublicController{Database: f.Database}
+	err = pCon.DeactivateCourseInCalender(appointment_id, course_id, repeats)
+	if err != nil {
+		log.Errorf("Unable to create course: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusOK)
+}
 
 func (f *PublicController) SearchCourse(c *gin.Context) {
 
