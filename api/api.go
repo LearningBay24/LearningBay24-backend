@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"learningbay24.de/backend/exam"
-
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
@@ -966,6 +964,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
+
 	var j map[string]interface{}
 	err = json.Unmarshal(raw, &j)
 	if err != nil {
@@ -973,6 +972,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
+
 	name, ok := j["name"].(string)
 	if !ok {
 		log.Error("unable to convert name to string")
@@ -1033,6 +1033,18 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, creatorId, courseId)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseAdmin(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
 		return
 	}
 
@@ -1098,9 +1110,6 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 }
 
 func (f *PublicController) EditExam(c *gin.Context) {
-	var editedExam models.Exam
-	var date time.Time
-	var duration int
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())
@@ -1115,6 +1124,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+
 	name, ok := j["name"].(string)
 	if !ok {
 		log.Error("unable to convert name to string")
@@ -1128,19 +1138,22 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+
 	dateStr, ok := j["date"].(string)
 	if !ok {
 		log.Error("unable to convert date to string")
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	var date time.Time
 	if dateStr != "" {
-		date, err = time.Parse(time.RFC3339, dateStr)
+		date, err = time.ParseInLocation(time.RFC3339, dateStr, time.Local)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
 			c.Status(http.StatusBadRequest)
 			return
 		}
+		date = date.Local()
 	}
 	durationStr, ok := j["duration"].(string)
 	if !ok {
@@ -1148,6 +1161,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
+	var duration int
 	if durationStr != "" {
 		duration, err = strconv.Atoi(durationStr)
 		if err != nil {
