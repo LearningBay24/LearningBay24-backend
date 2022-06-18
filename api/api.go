@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"learningbay24.de/backend/exam"
-
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
