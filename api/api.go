@@ -1112,26 +1112,26 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	err = json.Unmarshal(raw, &j)
 	if err != nil {
 		log.Errorf("Unable to unmarshal the json body: %+v", raw)
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	name, ok := j["name"].(string)
 	if !ok {
 		log.Error("unable to convert name to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	description, ok := j["description"].(string)
 	if !ok {
 		log.Error("unable to convert description to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	dateStr, ok := j["date"].(string)
 	if !ok {
 		log.Error("unable to convert date to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	if dateStr != "" {
@@ -1145,7 +1145,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	durationStr, ok := j["duration"].(string)
 	if !ok {
 		log.Error("unable to convert duration to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	if durationStr != "" {
@@ -1174,7 +1174,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	onlineStr, ok := j["online"].(string)
 	if !ok {
 		log.Error("unable to convert online to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	var online null.Int8
@@ -1193,14 +1193,14 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	location, ok := j["location"].(string)
 	if !ok {
 		log.Error("unable to convert location to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	registerDeadlineStr, ok := j["register_deadline"].(string)
 	if !ok {
 		log.Error("unable to convert register_deadline to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	var registerDeadline time.Time
@@ -1217,7 +1217,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
 	if !ok {
 		log.Error("unable to convert register_deadline to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	var deregisterDeadline time.Time
