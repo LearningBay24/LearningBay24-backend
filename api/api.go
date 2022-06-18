@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"learningbay24.de/backend/exam"
+
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
@@ -879,24 +881,18 @@ func (f *PublicController) GetUserByCookie(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, user)
 }
 
-func (f *PublicController) GetUserById(c *gin.Context) {
-
-	role_id, err := f.GetRoleIdFromCookie(c)
+/* Uncomment, when calender.go is integrated into main branch
+func (f *PublicController) GetAllAppointments(c *gin.Context) {
+	user_id, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		log.Errorf("Unable to get role_id from cookie: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	if !AuthorizeUser(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
-		c.Status(http.StatusUnauthorized)
-		return
-	}
-
-	user_id, err := strconv.Atoi(c.Param("id"))
+	appointments, err := calender.GetAllAppointments(f.Database, user_id)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		log.Errorf("Unable to get appointments from user: %s\n", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -914,25 +910,6 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, user)
-}
-
-/* Uncomment, when calender.go is integrated into main branch
-
-func (f *PublicController) GetAllAppointments(c *gin.Context) {
-
-	user_id, err := strconv.Atoi(c.Param("user_id"))
-	if err != nil {
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	appointments, err := calender.GetAllAppointments(f.Database, user_id)
-	if err != nil {
-		log.Errorf("Unable to get appointments from user: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-	c.IndentedJSON(http.StatusOK, appointments)
 }
 */
 
