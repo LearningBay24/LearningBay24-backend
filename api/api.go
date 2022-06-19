@@ -467,7 +467,7 @@ func (f *PublicController) EditCourseById(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	_, err = course.EditCourse(f.Database, id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
+	_, err = course.EditCourse(f.Database, course_id, newCourse.Name, newCourse.Description, newCourse.EnrollKey)
 	if err != nil {
 		log.Errorf("Unable to update course: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
