@@ -1053,7 +1053,7 @@ func (f *PublicController) DeleteSubmission(c *gin.Context) {
 
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
-	submission_id, err := strconv.Atoi(c.Param("id"))
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -1065,7 +1065,7 @@ func (f *PublicController) DeleteSubmission(c *gin.Context) {
 		return
 	}
 
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1097,7 +1097,7 @@ func (f *PublicController) DeleteSubmission(c *gin.Context) {
 
 func (f *PublicController) EditSubmissionById(c *gin.Context) {
 
-	id, err := strconv.Atoi(c.Param("id"))
+	id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		c.Status(http.StatusBadRequest)
 		return
@@ -1110,7 +1110,7 @@ func (f *PublicController) EditSubmissionById(c *gin.Context) {
 		return
 	}
 
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1207,7 +1207,7 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 		return
 	}
 
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1225,7 +1225,7 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-	submission_id, err := strconv.Atoi(c.Param("id"))
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1288,7 +1288,7 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 
 func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 
-	submission_id, err := strconv.Atoi(c.Param("id"))
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1309,7 +1309,7 @@ func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 		return
 	}
 
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1363,7 +1363,7 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1383,7 +1383,7 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		return
 	}
 
-	submission_id, err := strconv.Atoi(c.Param("id"))
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1437,7 +1437,7 @@ func (f *PublicController) DeleteUserSubmission(c *gin.Context) {
 
 	//Get given ID from the Context
 	//Convert data type from str to int to use ist as param
-	user_submission_id, err := strconv.Atoi(c.Param("id"))
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1451,7 +1451,7 @@ func (f *PublicController) DeleteUserSubmission(c *gin.Context) {
 		return
 	}
 
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1490,7 +1490,7 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1509,7 +1509,7 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-	user_submission_id, err := strconv.Atoi(c.Param("id"))
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1567,7 +1567,7 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 		}
 	}
 
-	c.Status(http.StatusNoContent)
+	c.Status(http.StatusCreated)
 }
 
 func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
@@ -1577,14 +1577,14 @@ func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	user_submission_id, err := strconv.Atoi(c.Param("id"))
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1673,7 +1673,7 @@ func (f *PublicController) GetSubmissionsFromCourse(c *gin.Context) {
 
 func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 
-	user_submission_id, err := strconv.Atoi(c.Param("id"))
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1685,7 +1685,7 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	course_id, err := strconv.Atoi(c.Param("course_id"))
+	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1739,5 +1739,5 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.IndentedJSON(http.StatusOK, "graded")
+	c.Status(http.StatusNoContent)
 }
