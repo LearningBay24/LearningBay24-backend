@@ -939,7 +939,7 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	date, err := time.Parse("2006-01-02", j["date"].(string))
+	date, err := time.Parse(time.RFC3339, j["date"].(string))
 	if err != nil {
 		log.Error("unable to convert string to time.Time")
 		c.Status(http.StatusBadRequest)
