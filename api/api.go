@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -25,6 +26,11 @@ import (
 
 type PublicController struct {
 	Database *sql.DB
+}
+
+type _file struct {
+	Name string `json:"name"`
+	Uri  string `json:"uri"`
 }
 
 func AuthorizeAdmin(roleId int) bool {
@@ -55,6 +61,11 @@ func AuthorizeCourseModerator(roleId int) bool {
 func AuthorizeCourseUser(roleId int) bool {
 	log.Infof("Authorizing with role id: %d", roleId)
 	return roleId <= dbi.CourseUserRoleId
+}
+
+func (f *PublicController) AuthorizeUserHasExam(userId, examId int) (bool, error) {
+	log.Infof("Authorizing exam id: %d with user id: %d")
+	return models.UserHasExamExists(context.Background(), f.Database, userId, examId)
 }
 
 func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
@@ -645,11 +656,6 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 	}
 
 	if c.ContentType() == "text/plain" {
-		type _file struct {
-			Name string `json:"name"`
-			Uri  string `json:"uri"`
-		}
-
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
 			log.Errorf("Unable to bind json: %s", err.Error())
@@ -726,12 +732,6 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 		log.Infof("User is not authorized: %s", err.Error())
 		c.Status(http.StatusUnauthorized)
 		return
-	}
-
-	type _file struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-		URI  string `json:"uri"`
 	}
 
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, course_id)
@@ -968,7 +968,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	err = json.Unmarshal(raw, &j)
 	if err != nil {
 		log.Errorf("Unable to unmarshal the json body: %+v", raw)
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1184,6 +1184,26 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	onlineStr, ok := j["online"].(string)
 	if !ok {
 		log.Error("unable to convert online to string")
@@ -1244,8 +1264,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		deregisterDeadline = deregisterDeadline.Local()
 	}
 
-	pCtrl := exam.PublicController{Database: f.Database}
-	err = pCtrl.EditExam(name, description, date, duration, examId, userId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
 	if err != nil {
 		log.Errorf("Unable to edit exam: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
@@ -1270,12 +1289,27 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		return
 	}
 
-	if c.ContentType() == "text/plain" {
-		type _file struct {
-			Name string `json:"name"`
-			Uri  string `json:"uri"`
-		}
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(id)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
 
+	course_role, err := course.GetCourseRole(f.Database, user_id, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	if c.ContentType() == "text/plain" {
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
 			log.Errorf("Unable to bind json: %s", err.Error())
@@ -1284,11 +1318,10 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		}
 		log.Info(file)
 
-		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
 		if err != nil {
 			log.Errorf("Unable to create Exam-URI: %s", err.Error())
-			c.Status(http.StatusInternalServerError)
+			c.Status(http.StatusBadRequest)
 			return
 		}
 	} else {
@@ -1306,11 +1339,10 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 			return
 		}
 
-		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi)
 		if err != nil {
 			log.Errorf("Unable to create ExamFile: %s", err.Error())
-			c.Status(http.StatusInternalServerError)
+			c.Status(http.StatusBadRequest)
 			return
 		}
 	}
@@ -1321,7 +1353,8 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 func (f *PublicController) GetExamById(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	// Fetch Data from Database with Backend function
@@ -1332,7 +1365,6 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	// Return Status and Data in JSON-Format
 	c.IndentedJSON(http.StatusOK, co)
 }
 
@@ -1379,11 +1411,30 @@ func (f *PublicController) GetUnregisteredExamsFromUser(c *gin.Context) {
 func (f *PublicController) GetExamsFromCourse(c *gin.Context) {
 	courseId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
 		return
 	}
-	// Fetch Data from Database with Backend function
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+
+		return
+	}
+
 	pCtrl := exam.PublicController{Database: f.Database}
+	course_role, err := course.GetCourseRole(f.Database, user_id, courseId)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
 	exams, err := pCtrl.GetExamsFromCourse(courseId)
 	if err != nil {
 		log.Errorf("Unable to get exam: %s", err.Error())
@@ -1464,7 +1515,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	userId, err := f.GetIdFromCookie(c)
@@ -1475,6 +1526,24 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	user, err := pCtrl.RegisterToExam(userId, examId)
 	if err != nil {
 		log.Errorf("Unable to register user to course: %s", err.Error())
@@ -1489,7 +1558,7 @@ func (f *PublicController) DeregisterFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 	userId, err := f.GetIdFromCookie(c)
@@ -1525,6 +1594,12 @@ func (f *PublicController) GetFileFromExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
+	if check, err := f.AuthorizeUserHasExam(userId, examId); !check {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	file, err := pCtrl.GetFileFromExam(examId)
 	if err != nil {
 		log.Errorf("Unable to get file from exam: %s", err.Error())
@@ -1557,12 +1632,14 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 		return
 	}
 
-	if c.ContentType() == "text/plain" {
-		type _file struct {
-			Name string `json:"name"`
-			Uri  string `json:"uri"`
-		}
+	pCtrl := exam.PublicController{Database: f.Database}
+	if check, err := f.AuthorizeUserHasExam(userId, examId); !check {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
 
+	if c.ContentType() == "text/plain" {
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
 			log.Errorf("Unable to bind json: %s", err.Error())
@@ -1571,7 +1648,6 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 		}
 		log.Info(file)
 
-		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.SubmitAnswer(file.Name, file.Uri, examId, userId, false, nil)
 		if err != nil {
 			log.Errorf("Unable to submit answer: %s", err.Error())
@@ -1592,7 +1668,6 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		pCtrl := exam.PublicController{Database: f.Database}
 		err = pCtrl.SubmitAnswer(file.Filename, "", examId, userId, true, fi)
 		if err != nil {
 			log.Errorf("Unable to submit answer: %s", err.Error())
@@ -1601,7 +1676,6 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 		}
 	}
 
-	pCtrl := exam.PublicController{Database: f.Database}
 	err = pCtrl.AttendExam(examId, userId)
 	if err != nil {
 		log.Errorf("Unable to attend user to exam: %s", err.Error())
@@ -1616,7 +1690,7 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1628,6 +1702,25 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, creatorId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	attendees, err := pCtrl.GetRegisteredUsersFromExam(examId, creatorId)
 	if err != nil {
 		log.Errorf("Unable to fetch attendees from exam: %s", err.Error())
@@ -1642,7 +1735,7 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1675,7 +1768,7 @@ func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("exam_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1713,6 +1806,26 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 		return
 	}
 
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, creatorId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())
@@ -1724,14 +1837,14 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 	err = json.Unmarshal(raw, &j)
 	if err != nil {
 		log.Errorf("Unable to unmarshal the json body: %+v", raw)
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	gradeStr, ok := j["grade"].(string)
 	if !ok {
 		log.Error("unable to convert grade to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1745,7 +1858,7 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 	passedStr, ok := j["passed"].(string)
 	if !ok {
 		log.Error("unable to convert passed to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
@@ -1759,11 +1872,10 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 	feedback, ok := j["feedback"].(string)
 	if !ok {
 		log.Error("unable to convert feedback to string")
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	pCtrl := exam.PublicController{Database: f.Database}
 	err = pCtrl.GradeAnswer(examId, creatorId, userId, null.IntFrom(grade), null.Int8From(int8(passed)), null.StringFrom(feedback))
 	if err != nil {
 		log.Errorf("Unable to grade answer: %s", err.Error())
@@ -1789,6 +1901,25 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	err = pCtrl.SetAttended(examId, userId)
 	if err != nil {
 		log.Errorf("Unable to set user's exam to attended: %s", err.Error())
@@ -1801,11 +1932,35 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 func (f *PublicController) DeleteExam(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		c.Status(http.StatusBadRequest)
 		return
 	}
-	// Deactivate Data from Database with Backend function
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(id)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseAdmin(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
 	ex, err := pCtrl.DeleteExam(id)
 	// Return Status and Data in JSON-Format
 	if err != nil {

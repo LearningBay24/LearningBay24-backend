@@ -76,7 +76,7 @@ func main() {
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
 	router.POST("/exams", pCtrl.CreateExam)
-	router.POST("/exams/:id/edit", pCtrl.EditExam)
+	router.PATCH("/exams/:id/edit", pCtrl.EditExam)
 	router.POST("/exams/:id/files", pCtrl.UploadExamFile)
 	router.GET("/exams/:id", pCtrl.GetExamById)
 	router.GET("/courses/:id/exams", pCtrl.GetExamsFromCourse)
