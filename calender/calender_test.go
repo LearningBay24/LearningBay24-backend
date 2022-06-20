@@ -57,7 +57,7 @@ func TestAddCourseToCalender(t *testing.T) {
 		CourseID  string
 	*/
 
-	id, err := ctrl.AddCourseToCalender(time.Time{}, null.String{String: "Home", Valid: true}, 1, 1, false, 2, time.Time{})
+	id, err := ctrl.AddCourseToCalender(time.Time{}, 3600, null.String{String: "Home", Valid: true}, 1, 1)
 	assert.NoError(t, err)
 	assert.NotEqual(t, id, 0)
 }

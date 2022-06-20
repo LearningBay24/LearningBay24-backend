@@ -76,7 +76,6 @@ func main() {
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
 	router.GET("/courses/appointments", pCtrl.GetAllAppointments)
-	router.GET("/appointments", pCtrl.GetAppointments)
 	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
 	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
 
