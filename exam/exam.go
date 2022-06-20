@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"learningbay24.de/backend/course"
 	"strconv"
 	"time"
 
@@ -39,6 +40,7 @@ type ExamService interface {
 	SetAttended(examId, userId int) error
 	GetUnregisteredExams(userId int) (models.ExamSlice, error)
 	DeleteExam(examId int) (int, error)
+	GetCourseFromExam(examId int) (*models.Course, error)
 }
 
 type GradedExam struct {
@@ -176,70 +178,65 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 }
 
 // EditExam takes a fileName, examId, creatorId, file-handle, date, duration, and an indicator if the file is local
-func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId, creatorId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) error {
+func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) error {
 	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return err
 	}
-	if creatorId == ex.CreatorID {
-		tx, err := p.Database.BeginTx(context.Background(), nil)
-		if err != nil {
-			return err
-		}
-		// if exam is online and has a file and filename: upload file
-		// TODO: restrict to pdfs only
-
-		if name != "" {
-			ex.Name = name
-		}
-
-		if description != "" {
-			ex.Description = description
-		}
-
-		if !date.IsZero() {
-			ex.Date = date
-		}
-		if duration != 0 {
-			ex.Duration = duration
-		}
-
-		if online.Valid {
-			ex.Online = online.Int8
-		}
-
-		if location.String != "" {
-			ex.Location.String = location.String
-		}
-
-		if !registerDeadLine.IsZero() {
-			ex.RegisterDeadline.Time = registerDeadLine.Time
-		}
-
-		if !deregisterDeadLine.IsZero() {
-			ex.DeregisterDeadline.Time = deregisterDeadLine.Time
-		}
-
-		_, err = ex.Update(context.Background(), tx, boil.Infer())
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-			}
-
-			return err
-		}
-		if e := tx.Commit(); e != nil {
-			return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
-		}
-		return nil
+	tx, err := p.Database.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
 	}
-	return fmt.Errorf("invalid value for variable creatorId: %d doesn't match exam's creatorId", creatorId)
+	// if exam is online and has a file and filename: upload file
+
+	if name != "" {
+		ex.Name = name
+	}
+
+	if description != "" {
+		ex.Description = description
+	}
+
+	if !date.IsZero() {
+		ex.Date = date
+	}
+	if duration != 0 {
+		ex.Duration = duration
+	}
+
+	if online.Valid {
+		ex.Online = online.Int8
+	}
+
+	if location.String != "" {
+		ex.Location.String = location.String
+	}
+
+	if !registerDeadLine.IsZero() {
+		ex.RegisterDeadline.Time = registerDeadLine.Time
+	}
+
+	if !deregisterDeadLine.IsZero() {
+		ex.DeregisterDeadline.Time = deregisterDeadLine.Time
+	}
+
+	_, err = ex.Update(context.Background(), tx, boil.Infer())
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return err
+	}
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+	}
+	return nil
 }
 
 // UploadExamFile takes a fileName, URI, associated uploaderId, examId and indicator if file is local or remote
 // Created struct gets inserted into database
 func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderId, examId int, local bool, file io.Reader) error {
-	// TODO: max upload size and restrict to pdf only
 	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return err
@@ -633,4 +630,17 @@ func (p *PublicController) DeleteExam(examId int) (int, error) {
 	}
 
 	return ex.ID, nil
+}
+
+func (p *PublicController) GetCourseFromExam(examId int) (*models.Course, error) {
+
+	exam, err := models.FindExam(context.Background(), p.Database, examId)
+	if err != nil {
+		return nil, err
+	}
+	c, err := course.GetCourse(p.Database, exam.CourseID)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
