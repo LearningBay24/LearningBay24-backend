@@ -35,6 +35,7 @@ type Appointment struct {
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt null.Time `boil:"updated_at" json:"updated_at,omitempty" toml:"updated_at" yaml:"updated_at,omitempty"`
 	DeletedAt null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	Duration  int       `boil:"duration" json:"duration" toml:"duration" yaml:"duration"`
 
 	R *appointmentR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L appointmentL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -49,6 +50,7 @@ var AppointmentColumns = struct {
 	CreatedAt string
 	UpdatedAt string
 	DeletedAt string
+	Duration  string
 }{
 	ID:        "id",
 	Date:      "date",
@@ -58,6 +60,7 @@ var AppointmentColumns = struct {
 	CreatedAt: "created_at",
 	UpdatedAt: "updated_at",
 	DeletedAt: "deleted_at",
+	Duration:  "duration",
 }
 
 var AppointmentTableColumns = struct {
@@ -69,6 +72,7 @@ var AppointmentTableColumns = struct {
 	CreatedAt string
 	UpdatedAt string
 	DeletedAt string
+	Duration  string
 }{
 	ID:        "appointment.id",
 	Date:      "appointment.date",
@@ -78,6 +82,7 @@ var AppointmentTableColumns = struct {
 	CreatedAt: "appointment.created_at",
 	UpdatedAt: "appointment.updated_at",
 	DeletedAt: "appointment.deleted_at",
+	Duration:  "appointment.duration",
 }
 
 // Generated where
@@ -206,6 +211,7 @@ var AppointmentWhere = struct {
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpernull_Time
 	DeletedAt whereHelpernull_Time
+	Duration  whereHelperint
 }{
 	ID:        whereHelperint{field: "`appointment`.`id`"},
 	Date:      whereHelpertime_Time{field: "`appointment`.`date`"},
@@ -215,6 +221,7 @@ var AppointmentWhere = struct {
 	CreatedAt: whereHelpertime_Time{field: "`appointment`.`created_at`"},
 	UpdatedAt: whereHelpernull_Time{field: "`appointment`.`updated_at`"},
 	DeletedAt: whereHelpernull_Time{field: "`appointment`.`deleted_at`"},
+	Duration:  whereHelperint{field: "`appointment`.`duration`"},
 }
 
 // AppointmentRels is where relationship names are stored.
@@ -245,8 +252,8 @@ func (r *appointmentR) GetCourse() *Course {
 type appointmentL struct{}
 
 var (
-	appointmentAllColumns            = []string{"id", "date", "location", "online", "course_id", "created_at", "updated_at", "deleted_at"}
-	appointmentColumnsWithoutDefault = []string{"location", "online", "course_id", "updated_at", "deleted_at"}
+	appointmentAllColumns            = []string{"id", "date", "location", "online", "course_id", "created_at", "updated_at", "deleted_at", "duration"}
+	appointmentColumnsWithoutDefault = []string{"location", "online", "course_id", "updated_at", "deleted_at", "duration"}
 	appointmentColumnsWithDefault    = []string{"id", "date", "created_at"}
 	appointmentPrimaryKeyColumns     = []string{"id"}
 	appointmentGeneratedColumns      = []string{}

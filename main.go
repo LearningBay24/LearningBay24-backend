@@ -36,7 +36,7 @@ func setupEnvironment(db *sql.DB) {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PATCH, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "https://learningbay24.de")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://learningbay24.de")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -68,6 +68,18 @@ func main() {
 	router.POST("/courses", pCtrl.CreateCourse)
 	router.POST("/courses/:id", pCtrl.EnrollUser)
 	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
+	router.GET("/submissions/:id", pCtrl.GetSubmission)
+	router.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
+	router.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
+	router.PATCH("/courses/:id/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
+	router.DELETE("courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
+	router.PATCH("courses/:id/submissions/:submission_id", pCtrl.EditSubmissionById)
+	router.POST("/courses/:id/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
+	router.DELETE("/courses/:id/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
+	router.POST("/courses/:id/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
+	router.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
+	router.POST("/courses/:id/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
+	router.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
 	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
 	router.GET("/courses/search", pCtrl.SearchCourse)
@@ -95,6 +107,11 @@ func main() {
 	router.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
 	router.PATCH("/users/:user_id/exams/:exam_id/grade", pCtrl.GradeAnswer)
 	router.DELETE("/exams/:id", pCtrl.DeleteExam)
+	router.GET("/courses/appointments", pCtrl.GetAllAppointments)
+	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
+	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
+	router.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
+	router.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 
 	router.Run("0.0.0.0:8080")
 }
