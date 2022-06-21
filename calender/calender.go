@@ -101,8 +101,7 @@ func (p *PublicController) AddCourseToCalender(date time.Time, duration int, loc
 	return newAppoint.ID, nil
 }
 
-// Soft-deletes the appointment, repeats=true, if its's a repeating appointment
-func (p *PublicController) DeactivateCourseInCalender(appointmentId int, courseId int) error {
+func (p *PublicController) DeactivateCourseInCalender(appointmentId int) error {
 	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
