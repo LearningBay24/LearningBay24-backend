@@ -38,6 +38,7 @@ type UserHasExam struct {
 	UpdatedAt null.Time `boil:"updated_at" json:"updated_at,omitempty" toml:"updated_at" yaml:"updated_at,omitempty"`
 	// When the user deregistered from the exam.
 	DeletedAt null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	FileID    null.Int  `boil:"file_id" json:"file_id,omitempty" toml:"file_id" yaml:"file_id,omitempty"`
 
 	R *userHasExamR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userHasExamL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -53,6 +54,7 @@ var UserHasExamColumns = struct {
 	CreatedAt string
 	UpdatedAt string
 	DeletedAt string
+	FileID    string
 }{
 	UserID:    "user_id",
 	ExamID:    "exam_id",
@@ -63,6 +65,7 @@ var UserHasExamColumns = struct {
 	CreatedAt: "created_at",
 	UpdatedAt: "updated_at",
 	DeletedAt: "deleted_at",
+	FileID:    "file_id",
 }
 
 var UserHasExamTableColumns = struct {
@@ -75,6 +78,7 @@ var UserHasExamTableColumns = struct {
 	CreatedAt string
 	UpdatedAt string
 	DeletedAt string
+	FileID    string
 }{
 	UserID:    "user_has_exam.user_id",
 	ExamID:    "user_has_exam.exam_id",
@@ -85,6 +89,7 @@ var UserHasExamTableColumns = struct {
 	CreatedAt: "user_has_exam.created_at",
 	UpdatedAt: "user_has_exam.updated_at",
 	DeletedAt: "user_has_exam.deleted_at",
+	FileID:    "user_has_exam.file_id",
 }
 
 // Generated where
@@ -123,6 +128,7 @@ var UserHasExamWhere = struct {
 	CreatedAt whereHelpertime_Time
 	UpdatedAt whereHelpernull_Time
 	DeletedAt whereHelpernull_Time
+	FileID    whereHelpernull_Int
 }{
 	UserID:    whereHelperint{field: "`user_has_exam`.`user_id`"},
 	ExamID:    whereHelperint{field: "`user_has_exam`.`exam_id`"},
@@ -133,20 +139,24 @@ var UserHasExamWhere = struct {
 	CreatedAt: whereHelpertime_Time{field: "`user_has_exam`.`created_at`"},
 	UpdatedAt: whereHelpernull_Time{field: "`user_has_exam`.`updated_at`"},
 	DeletedAt: whereHelpernull_Time{field: "`user_has_exam`.`deleted_at`"},
+	FileID:    whereHelpernull_Int{field: "`user_has_exam`.`file_id`"},
 }
 
 // UserHasExamRels is where relationship names are stored.
 var UserHasExamRels = struct {
 	Exam string
+	File string
 	User string
 }{
 	Exam: "Exam",
+	File: "File",
 	User: "User",
 }
 
 // userHasExamR is where relationships are stored.
 type userHasExamR struct {
 	Exam *Exam `boil:"Exam" json:"Exam" toml:"Exam" yaml:"Exam"`
+	File *File `boil:"File" json:"File" toml:"File" yaml:"File"`
 	User *User `boil:"User" json:"User" toml:"User" yaml:"User"`
 }
 
@@ -162,6 +172,13 @@ func (r *userHasExamR) GetExam() *Exam {
 	return r.Exam
 }
 
+func (r *userHasExamR) GetFile() *File {
+	if r == nil {
+		return nil
+	}
+	return r.File
+}
+
 func (r *userHasExamR) GetUser() *User {
 	if r == nil {
 		return nil
@@ -173,8 +190,8 @@ func (r *userHasExamR) GetUser() *User {
 type userHasExamL struct{}
 
 var (
-	userHasExamAllColumns            = []string{"user_id", "exam_id", "attended", "grade", "passed", "feedback", "created_at", "updated_at", "deleted_at"}
-	userHasExamColumnsWithoutDefault = []string{"user_id", "exam_id", "grade", "passed", "feedback", "updated_at", "deleted_at"}
+	userHasExamAllColumns            = []string{"user_id", "exam_id", "attended", "grade", "passed", "feedback", "created_at", "updated_at", "deleted_at", "file_id"}
+	userHasExamColumnsWithoutDefault = []string{"user_id", "exam_id", "grade", "passed", "feedback", "updated_at", "deleted_at", "file_id"}
 	userHasExamColumnsWithDefault    = []string{"attended", "created_at"}
 	userHasExamPrimaryKeyColumns     = []string{"user_id", "exam_id"}
 	userHasExamGeneratedColumns      = []string{}
@@ -469,6 +486,17 @@ func (o *UserHasExam) Exam(mods ...qm.QueryMod) examQuery {
 	return Exams(queryMods...)
 }
 
+// File pointed to by the foreign key.
+func (o *UserHasExam) File(mods ...qm.QueryMod) fileQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("`id` = ?", o.FileID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Files(queryMods...)
+}
+
 // User pointed to by the foreign key.
 func (o *UserHasExam) User(mods ...qm.QueryMod) userQuery {
 	queryMods := []qm.QueryMod{
@@ -575,6 +603,115 @@ func (userHasExamL) LoadExam(ctx context.Context, e boil.ContextExecutor, singul
 				local.R.Exam = foreign
 				if foreign.R == nil {
 					foreign.R = &examR{}
+				}
+				foreign.R.UserHasExams = append(foreign.R.UserHasExams, local)
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadFile allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (userHasExamL) LoadFile(ctx context.Context, e boil.ContextExecutor, singular bool, maybeUserHasExam interface{}, mods queries.Applicator) error {
+	var slice []*UserHasExam
+	var object *UserHasExam
+
+	if singular {
+		object = maybeUserHasExam.(*UserHasExam)
+	} else {
+		slice = *maybeUserHasExam.(*[]*UserHasExam)
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &userHasExamR{}
+		}
+		if !queries.IsNil(object.FileID) {
+			args = append(args, object.FileID)
+		}
+
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &userHasExamR{}
+			}
+
+			for _, a := range args {
+				if queries.Equal(a, obj.FileID) {
+					continue Outer
+				}
+			}
+
+			if !queries.IsNil(obj.FileID) {
+				args = append(args, obj.FileID)
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`file`),
+		qm.WhereIn(`file.id in ?`, args...),
+		qmhelper.WhereIsNull(`file.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load File")
+	}
+
+	var resultSlice []*File
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice File")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for file")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for file")
+	}
+
+	if len(userHasExamAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.File = foreign
+		if foreign.R == nil {
+			foreign.R = &fileR{}
+		}
+		foreign.R.UserHasExams = append(foreign.R.UserHasExams, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.FileID, foreign.ID) {
+				local.R.File = foreign
+				if foreign.R == nil {
+					foreign.R = &fileR{}
 				}
 				foreign.R.UserHasExams = append(foreign.R.UserHasExams, local)
 				break
@@ -734,6 +871,86 @@ func (o *UserHasExam) SetExam(ctx context.Context, exec boil.ContextExecutor, in
 		related.R.UserHasExams = append(related.R.UserHasExams, o)
 	}
 
+	return nil
+}
+
+// SetFile of the userHasExam to the related item.
+// Sets o.R.File to related.
+// Adds o to related.R.UserHasExams.
+func (o *UserHasExam) SetFile(ctx context.Context, exec boil.ContextExecutor, insert bool, related *File) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE `user_has_exam` SET %s WHERE %s",
+		strmangle.SetParamNames("`", "`", 0, []string{"file_id"}),
+		strmangle.WhereClause("`", "`", 0, userHasExamPrimaryKeyColumns),
+	)
+	values := []interface{}{related.ID, o.UserID, o.ExamID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.FileID, related.ID)
+	if o.R == nil {
+		o.R = &userHasExamR{
+			File: related,
+		}
+	} else {
+		o.R.File = related
+	}
+
+	if related.R == nil {
+		related.R = &fileR{
+			UserHasExams: UserHasExamSlice{o},
+		}
+	} else {
+		related.R.UserHasExams = append(related.R.UserHasExams, o)
+	}
+
+	return nil
+}
+
+// RemoveFile relationship.
+// Sets o.R.File to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *UserHasExam) RemoveFile(ctx context.Context, exec boil.ContextExecutor, related *File) error {
+	var err error
+
+	queries.SetScanner(&o.FileID, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("file_id")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.File = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.UserHasExams {
+		if queries.Equal(o.FileID, ri.FileID) {
+			continue
+		}
+
+		ln := len(related.R.UserHasExams)
+		if ln > 1 && i < ln-1 {
+			related.R.UserHasExams[i] = related.R.UserHasExams[ln-1]
+		}
+		related.R.UserHasExams = related.R.UserHasExams[:ln-1]
+		break
+	}
 	return nil
 }
 

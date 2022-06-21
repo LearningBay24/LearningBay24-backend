@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -15,6 +16,7 @@ import (
 	"learningbay24.de/backend/course"
 	coursematerial "learningbay24.de/backend/courseMaterial"
 	"learningbay24.de/backend/dbi"
+	"learningbay24.de/backend/exam"
 	"learningbay24.de/backend/models"
 
 	"github.com/dgrijalva/jwt-go"
@@ -23,13 +25,13 @@ import (
 	"github.com/volatiletech/null/v8"
 )
 
+type PublicController struct {
+	Database *sql.DB
+}
+
 type _file struct {
 	Name string `json:"name"`
 	Uri  string `json:"uri"`
-}
-
-type PublicController struct {
-	Database *sql.DB
 }
 
 func AuthorizeAdmin(roleId int) bool {
@@ -60,6 +62,11 @@ func AuthorizeCourseModerator(roleId int) bool {
 func AuthorizeCourseUser(roleId int) bool {
 	log.Infof("Authorizing with role id: %d", roleId)
 	return roleId <= dbi.CourseUserRoleId
+}
+
+func (f *PublicController) AuthorizeUserHasExam(userId, examId int) (bool, error) {
+	log.Infof("Authorizing exam id: %d with user id: %d", examId, userId)
+	return models.UserHasExamExists(context.Background(), f.Database, userId, examId)
 }
 
 func (f *PublicController) GetDataFromCookie(c *gin.Context) (interface{}, error) {
@@ -1033,6 +1040,1005 @@ func (f *PublicController) SearchCourse(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, courses)
 }
 
+func (f *PublicController) CreateExam(c *gin.Context) {
+	var newExam models.Exam
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	description, ok := j["description"].(string)
+	if !ok {
+		log.Error("unable to convert description to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	dateStr, ok := j["date"].(string)
+	if !ok {
+		log.Error("unable to convert date to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	date, err := time.Parse(time.RFC3339, dateStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	durationStr, ok := j["duration"].(string)
+	if !ok {
+		log.Error("unable to convert duration to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	duration, err := strconv.Atoi(durationStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	courseIdStr, ok := j["course_id"].(string)
+	if !ok {
+		log.Error("unable to convert course_id to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	courseId, err := strconv.Atoi(courseIdStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	creatorId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, creatorId, courseId)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseAdmin(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	onlineStr, ok := j["online"].(string)
+	if !ok {
+		log.Error("unable to convert online to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	online, err := strconv.Atoi(onlineStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `online` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+	}
+
+	location, ok := j["location"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	registerDeadlineStr, ok := j["register_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert register_deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	registerDeadline, err := time.Parse(time.RFC3339, registerDeadlineStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert deregister_deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	deregisterDeadline, err := time.Parse(time.RFC3339, deregisterDeadlineStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	id, err := pCtrl.CreateExam(name, description, date, duration, courseId, creatorId, int8(online), null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	if err != nil {
+		log.Errorf("Unable to create exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	newExam.ID = id
+
+	c.IndentedJSON(http.StatusCreated, newExam)
+}
+
+func (f *PublicController) EditExam(c *gin.Context) {
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	description, ok := j["description"].(string)
+	if !ok {
+		log.Error("unable to convert description to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	dateStr, ok := j["date"].(string)
+	if !ok {
+		log.Error("unable to convert date to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	var date time.Time
+	if dateStr != "" {
+		date, err = time.ParseInLocation(time.RFC3339, dateStr, time.Local)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		date = date.Local()
+	}
+	durationStr, ok := j["duration"].(string)
+	if !ok {
+		log.Error("unable to convert duration to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	var duration int
+	if durationStr != "" {
+		duration, err = strconv.Atoi(durationStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `duration` to int: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+	}
+
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	onlineStr, ok := j["online"].(string)
+	if !ok {
+		log.Error("unable to convert online to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	var online null.Int8
+	if onlineStr != "" {
+		onlineInt, err := strconv.Atoi(onlineStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `online` to int: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+		}
+		online.Int8 = int8(onlineInt)
+		online.Valid = true
+	} else {
+		online.Valid = false
+	}
+
+	location, ok := j["location"].(string)
+	if !ok {
+		log.Error("unable to convert location to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	registerDeadlineStr, ok := j["register_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert register_deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	var registerDeadline time.Time
+	if registerDeadlineStr != "" {
+		registerDeadline, err = time.ParseInLocation(time.RFC3339, registerDeadlineStr, time.Local)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		registerDeadline = registerDeadline.Local()
+	}
+
+	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert register_deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	var deregisterDeadline time.Time
+	if deregisterDeadlineStr != "" {
+		deregisterDeadline, err = time.ParseInLocation(time.RFC3339, deregisterDeadlineStr, time.Local)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+		deregisterDeadline = deregisterDeadline.Local()
+	}
+
+	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	if err != nil {
+		log.Errorf("Unable to edit exam: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) UploadExamFile(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(id)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	if c.ContentType() == "text/plain" {
+		var file _file
+		if err := c.BindJSON(&file); err != nil {
+			log.Errorf("Unable to bind json: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		log.Info(file)
+		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
+		if err != nil {
+			log.Errorf("Unable to create Exam-URI: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("No file found in request: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		fi, err := file.Open()
+		if err != nil {
+			log.Errorf("Unable to open file: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi)
+		if err != nil {
+			log.Errorf("Unable to create ExamFile: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+	}
+
+	c.Status(http.StatusCreated)
+}
+
+func (f *PublicController) GetExamById(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetExamByID(id)
+	if err != nil {
+		log.Errorf("Unable to get exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, co)
+}
+
+func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetRegisteredExamsFromUser(userId)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetUnregisteredExamsFromUser(c *gin.Context) {
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetUnregisteredExams(userId)
+	if err != nil {
+		log.Errorf("Unable to get exams: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetExamsFromCourse(c *gin.Context) {
+	courseId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	course_role, err := course.GetCourseRole(f.Database, user_id, courseId)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	exams, err := pCtrl.GetExamsFromCourse(courseId)
+	if err != nil {
+		log.Errorf("Unable to get exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetAttendedExamsFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetAttendedExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetPassedExamsFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetPassedExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from user: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) GetCreatedFromUser(c *gin.Context) {
+	// Get given ID from the Context
+	// Convert data type from str to int to use ist as param
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Fetch Data from Database with Backend function
+	pCtrl := exam.PublicController{Database: f.Database}
+	exams, err := pCtrl.GetCreatedExamsFromUser(user_id)
+	if err != nil {
+		log.Errorf("Unable to get exams from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, exams)
+}
+
+func (f *PublicController) RegisterToExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	user, err := pCtrl.RegisterToExam(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to register user to course: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, user)
+}
+
+func (f *PublicController) DeregisterFromExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	err = pCtrl.DeregisterFromExam(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to deregister user from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) GetFileFromExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	if check, err := f.AuthorizeUserHasExam(userId, examId); !check {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	file, err := pCtrl.GetFileFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get file from exam: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	err = pCtrl.AttendExam(examId, userId)
+	if err != nil {
+		log.Errorf("Unable to get file from exam: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.File(file[0].URI)
+	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	pCtrl := exam.PublicController{Database: f.Database}
+	if check, err := f.AuthorizeUserHasExam(userId, examId); !check {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	if c.ContentType() == "text/plain" {
+		var file _file
+		if err := c.BindJSON(&file); err != nil {
+			log.Errorf("Unable to bind json: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		log.Info(file)
+
+		err = pCtrl.SubmitAnswer(file.Name, file.Uri, examId, userId, false, nil)
+		if err != nil {
+			log.Errorf("Unable to submit answer: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("No file found in request: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		fi, err := file.Open()
+		if err != nil {
+			log.Errorf("Unable to open file: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+		err = pCtrl.SubmitAnswer(file.Filename, "", examId, userId, true, fi)
+		if err != nil {
+			log.Errorf("Unable to submit answer: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	err = pCtrl.AttendExam(examId, userId)
+	if err != nil {
+		log.Errorf("Unable to attend user to exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.Status(http.StatusCreated)
+}
+
+func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	creatorId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, creatorId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	attendees, err := pCtrl.GetRegisteredUsersFromExam(examId, creatorId)
+	if err != nil {
+		log.Errorf("Unable to fetch attendees from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, attendees)
+}
+
+func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	creatorId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	attendees, err := pCtrl.GetAttendeesFromExam(examId, creatorId)
+	if err != nil {
+		log.Errorf("Unable to fetch attendees from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, attendees)
+}
+
+func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
+	userId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	examId, err := strconv.Atoi(c.Param("exam_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter 'exam_id' to an int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	file, err := pCtrl.GetAnswerFromAttendee(userId, examId)
+	if err != nil {
+		log.Errorf("Unable to get file from answer: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.File(file.URI)
+	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) GradeAnswer(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("exam_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `exam_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	creatorId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userId, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, creatorId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	gradeStr, ok := j["grade"].(string)
+	if !ok {
+		log.Error("unable to convert grade to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	grade, err := strconv.Atoi(gradeStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `grade` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	passedStr, ok := j["passed"].(string)
+	if !ok {
+		log.Error("unable to convert passed to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	passed, err := strconv.Atoi(passedStr)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `passed` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	feedback, ok := j["feedback"].(string)
+	if !ok {
+		log.Error("unable to convert feedback to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	err = pCtrl.GradeAnswer(examId, creatorId, userId, null.IntFrom(grade), null.Int8From(int8(passed)), null.StringFrom(feedback))
+	if err != nil {
+		log.Errorf("Unable to grade answer: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) SetAttended(c *gin.Context) {
+	examId, err := strconv.Atoi(c.Param("exam_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `exam_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := strconv.Atoi(c.Param("user_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	err = pCtrl.SetAttended(examId, userId)
+	if err != nil {
+		log.Errorf("Unable to set user's exam to attended: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.Status(http.StatusOK)
+}
+
+func (f *PublicController) DeleteExam(c *gin.Context) {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	pCtrl := exam.PublicController{Database: f.Database}
+	co, err := pCtrl.GetCourseFromExam(id)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseAdmin(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	ex, err := pCtrl.DeleteExam(id)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete course: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, ex)
+}
 func (f *PublicController) GetSubmission(c *gin.Context) {
 	submission_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -1040,7 +2046,6 @@ func (f *PublicController) GetSubmission(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	submission, err := course.GetSubmission(f.Database, submission_id)
 	if err != nil {
 		log.Errorf("Unable to get submission: %s", err.Error())
@@ -1058,7 +2063,6 @@ func (f *PublicController) CreateSubmission(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
@@ -1077,7 +2081,6 @@ func (f *PublicController) CreateSubmission(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())
@@ -1207,7 +2210,6 @@ func (f *PublicController) EditSubmissionById(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())
@@ -1312,7 +2314,6 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 	}
 
 	if c.ContentType() == "text/plain" {
-
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
 			log.Errorf("Unable to bind json: %s", err.Error())
@@ -1320,7 +2321,6 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 			return
 		}
 		log.Info(file)
-
 		user_id, err := f.GetIdFromCookie(c)
 		if err != nil {
 			log.Errorf("Unable to get id from Cookie: %s", err.Error())
@@ -1347,7 +2347,6 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-
 		user_id, err := f.GetIdFromCookie(c)
 		if err != nil {
 			log.Errorf("Unable to get id from Cookie: %s", err.Error())
@@ -1373,7 +2372,6 @@ func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	file_id, err := strconv.Atoi(c.Param("file_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
@@ -1387,7 +2385,6 @@ func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
@@ -1424,7 +2421,6 @@ func (f *PublicController) GetUserSubmission(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	user_submission, err := course.GetUserSubmission(f.Database, user_submission_id)
 	if err != nil {
 		log.Errorf("Unable to get user submission: %s", err.Error())
@@ -1448,27 +2444,23 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
 	if err != nil {
 		log.Errorf("Unable to get course role: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-
 	if !AuthorizeCourseUser(course_role) {
 		log.Infof("User is not authorized: %s", err.Error())
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-
 	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())
@@ -1483,7 +2475,6 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	name, ok := j["name"].(string)
 	if !ok {
 		log.Error("unable to convert name to string")
@@ -1502,7 +2493,6 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	user_submission_id, err := course.CreateUserSubmission(f.Database, name, 9999, submission_id, int8(ignores_deadlineint))
 	if err != nil {
 		log.Errorf("Unable to add file to submission: %s", err.Error())
@@ -1522,14 +2512,12 @@ func (f *PublicController) DeleteUserSubmission(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())

@@ -105,6 +105,7 @@ var FileRels = struct {
 	Exams               string
 	Submissions         string
 	ProfilePictureUsers string
+	UserHasExams        string
 	UserSubmissions     string
 }{
 	Uploader:            "Uploader",
@@ -113,6 +114,7 @@ var FileRels = struct {
 	Exams:               "Exams",
 	Submissions:         "Submissions",
 	ProfilePictureUsers: "ProfilePictureUsers",
+	UserHasExams:        "UserHasExams",
 	UserSubmissions:     "UserSubmissions",
 }
 
@@ -124,6 +126,7 @@ type fileR struct {
 	Exams               ExamSlice           `boil:"Exams" json:"Exams" toml:"Exams" yaml:"Exams"`
 	Submissions         SubmissionSlice     `boil:"Submissions" json:"Submissions" toml:"Submissions" yaml:"Submissions"`
 	ProfilePictureUsers UserSlice           `boil:"ProfilePictureUsers" json:"ProfilePictureUsers" toml:"ProfilePictureUsers" yaml:"ProfilePictureUsers"`
+	UserHasExams        UserHasExamSlice    `boil:"UserHasExams" json:"UserHasExams" toml:"UserHasExams" yaml:"UserHasExams"`
 	UserSubmissions     UserSubmissionSlice `boil:"UserSubmissions" json:"UserSubmissions" toml:"UserSubmissions" yaml:"UserSubmissions"`
 }
 
@@ -172,6 +175,13 @@ func (r *fileR) GetProfilePictureUsers() UserSlice {
 		return nil
 	}
 	return r.ProfilePictureUsers
+}
+
+func (r *fileR) GetUserHasExams() UserHasExamSlice {
+	if r == nil {
+		return nil
+	}
+	return r.UserHasExams
 }
 
 func (r *fileR) GetUserSubmissions() UserSubmissionSlice {
@@ -552,6 +562,20 @@ func (o *File) ProfilePictureUsers(mods ...qm.QueryMod) userQuery {
 	)
 
 	return Users(queryMods...)
+}
+
+// UserHasExams retrieves all the user_has_exam's UserHasExams with an executor.
+func (o *File) UserHasExams(mods ...qm.QueryMod) userHasExamQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("`user_has_exam`.`file_id`=?", o.ID),
+	)
+
+	return UserHasExams(queryMods...)
 }
 
 // UserSubmissions retrieves all the user_submission's UserSubmissions with an executor.
@@ -1212,6 +1236,105 @@ func (fileL) LoadProfilePictureUsers(ctx context.Context, e boil.ContextExecutor
 					foreign.R = &userR{}
 				}
 				foreign.R.ProfilePictureFile = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadUserHasExams allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (fileL) LoadUserHasExams(ctx context.Context, e boil.ContextExecutor, singular bool, maybeFile interface{}, mods queries.Applicator) error {
+	var slice []*File
+	var object *File
+
+	if singular {
+		object = maybeFile.(*File)
+	} else {
+		slice = *maybeFile.(*[]*File)
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &fileR{}
+		}
+		args = append(args, object.ID)
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &fileR{}
+			}
+
+			for _, a := range args {
+				if queries.Equal(a, obj.ID) {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.ID)
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`user_has_exam`),
+		qm.WhereIn(`user_has_exam.file_id in ?`, args...),
+		qmhelper.WhereIsNull(`user_has_exam.deleted_at`),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load user_has_exam")
+	}
+
+	var resultSlice []*UserHasExam
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice user_has_exam")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on user_has_exam")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for user_has_exam")
+	}
+
+	if len(userHasExamAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.UserHasExams = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &userHasExamR{}
+			}
+			foreign.R.File = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.FileID) {
+				local.R.UserHasExams = append(local.R.UserHasExams, foreign)
+				if foreign.R == nil {
+					foreign.R = &userHasExamR{}
+				}
+				foreign.R.File = local
 				break
 			}
 		}
@@ -1991,6 +2114,133 @@ func (o *File) RemoveProfilePictureUsers(ctx context.Context, exec boil.ContextE
 				o.R.ProfilePictureUsers[i] = o.R.ProfilePictureUsers[ln-1]
 			}
 			o.R.ProfilePictureUsers = o.R.ProfilePictureUsers[:ln-1]
+			break
+		}
+	}
+
+	return nil
+}
+
+// AddUserHasExams adds the given related objects to the existing relationships
+// of the file, optionally inserting them as new records.
+// Appends related to o.R.UserHasExams.
+// Sets related.R.File appropriately.
+func (o *File) AddUserHasExams(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*UserHasExam) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.FileID, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE `user_has_exam` SET %s WHERE %s",
+				strmangle.SetParamNames("`", "`", 0, []string{"file_id"}),
+				strmangle.WhereClause("`", "`", 0, userHasExamPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.UserID, rel.ExamID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.FileID, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &fileR{
+			UserHasExams: related,
+		}
+	} else {
+		o.R.UserHasExams = append(o.R.UserHasExams, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &userHasExamR{
+				File: o,
+			}
+		} else {
+			rel.R.File = o
+		}
+	}
+	return nil
+}
+
+// SetUserHasExams removes all previously related items of the
+// file replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.File's UserHasExams accordingly.
+// Replaces o.R.UserHasExams with related.
+// Sets related.R.File's UserHasExams accordingly.
+func (o *File) SetUserHasExams(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*UserHasExam) error {
+	query := "update `user_has_exam` set `file_id` = null where `file_id` = ?"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.UserHasExams {
+			queries.SetScanner(&rel.FileID, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.File = nil
+		}
+		o.R.UserHasExams = nil
+	}
+
+	return o.AddUserHasExams(ctx, exec, insert, related...)
+}
+
+// RemoveUserHasExams relationships from objects passed in.
+// Removes related items from R.UserHasExams (uses pointer comparison, removal does not keep order)
+// Sets related.R.File.
+func (o *File) RemoveUserHasExams(ctx context.Context, exec boil.ContextExecutor, related ...*UserHasExam) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.FileID, nil)
+		if rel.R != nil {
+			rel.R.File = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("file_id")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.UserHasExams {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.UserHasExams)
+			if ln > 1 && i < ln-1 {
+				o.R.UserHasExams[i] = o.R.UserHasExams[ln-1]
+			}
+			o.R.UserHasExams = o.R.UserHasExams[:ln-1]
 			break
 		}
 	}
