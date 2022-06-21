@@ -1009,15 +1009,9 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	course_id, err := strconv.Atoi(j["course_id"].(string))
-	if err != nil {
-		log.Error("unable to convert string to time.Time")
-		c.Status(http.StatusBadRequest)
-		return
-	}
 
 	pCon := &calender.PublicController{Database: f.Database}
-	err = pCon.DeactivateCourseInCalender(appointment_id, course_id)
+	err = pCon.DeactivateCourseInCalender(appointment_id)
 	if err != nil {
 		log.Errorf("Unable to create course: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
