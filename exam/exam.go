@@ -6,9 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"learningbay24.de/backend/course"
 	"strconv"
 	"time"
+
+	"learningbay24.de/backend/course"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -106,7 +107,6 @@ func (p *PublicController) GetExamsFromCourse(courseId int) (models.ExamSlice, e
 
 // GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are attended
 func (p *PublicController) GetAttendedExamsFromUser(userId int) ([]*GradedExam, error) {
-	// TODO: add a grade to the model
 	var gex []*GradedExam
 
 	err := models.NewQuery(
@@ -127,7 +127,6 @@ func (p *PublicController) GetAttendedExamsFromUser(userId int) ([]*GradedExam, 
 
 // GetPassedExamsFromUser GetAttendedExamsFromUser takes a userId and returns a slice of exams associated with it that are passed
 func (p *PublicController) GetPassedExamsFromUser(userId int) ([]*GradedExam, error) {
-	// TODO: add a grade to the model
 	var gex []*GradedExam
 
 	err := models.NewQuery(

@@ -656,6 +656,11 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 	}
 
 	if c.ContentType() == "text/plain" {
+		type _file struct {
+			Name string `json:"name"`
+			Uri  string `json:"uri"`
+		}
+
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
 			log.Errorf("Unable to bind json: %s", err.Error())
@@ -670,12 +675,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		err = coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil)
-		if err != nil {
-			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
-			c.Status(http.StatusInternalServerError)
-			return
-		}
+		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil)
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -709,6 +709,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 }
 
 func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
+
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s", err.Error())
@@ -732,6 +733,12 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 		log.Infof("User is not authorized: %s", err.Error())
 		c.Status(http.StatusUnauthorized)
 		return
+	}
+
+	type _file struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+		URI  string `json:"uri"`
 	}
 
 	files, err := coursematerial.GetAllMaterialsFromCourse(f.Database, course_id)
