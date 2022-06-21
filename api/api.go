@@ -671,7 +671,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil)
+		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil, 0)
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
@@ -693,7 +693,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", user_id, course_id, true, fi)
+		err = coursematerial.CreateMaterial(f.Database, file.Filename, "", user_id, course_id, true, fi, int(file.Size))
 		if err != nil {
 			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -1393,7 +1393,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 			return
 		}
 		log.Info(file)
-		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil)
+		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil, 0)
 		if err != nil {
 			log.Errorf("Unable to create Exam-URI: %s", err.Error())
 			c.Status(http.StatusBadRequest)
@@ -1413,7 +1413,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi)
+		err = pCtrl.UploadExamFile(file.Filename, "", user_id, id, true, fi, int(file.Size))
 		if err != nil {
 			log.Errorf("Unable to create ExamFile: %s", err.Error())
 			c.Status(http.StatusBadRequest)
@@ -1719,7 +1719,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 		}
 		log.Info(file)
 
-		err = pCtrl.SubmitAnswer(file.Name, file.Uri, examId, userId, false, nil)
+		err = pCtrl.SubmitAnswer(file.Name, file.Uri, examId, userId, false, nil, 0)
 		if err != nil {
 			log.Errorf("Unable to submit answer: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -1739,7 +1739,7 @@ func (f *PublicController) SubmitAnswerToExam(c *gin.Context) {
 			c.Status(http.StatusInternalServerError)
 			return
 		}
-		err = pCtrl.SubmitAnswer(file.Filename, "", examId, userId, true, fi)
+		err = pCtrl.SubmitAnswer(file.Filename, "", examId, userId, true, fi, int(file.Size))
 		if err != nil {
 			log.Errorf("Unable to submit answer: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -2322,7 +2322,7 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		err = course.CreateSubmissionHasFiles(f.Database, submission_id, file.Name, file.Uri, user_id, false, nil)
+		err = course.CreateSubmissionHasFiles(f.Database, submission_id, file.Name, file.Uri, user_id, false, nil, 0)
 		if err != nil {
 			log.Errorf("Unable to add file to submission: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -2348,7 +2348,7 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		err = course.CreateSubmissionHasFiles(f.Database, submission_id, file.Filename, "", user_id, true, fi)
+		err = course.CreateSubmissionHasFiles(f.Database, submission_id, file.Filename, "", user_id, true, fi, int(file.Size))
 		if err != nil {
 			log.Errorf("Unable to add file to submission: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -2594,7 +2594,7 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		err = course.CreateUserSubmissionHasFiles(f.Database, user_submission_id, file.Name, file.Uri, user_id, false, nil)
+		err = course.CreateUserSubmissionHasFiles(f.Database, user_submission_id, file.Name, file.Uri, user_id, false, nil, 0)
 		if err != nil {
 			log.Errorf("Unable to add file to user submission: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
@@ -2621,7 +2621,7 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 			c.IndentedJSON(http.StatusBadRequest, err.Error())
 			return
 		}
-		err = course.CreateUserSubmissionHasFiles(f.Database, user_submission_id, file.Filename, "", user_id, true, fi)
+		err = course.CreateUserSubmissionHasFiles(f.Database, user_submission_id, file.Filename, "", user_id, true, fi, int(file.Size))
 		if err != nil {
 			log.Errorf("Unable to add file to user submission: %s", err.Error())
 			c.Status(http.StatusInternalServerError)
