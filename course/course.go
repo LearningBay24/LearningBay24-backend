@@ -29,8 +29,10 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 // CreateCourse takes a name,enrollkey and description and adds a course and forum with that Name in the Database while userid is an array of IDs that is used to assign the role of the creator
 // and the roles for tutor
 func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int) (int, error) {
-	// TODO: implement check for certificates
-
+	// Validation
+	if name == "" {
+		return 0, errors.New("name cant be empty")
+	}
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
@@ -79,7 +81,12 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 }
 
 // UpdateCourse takes the ID of a existing course and the already existing fields for name,enrollkey and description and overwrites the corespoding course and forum with the new Strings(name,enrollkey and description)
-func UpdateCourse(db *sql.DB, id int, name string, description null.String, enrollkey string) (int, error) {
+func EditCourse(db *sql.DB, id int, name string, description null.String, enrollkey string) (int, error) {
+	// Validation
+	if name == "" {
+		return 0, errors.New("name cant be empty")
+	}
+
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return 0, err
@@ -225,7 +232,7 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 }
 
 // GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
-func GetCoursesFromUser(db *sql.DB, uid int) (models.CourseSlice, error) {
+func GetCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
 
 	courses, err := models.Courses(
 		qm.From(models.TableNames.UserHasCourse),
@@ -240,7 +247,7 @@ func GetCoursesFromUser(db *sql.DB, uid int) (models.CourseSlice, error) {
 }
 
 // GetUserCourses takes the ID of a Course and returns a slice of Users which are enrolled in it
-func GetUsersInCourse(db *sql.DB, cid int) (models.UserSlice, error) {
+func GetUsersInCourse(db *sql.DB, cid int) ([]*models.User, error) {
 
 	users, err := models.Users(
 		qm.From(models.TableNames.UserHasCourse),
