@@ -1003,7 +1003,6 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 		return
 	}
 
-
 	pCon := &calender.PublicController{Database: f.Database}
 	err = pCon.DeactivateCourseInCalender(appointment_id)
 	if err != nil {
