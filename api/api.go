@@ -657,11 +657,6 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 	}
 
 	if c.ContentType() == "text/plain" {
-		type _file struct {
-			Name string `json:"name"`
-			Uri  string `json:"uri"`
-		}
-
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
 			log.Errorf("Unable to bind json: %s", err.Error())
