@@ -22,6 +22,11 @@ import (
 	"github.com/volatiletech/null/v8"
 )
 
+type _file struct {
+	Name string `json:"name"`
+	Uri  string `json:"uri"`
+}
+
 type PublicController struct {
 	Database *sql.DB
 }
@@ -947,4 +952,792 @@ func (f *PublicController) SearchCourse(c *gin.Context) {
 	}
 
 	c.IndentedJSON(http.StatusOK, courses)
+}
+
+func (f *PublicController) GetSubmission(c *gin.Context) {
+	submission_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	submission, err := course.GetSubmission(f.Database, submission_id)
+	if err != nil {
+		log.Errorf("Unable to get submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, submission)
+}
+
+func (f *PublicController) CreateSubmission(c *gin.Context) {
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Errorf("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	deadline, ok := j["deadline"].(string)
+	if !ok {
+		log.Error("unable to convert deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	visible_from, ok := j["visible_from"].(string)
+	if !ok {
+		log.Error("unable to convert visible_from to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	max_filesize, err := strconv.Atoi(j["max_filesize"].(string))
+	if err != nil {
+		log.Error("unable to convert maxfilesize to int")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	id, err := course.CreateSubmission(f.Database, name, deadline, course_id, max_filesize, visible_from)
+	if err != nil {
+		log.Errorf("Unable to create submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, id)
+}
+
+func (f *PublicController) DeleteSubmission(c *gin.Context) {
+
+	//Get given ID from the Context
+	//Convert data type from str to int to use ist as param
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Errorf("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	//Deactivate Data from Database with Backend function
+	submission_id, err = course.DeleteSubmission(f.Database, submission_id)
+	//Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete submission: %s\n", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, submission_id)
+}
+
+func (f *PublicController) EditSubmissionById(c *gin.Context) {
+
+	id, err := strconv.Atoi(c.Param("submission_id"))
+	if err != nil {
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Errorf("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	deadline, ok := j["deadline"].(string)
+	if !ok {
+		log.Error("unable to convert deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	visible_from, ok := j["visible_from"].(string)
+	if !ok {
+		log.Error("unable to convert visible_from to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	max_filesize, err := strconv.Atoi(j["max_filesize"].(string))
+	if err != nil {
+		log.Error("unable to convert maxfilesize to int")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	_, err = course.EditSubmission(f.Database, id, name, deadline, max_filesize, visible_from)
+	if err != nil {
+		log.Errorf("Unable to update submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, id)
+}
+
+func (f *PublicController) GetSubmissionFromUser(c *gin.Context) {
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Fetch Data from Database with Backend function
+	users, err := course.GetSubmissionsFromUser(f.Database, user_id)
+	if err != nil {
+		log.Errorf("Unable to get submissions from user: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	// Return Status and Data in JSON-Format
+	c.IndentedJSON(http.StatusOK, users)
+}
+
+func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Errorf("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	if c.ContentType() == "text/plain" {
+
+		var file _file
+		if err := c.BindJSON(&file); err != nil {
+			log.Errorf("Unable to bind json: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		log.Info(file)
+
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		err = course.CreateSubmissionHasFiles(f.Database, submission_id, file.Name, file.Uri, user_id, false, nil)
+		if err != nil {
+			log.Errorf("Unable to add file to submission: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("No file found in request: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		fi, err := file.Open()
+		if err != nil {
+			log.Errorf("Unable to open file: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		err = course.CreateSubmissionHasFiles(f.Database, submission_id, file.Filename, "", user_id, true, fi)
+		if err != nil {
+			log.Errorf("Unable to add file to submission: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	c.Status(http.StatusCreated)
+}
+
+func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
+
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	file_id, err := strconv.Atoi(c.Param("file_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Errorf("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	// Deactivate Data from Database with Backend function
+	err = course.DeleteSubmissionHasFiles(f.Database, submission_id, file_id)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete file from submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) GetUserSubmission(c *gin.Context) {
+	user_submission_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user_submission, err := course.GetUserSubmission(f.Database, user_submission_id)
+	if err != nil {
+		log.Errorf("Unable to get user submission: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, user_submission)
+}
+
+func (f *PublicController) CreateUserSubmission(c *gin.Context) {
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	name, ok := j["name"].(string)
+	if !ok {
+		log.Error("unable to convert name to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	ignores_deadline, ok := j["ignores_deadline"].(string)
+	if !ok {
+		log.Error("unable to convert ignores_deadline to string")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	ignores_deadlineint, err := strconv.Atoi(ignores_deadline)
+	if err != nil {
+		log.Error("unable to convert ignores_deadline to int")
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user_submission_id, err := course.CreateUserSubmission(f.Database, name, 9999, submission_id, int8(ignores_deadlineint))
+	if err != nil {
+		log.Errorf("Unable to add file to submission: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	c.IndentedJSON(http.StatusCreated, user_submission_id)
+}
+
+func (f *PublicController) DeleteUserSubmission(c *gin.Context) {
+
+	//Get given ID from the Context
+	//Convert data type from str to int to use ist as param
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	//Deactivate Data from Database with Backend function
+	user_submission_id, err = course.DeleteUserSubmission(f.Database, user_submission_id, user_id)
+	//Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete user submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, user_submission_id)
+}
+
+func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
+
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	if c.ContentType() == "text/plain" {
+
+		var file _file
+		if err := c.BindJSON(&file); err != nil {
+			log.Errorf("Unable to bind json: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		log.Info(file)
+
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		err = course.CreateUserSubmissionHasFiles(f.Database, user_submission_id, file.Name, file.Uri, user_id, false, nil)
+		if err != nil {
+			log.Errorf("Unable to add file to user submission: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	} else {
+		file, err := c.FormFile("file")
+		if err != nil {
+			log.Errorf("No file found in request: %s", err.Error())
+			c.Status(http.StatusBadRequest)
+			return
+		}
+
+		fi, err := file.Open()
+		if err != nil {
+			log.Errorf("Unable to open file: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+
+		user_id, err := f.GetIdFromCookie(c)
+		if err != nil {
+			log.Errorf("Unable to get id from Cookie: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
+		err = course.CreateUserSubmissionHasFiles(f.Database, user_submission_id, file.Filename, "", user_id, true, fi)
+		if err != nil {
+			log.Errorf("Unable to add file to user submission: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
+	}
+
+	c.Status(http.StatusCreated)
+}
+
+func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	file_id, err := strconv.Atoi(c.Param("file_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	role_id, err := f.GetRoleIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get role_id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusUnauthorized, err.Error())
+		return
+	}
+
+	if !AuthorizeModerator(role_id) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	// Deactivate Data from Database with Backend function
+	err = course.DeleteUserSubmissionHasFiles(f.Database, user_submission_id, file_id, user_id)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete file from user submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.Status(http.StatusNoContent)
+}
+
+func (f *PublicController) GetSubmissionsFromCourse(c *gin.Context) {
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	// Deactivate Data from Database with Backend function
+	submissions, err := course.GetSubmissionsFromCourse(f.Database, course_id)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete file from user submission: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, submissions)
+}
+
+func (f *PublicController) GradeUserSubmission(c *gin.Context) {
+
+	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	raw, err := c.GetRawData()
+	if err != nil {
+		log.Errorf("Unable to get raw data from request: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	var j map[string]interface{}
+	err = json.Unmarshal(raw, &j)
+	if err != nil {
+		log.Errorf("Unable to unmarshal the json body: %+v", raw)
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	grade, ok := j["grade"].(string)
+	if !ok {
+		log.Error("unable to convert grade to string")
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+	gradeint, err := strconv.Atoi(grade)
+	if err != nil {
+		log.Errorf("Unable to convert grade string to int: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	// Deactivate Data from Database with Backend function
+	err = course.GradeUserSubmission(f.Database, user_submission_id, gradeint)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to delete file from user submission: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.Status(http.StatusNoContent)
 }
