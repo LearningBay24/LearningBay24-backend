@@ -101,7 +101,6 @@ func (p *PublicController) AddCourseToCalender(date time.Time, duration int, loc
 	return newAppoint.ID, nil
 }
 
-
 func (p *PublicController) DeactivateCourseInCalender(appointmentId int) error {
 	tx, err := p.Database.BeginTx(context.Background(), nil)
 	if err != nil {
