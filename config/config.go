@@ -21,6 +21,7 @@ type DB struct {
 type Files struct {
 	Path             string
 	AllowedFileTypes []string
+	MaxUploadPerUser int
 }
 
 type Secrets struct {

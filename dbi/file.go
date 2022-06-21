@@ -75,6 +75,16 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 		return 0, err
 	}
 
+	// verify user exists and later whether the user reached the upload cap yet
+	user, err := models.FindUser(context.Background(), tx, uploaderID)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+
+		return 0, err
+	}
+
 	fullFile := filepath.Join(filePath, name)
 	f := models.File{Name: name, URI: fullFile, Local: 1, UploaderID: uploaderID}
 	err = f.Insert(context.Background(), tx, boil.Infer())
@@ -98,13 +108,26 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	defer fp.Close()
 	// write to the file on disk
 	bufr := bufio.NewReader(*file)
-	_, err = bufr.WriteTo(fp)
+	n, err := bufr.WriteTo(fp)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
+	}
+
+	if user.UploadedBytes+n > config.Conf.Files.MaxUploadPerUser {
+		_e := fmt.Errorf("user has reached the upload limit of %d bytes", config.Conf.Files.MaxUploadPerUser)
+
+		if e := tx.Rollback(); e != nil {
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		}
+		if e := os.Remove(fullFile); e != nil {
+			return 0, fmt.Errorf("%s, but the created file could not be deleted: %s", _e.Error(), e.Error())
+		}
+
+		return 0, fmt.Errorf("user has reached the upload limit of %d bytes", config.Conf.Files.MaxUploadPerUser)
 	}
 
 	err = tx.Commit()
