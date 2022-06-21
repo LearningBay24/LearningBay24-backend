@@ -85,7 +85,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 		return 0, err
 	}
 
-	if user.UploadedBytes+fileSize > config.Conf.Files.MaxUploadPerUser {
+	if config.Conf.Files.MaxUploadPerUser != 0 && user.UploadedBytes+fileSize > config.Conf.Files.MaxUploadPerUser {
 		if e := tx.Rollback(); e != nil {
 			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
