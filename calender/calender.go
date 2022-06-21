@@ -33,6 +33,11 @@ type PublicController struct {
 
 type RepeatDistance int
 
+type AppointmentWithCourse struct {
+	*models.Appointment `boil:",bind"`
+	Name                string `boil:"name" json:"name" toml:"name" yaml:"name"`
+}
+
 const (
 	None RepeatDistance = iota
 	Week
@@ -41,24 +46,28 @@ const (
 )
 
 // Returns all appointments the user with the user-ID has
-func (p *PublicController) GetAllAppointments(userId int) ([]models.AppointmentSlice, error) {
+func (p *PublicController) GetAllAppointments(userId int) ([]AppointmentWithCourse, error) {
 
 	courses, err := course.GetCoursesFromUser(p.Database, userId)
 	if err != nil {
 		return nil, err
 	}
-	var Appoint []models.AppointmentSlice
+	var fullSlice []AppointmentWithCourse
 	for _, course := range courses {
 		app, err := models.Appointments(models.AppointmentWhere.CourseID.EQ(course.ID)).All(context.Background(), p.Database)
+		var currentAppointment AppointmentWithCourse
+		for index := range app {
+			currentAppointment.Appointment = app[index]
+			currentAppointment.Name = course.Name
+			fullSlice = append(fullSlice, currentAppointment)
+		}
 
 		if err != nil {
 			return nil, err
 		}
-
-		Appoint = append(Appoint, app)
 	}
 
-	return Appoint, nil
+	return fullSlice, nil
 }
 
 // adds appointment/s to the course; appointments may repeat
