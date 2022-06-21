@@ -36,7 +36,7 @@ func setupEnvironment(db *sql.DB) {
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PATCH, OPTIONS")
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "https://learningbay24.de")
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "http://learningbay24.de")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
@@ -87,6 +87,9 @@ func main() {
 	router.DELETE("/users/:id", pCtrl.DeleteUser)
 	router.GET("/users/cookie", pCtrl.GetUserByCookie)
 	router.GET("/users/:id", pCtrl.GetUserById)
+	router.GET("/courses/appointments", pCtrl.GetAllAppointments)
+	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
+	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
 	router.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
 	router.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 
