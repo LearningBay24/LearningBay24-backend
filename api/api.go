@@ -25,11 +25,6 @@ import (
 	"github.com/volatiletech/null/v8"
 )
 
-type _file struct {
-	Name string `json:"name"`
-	Uri  string `json:"uri"`
-}
-
 type PublicController struct {
 	Database *sql.DB
 }
