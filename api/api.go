@@ -64,7 +64,7 @@ func AuthorizeCourseUser(roleId int) bool {
 }
 
 func (f *PublicController) AuthorizeUserHasExam(userId, examId int) (bool, error) {
-	log.Infof("Authorizing exam id: %d with user id: %d")
+	log.Infof("Authorizing exam id: %d with user id: %d", examId, userId)
 	return models.UserHasExamExists(context.Background(), f.Database, userId, examId)
 }
 
