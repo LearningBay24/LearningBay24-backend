@@ -26,6 +26,11 @@ func applyMigrations(db *sql.DB) {
 }
 
 func setupEnvironment(db *sql.DB) {
+	// always try to set up admin user
+	if err := dbi.AddDefaultData(db); err != nil {
+		log.Info(err)
+	}
+
 	if config.Conf.Environment != "development" {
 		return
 	}

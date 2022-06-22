@@ -3,6 +3,7 @@ package dbi
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"learningbay24.de/backend/models"
@@ -12,6 +13,19 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func AddDefaultData(db *sql.DB) error {
+	password, err := bcrypt.GenerateFromPassword([]byte("testpassword"), bcrypt.DefaultCost)
+	if err != nil {
+		return errors.New("Unable to create password for admin user. Skipping inserting default and dummy data.")
+	}
+	admin := models.User{ID: 1, Firstname: "Admin", Surname: "Admin", Email: "admin@learningbay24.de", Password: password, RoleID: AdminRoleId, PreferredLanguageID: 9999}
+	if err := admin.Insert(context.Background(), db, boil.Infer()); err != nil {
+		return errors.New("Unable to insert admin user. Skipping inserting default data.")
+	}
+
+	return nil
+}
 
 func AddDummyData(db *sql.DB) {
 	log.Info("Populating database with dummy data.")

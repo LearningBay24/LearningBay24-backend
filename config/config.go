@@ -33,6 +33,7 @@ type Config struct {
 	Secure      bool
 	Environment string
 	LogLevel    string
+	AdminPass   string
 	DB          DB
 	Files       Files
 	Secrets     Secrets
