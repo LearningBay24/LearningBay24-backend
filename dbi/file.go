@@ -57,15 +57,16 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	// check if file type is valid
 	for num := 0; ; num++ {
 		if _, err := os.Stat(filepath.Join(filePath, name)); err != nil {
-			if os.IsNotExist(err) {
-				if num != 0 {
-					ext := path.Ext(name)
-					f := strings.TrimSuffix(name, ext)
-					name = fmt.Sprintf("%s-%d.%s", f, num, ext)
-				}
-				break
-			} else {
+			if !os.IsNotExist(err) {
 				return 0, err
+			} else {
+				break
+			}
+		} else {
+			if num != 0 {
+				ext := path.Ext(name)
+				f := strings.TrimSuffix(name, ext)
+				name = fmt.Sprintf("%s-%d%s", f, num, ext)
 			}
 		}
 	}
