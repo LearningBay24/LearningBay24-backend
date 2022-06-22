@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/models"
 
 	log "github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ import (
 )
 
 func AddDefaultData(db *sql.DB) error {
-	password, err := bcrypt.GenerateFromPassword([]byte("testpassword"), bcrypt.DefaultCost)
+	password, err := bcrypt.GenerateFromPassword([]byte(config.Conf.AdminPass), bcrypt.DefaultCost)
 	if err != nil {
 		return errors.New("Unable to create password for admin user. Skipping inserting default and dummy data.")
 	}
