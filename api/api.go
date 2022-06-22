@@ -513,10 +513,11 @@ func (f *PublicController) Login(c *gin.Context) {
 	id, err := dbi.VerifyCredentials(f.Database, newUser.Email, []byte(newUser.Password))
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
+			log.Errorf("Unable to find user with E-Mail: %s", newUser.Email)
 			c.IndentedJSON(http.StatusBadRequest, fmt.Sprintf("Unable to find user with E-Mail: %s", newUser.Email))
 		} else {
-			c.IndentedJSON(http.StatusUnauthorized, err.Error())
 			log.Errorf("Unable to verify credentials: %s", err.Error())
+			c.IndentedJSON(http.StatusUnauthorized, err.Error())
 		}
 
 		return
@@ -554,9 +555,8 @@ func (f *PublicController) Login(c *gin.Context) {
 
 	// Set the cookie and add it to the response header
 	c.SetCookie("user_token", tokenString, int((time.Hour * 24).Seconds()), "/", config.Conf.Domain, config.Conf.Secure, true)
-	// Return empty string
 
-	c.IndentedJSON(http.StatusOK, "")
+	c.Status(http.StatusOK)
 }
 
 func (f *PublicController) Logout(c *gin.Context) {

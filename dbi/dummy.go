@@ -3,7 +3,6 @@ package dbi
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"time"
 
 	"learningbay24.de/backend/config"
@@ -18,11 +17,59 @@ import (
 func AddDefaultData(db *sql.DB) error {
 	password, err := bcrypt.GenerateFromPassword([]byte(config.Conf.AdminPass), bcrypt.DefaultCost)
 	if err != nil {
-		return errors.New("Unable to create password for admin user. Skipping inserting default and dummy data.")
+		return err
 	}
+
+	admin_role := models.Role{ID: AdminRoleId, Name: "admin", DisplayName: "Administrator"}
+	moderator_role := models.Role{ID: ModeratorRoleId, Name: "mod", DisplayName: "Moderator"}
+	user_role := models.Role{ID: UserRoleId, Name: "user", DisplayName: "User"}
+	language := models.Language{ID: 1, Name: "Deutsch"}
 	admin := models.User{ID: 1, Firstname: "Admin", Surname: "Admin", Email: "admin@learningbay24.de", Password: password, RoleID: AdminRoleId, PreferredLanguageID: 9999}
-	if err := admin.Insert(context.Background(), db, boil.Infer()); err != nil {
-		return errors.New("Unable to insert admin user. Skipping inserting default data.")
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	if err := admin_role.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	if err := moderator_role.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	if err := user_role.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	if err := language.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	admin.PreferredLanguageID = language.ID
+	if err := admin.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 
 	return nil

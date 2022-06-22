@@ -28,6 +28,7 @@ func applyMigrations(db *sql.DB) {
 func setupEnvironment(db *sql.DB) {
 	// always try to set up admin user
 	if err := dbi.AddDefaultData(db); err != nil {
+		log.Info("Unable to insert default data. This could be due to default data already being inserted!")
 		log.Info(err)
 	}
 
