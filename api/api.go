@@ -156,7 +156,7 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -195,7 +195,7 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseAdmin(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -242,7 +242,7 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -267,7 +267,7 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 		return
 	}
 	if !AuthorizeUser(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -313,7 +313,7 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseAdmin(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -337,7 +337,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 	}
 
 	if !AuthorizeModerator(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -404,7 +404,7 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 		return
 	}
 	if !AuthorizeUser(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -462,7 +462,7 @@ func (f *PublicController) EditCourseById(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -568,7 +568,7 @@ func (f *PublicController) Logout(c *gin.Context) {
 		return
 	}
 	if !AuthorizeUser(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -586,7 +586,7 @@ func (f *PublicController) Register(c *gin.Context) {
 	}
 
 	if !AuthorizeModerator(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -651,7 +651,7 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -726,7 +726,7 @@ func (f *PublicController) GetMaterialsFromCourse(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -779,7 +779,7 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -811,7 +811,7 @@ func (f *PublicController) DeleteUser(c *gin.Context) {
 		return
 	}
 	if !AuthorizeAdmin(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -853,7 +853,7 @@ func (f *PublicController) GetUserByCookie(c *gin.Context) {
 		return
 	}
 	if !AuthorizeUser(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -890,7 +890,7 @@ func (f *PublicController) GetUserById(c *gin.Context) {
 		return
 	}
 	if !AuthorizeUser(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1122,8 +1122,8 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	if !AuthorizeCourseAdmin(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1278,7 +1278,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1381,7 +1381,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1504,7 +1504,7 @@ func (f *PublicController) GetExamsFromCourse(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1612,7 +1612,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1786,7 +1786,7 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1890,7 +1890,7 @@ func (f *PublicController) GradeAnswer(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -1980,7 +1980,7 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2021,7 +2021,7 @@ func (f *PublicController) DeleteExam(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseAdmin(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2072,7 +2072,7 @@ func (f *PublicController) CreateSubmission(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Errorf("User is not authorized: %s", err.Error())
+		log.Errorf("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2156,7 +2156,7 @@ func (f *PublicController) DeleteSubmission(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Errorf("User is not authorized: %s", err.Error())
+		log.Errorf("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2201,7 +2201,7 @@ func (f *PublicController) EditSubmissionById(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Errorf("User is not authorized: %s", err.Error())
+		log.Errorf("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2297,7 +2297,7 @@ func (f *PublicController) CreateSubmissionHasFiles(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Errorf("User is not authorized: %s", err.Error())
+		log.Errorf("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2394,7 +2394,7 @@ func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role) {
-		log.Errorf("User is not authorized: %s", err.Error())
+		log.Errorf("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2446,7 +2446,7 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2528,7 +2528,7 @@ func (f *PublicController) DeleteUserSubmission(c *gin.Context) {
 	}
 
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2567,7 +2567,7 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 	}
 
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2661,7 +2661,7 @@ func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
 	}
 
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2681,7 +2681,7 @@ func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
 	}
 
 	if !AuthorizeModerator(role_id) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2717,7 +2717,7 @@ func (f *PublicController) GetSubmissionsFromCourse(c *gin.Context) {
 	}
 
 	if !AuthorizeCourseUser(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
@@ -2762,7 +2762,7 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 	}
 
 	if !AuthorizeCourseModerator(course_role) {
-		log.Infof("User is not authorized: %s", err.Error())
+		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
 	}
