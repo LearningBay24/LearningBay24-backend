@@ -2699,7 +2699,7 @@ func (f *PublicController) GetSubmissionsFromCourse(c *gin.Context) {
 	submissions, err := course.GetSubmissionsFromCourse(f.Database, course_id)
 	// Return Status and Data in JSON-Format
 	if err != nil {
-		log.Errorf("Unable to delete file from user submission: %s", err.Error())
+		log.Errorf("Unable to get submissions from course: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
