@@ -1127,7 +1127,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	if !AuthorizeCourseAdmin(course_role) {
+	if !AuthorizeCourseModerator(course_role) {
 		log.Infof("User is not authorized: %s", err.Error())
 		c.Status(http.StatusUnauthorized)
 		return
