@@ -31,7 +31,7 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int) (int, error) {
 	// Validation
 	if name == "" {
-		return 0, errors.New("name cant be empty")
+		return 0, errors.New("Name cant be empty")
 	}
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -44,7 +44,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
@@ -56,26 +56,25 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 	err = c.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 		}
 
 		return 0, err
 	} else {
 		// TODO: Implement roles assigment for tutors
-		// TODO: remove hard coded role
 		// Gives the user with the ID in the 0 place in the array the role of the creator
 		shasc := models.UserHasCourse{UserID: usersid, CourseID: c.ID, RoleID: dbi.CourseAdminRoleId}
 		err = shasc.Insert(context.Background(), tx, boil.Infer())
 		if err != nil {
 			if e := tx.Rollback(); e != nil {
-				return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+				return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 			}
 
 			return 0, err
 		}
 	}
 	if e := tx.Commit(); e != nil {
-		return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+		return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
 	}
 	return c.ID, nil
 }
