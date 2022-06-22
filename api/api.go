@@ -342,23 +342,6 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	var newCourse models.Course
-
-	raw, err := c.GetRawData()
-	if err != nil {
-		log.Errorf("Unable to get raw data from request: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	var j map[string]interface{}
-	err = json.Unmarshal(raw, &j)
-	if err != nil {
-		log.Errorf("Unable to unmarshal the json body: %+v", raw)
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
 	user_id, err := f.GetIdFromCookie(c)
 	if err != nil {
 		log.Errorf("Unable to get id from Cookie: %s", err.Error())
@@ -366,26 +349,16 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 		return
 	}
 
-	name, ok := j["name"].(string)
-	if !ok {
-		log.Error("unable to convert name to string")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	description, ok := j["description"].(string)
-	if !ok {
-		log.Error("unable to convert description to string")
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-	enroll_key, ok := j["enroll_key"].(string)
-	if !ok {
-		log.Error("unable to convert enroll_key to string")
-		c.Status(http.StatusInternalServerError)
-		return
+	var newCourse models.Course
+	if err := c.BindJSON(&newCourse); err != nil {
+		if err != nil {
+			log.Errorf("Unable to bind json: %s", err.Error())
+			c.IndentedJSON(http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 
-	id, err := course.CreateCourse(f.Database, name, null.StringFrom(description), enroll_key, user_id)
+	id, err := course.CreateCourse(f.Database, newCourse.Name, newCourse.Description, newCourse.EnrollKey, user_id)
 	if err != nil {
 		log.Errorf("Unable to create course: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
