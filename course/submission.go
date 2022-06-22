@@ -171,12 +171,12 @@ func DeleteSubmission(db *sql.DB, sid int) (int, error) {
 	return s.ID, nil
 }
 
-func CreateSubmissionHasFiles(db *sql.DB, submission_id int, fileName string, uri string, uploaderId int, local bool, file io.Reader) error {
+func CreateSubmissionHasFiles(db *sql.DB, submission_id int, fileName string, uri string, uploaderId int, local bool, file io.Reader, fileSize int) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
-	file_id, err := dbi.SaveFile(db, fileName, uri, uploaderId, local, &file)
+	file_id, err := dbi.SaveFile(db, fileName, uri, uploaderId, local, &file, fileSize)
 	if err != nil {
 		return err
 	}
@@ -351,12 +351,12 @@ func DeleteUserSubmission(db *sql.DB, user_submission_id int, user_id int) (int,
 	return uhassubmission.ID, nil
 }
 
-func CreateUserSubmissionHasFiles(db *sql.DB, user_submission_id int, fileName string, uri string, uploaderId int, local bool, file io.Reader) error {
+func CreateUserSubmissionHasFiles(db *sql.DB, user_submission_id int, fileName string, uri string, uploaderId int, local bool, file io.Reader, fileSize int) error {
 	tx, err := db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
-	file_id, err := dbi.SaveFile(db, fileName, uri, uploaderId, local, &file)
+	file_id, err := dbi.SaveFile(db, fileName, uri, uploaderId, local, &file, fileSize)
 	if err != nil {
 		return err
 	}

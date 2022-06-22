@@ -104,6 +104,7 @@ func main() {
 	router.POST("/users/exams/:id/submit", pCtrl.SubmitAnswerToExam)
 	router.GET("/exams/:id/users", pCtrl.GetRegisteredUsersFromExam)
 	router.GET("exams/:id/users/attended", pCtrl.GetAttendeesFromExam)
+	// NOTE: `usersx` is used as `users` seems to cause problems for this particular route
 	router.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
 	router.PATCH("/users/:user_id/exams/:exam_id/grade", pCtrl.GradeAnswer)
 	router.DELETE("/exams/:id", pCtrl.DeleteExam)
