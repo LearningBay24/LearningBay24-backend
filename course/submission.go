@@ -442,3 +442,29 @@ func GetUserSubmissionsFromSubmission(db *sql.DB, submission_id int) ([]*models.
 	}
 	return user_submissions, err
 }
+
+func GetFileFromSubmission(db *sql.DB, submission_id int) (*models.File, error) {
+	files, err := models.Files(
+		qm.From("submission_has_files"),
+		qm.Where("submission_has_files.submission_id = ?", submission_id),
+		qm.And("submission_has_files.file_id = file.id"),
+	).One(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, err
+}
+
+func GetFileFromUserSubmission(db *sql.DB, user_submission_id int) (*models.File, error) {
+	files, err := models.Files(
+		qm.From("user_submission_has_files"),
+		qm.Where("user_submission_has_files.user_submission_id = ?", user_submission_id),
+		qm.And("user_submission_has_files.file_id = file.id"),
+	).One(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, err
+}
