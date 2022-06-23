@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -66,13 +67,13 @@ func AuthMiddleware() gin.HandlerFunc {
 		if cookie == "" {
 			flog.Errorf("Unable to get cookie")
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 		tokenString := strings.Split(cookie, "=")[1]
 
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				flog.Errorf("unexpected signing method: %v", token.Header["alg"])
-				c.AbortWithStatus(http.StatusUnauthorized)
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 
 			return []byte(config.Conf.Secrets.JWTSecret), nil
@@ -80,36 +81,42 @@ func AuthMiddleware() gin.HandlerFunc {
 		if err != nil {
 			flog.Errorf("Error parsing token: %s", err.Error())
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		data, ok := token.Claims.(jwt.MapClaims)["data"]
 		if !ok {
 			flog.Error("Unable to map id from data interface")
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		datamap, ok := data.(map[string]interface{})
 		if !ok {
 			flog.Error("Unable to map id from data interface")
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		id, err := strconv.Atoi(datamap["id"].(string))
 		if err != nil {
 			flog.Errorf("Unable to convert id to int: %s", err.Error())
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		role_id, err := strconv.Atoi(datamap["role_id"].(string))
 		if err != nil {
 			flog.Errorf("Unable to convert role_id to int: %s", err.Error())
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		// ensure basic permissions
 		if !api.AuthorizeUser(role_id) {
 			flog.Error("Cookie's role_id does not have user permissions")
 			c.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 
 		c.Set("CookieUserId", id)
