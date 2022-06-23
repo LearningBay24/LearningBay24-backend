@@ -2746,8 +2746,8 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 	err = course.GradeUserSubmission(f.Database, user_submission_id, gradeint)
 	// Return Status and Data in JSON-Format
 	if err != nil {
-		log.Errorf("Unable to delete file from user submission: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		log.Errorf("Unable to grade usersubmission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.Status(http.StatusNoContent)
@@ -2765,8 +2765,8 @@ func (f *PublicController) GetUserSubmissionsFromSubmission(c *gin.Context) {
 	submissions, err := course.GetUserSubmissionsFromSubmission(f.Database, submission_id)
 	// Return Status and Data in JSON-Format
 	if err != nil {
-		log.Errorf("Unable to get submissions from course: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		log.Errorf("Unable to get usersubmissions from submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	c.IndentedJSON(http.StatusOK, submissions)
@@ -2778,7 +2778,7 @@ func (f *PublicController) GetFileFromSubmission(c *gin.Context) {
 
 	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("unable to convert parameter `submission` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -2786,8 +2786,8 @@ func (f *PublicController) GetFileFromSubmission(c *gin.Context) {
 	// Fetch Data from Database with Backend function
 	users, err := course.GetFileFromSubmission(f.Database, submission_id)
 	if err != nil {
-		log.Errorf("Unable to get users in course: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		log.Errorf("unable to get file from submission: %s", err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	// Return Status and Data in JSON-Format
@@ -2800,7 +2800,7 @@ func (f *PublicController) GetFileFromUserSubmission(c *gin.Context) {
 
 	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("unable to convert parameter `usersubmission` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -2809,7 +2809,7 @@ func (f *PublicController) GetFileFromUserSubmission(c *gin.Context) {
 	users, err := course.GetFileFromUserSubmission(f.Database, user_submission_id)
 	if err != nil {
 		log.Errorf("Unable to get users in course: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		c.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
 	// Return Status and Data in JSON-Format
