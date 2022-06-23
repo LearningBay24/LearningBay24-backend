@@ -417,7 +417,7 @@ func GetSubmissionsFromCourse(db *sql.DB, course_id int) ([]*models.Submission, 
 	if err != nil {
 		return nil, err
 	}
-	return submissions, err
+	return submissions, nil
 }
 
 func GradeUserSubmission(db *sql.DB, user_submission_id int, grade int) error {
@@ -432,7 +432,7 @@ func GradeUserSubmission(db *sql.DB, user_submission_id int, grade int) error {
 		return err
 	}
 
-	return err
+	return nil
 }
 
 func GetUserSubmissionsFromSubmission(db *sql.DB, submission_id int) ([]*models.UserSubmission, error) {
@@ -453,7 +453,7 @@ func GetFileFromSubmission(db *sql.DB, submission_id int) (*models.File, error) 
 		return nil, err
 	}
 
-	return files, err
+	return files, nil
 }
 
 func GetFileFromUserSubmission(db *sql.DB, user_submission_id int) (*models.File, error) {
@@ -466,5 +466,25 @@ func GetFileFromUserSubmission(db *sql.DB, user_submission_id int) (*models.File
 		return nil, err
 	}
 
-	return files, err
+	return files, nil
+}
+
+func GetCourseIdBySubmission(db *sql.DB, submission_id int) (int, error) {
+	submission, err := GetSubmission(db, submission_id)
+	if err != nil {
+		return 0, err
+	}
+	return submission.CourseID, nil
+}
+
+func GetCourseIdByUserSubmission(db *sql.DB, user_submission_id int) (int, error) {
+	user_submission, err := GetUserSubmission(db, user_submission_id)
+	if err != nil {
+		return 0, err
+	}
+	submission, err := GetSubmission(db, user_submission.SubmissionID)
+	if err != nil {
+		return 0, err
+	}
+	return submission.CourseID, nil
 }
