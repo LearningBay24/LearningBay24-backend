@@ -77,6 +77,7 @@ func main() {
 	router.GET("/submissions/:id", pCtrl.GetSubmission)
 	router.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
 	router.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
+	router.GET("/courses/:id/submissions/:submission_id/usersubmissions", pCtrl.GetUserSubmissionsFromSubmission)
 	router.PATCH("/courses/:id/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
 	router.DELETE("courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
 	router.PATCH("courses/:id/submissions/:submission_id", pCtrl.EditSubmissionById)

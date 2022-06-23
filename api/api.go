@@ -2776,3 +2776,46 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 	}
 	c.Status(http.StatusNoContent)
 }
+
+func (f *PublicController) GetUserSubmissionsFromSubmission(c *gin.Context) {
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	submission_id, err := strconv.Atoi(c.Param("submission_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized")
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	// Deactivate Data from Database with Backend function
+	submissions, err := course.GetUserSubmissionsFromSubmission(f.Database, submission_id)
+	// Return Status and Data in JSON-Format
+	if err != nil {
+		log.Errorf("Unable to get submissions from course: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	c.IndentedJSON(http.StatusOK, submissions)
+}
