@@ -151,6 +151,7 @@ func main() {
 		auth.POST("/courses/:id/files", pCtrl.UploadMaterial)
 		auth.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
 		auth.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
+		auth.DELETE("/courses/:id/files/:file_id", pCtrl.DeleteMaterialFromCourse)
 		auth.DELETE("/users/:id", pCtrl.DeleteUser)
 		auth.GET("/users/cookie", pCtrl.GetUserByCookie)
 		auth.GET("/users/:id", pCtrl.GetUserById)
