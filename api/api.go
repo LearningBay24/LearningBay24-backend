@@ -1201,15 +1201,29 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	// Fetch Data from Database with Backend function
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	co, err := pCtrl.GetExamByID(id)
+	ex, err := pCtrl.GetExamByID(id)
 	if err != nil {
 		log.Errorf("Unable to get exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.IndentedJSON(http.StatusOK, co)
+
+	userId := c.MustGet("CookieUserId").(int)
+
+	course_role, err := course.GetCourseRole(f.Database, userId, ex.CourseID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized")
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	c.IndentedJSON(http.StatusOK, ex)
 }
 
 func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
@@ -1537,8 +1551,7 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 }
 
 func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
-	// TODO: user_id from cookie
-	userId, err := strconv.Atoi(c.Param("id"))
+	attendeeId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1552,8 +1565,29 @@ func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
 		return
 	}
 
+	userId := c.MustGet("CookieUserId").(int)
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	file, err := pCtrl.GetAnswerFromAttendee(userId, examId)
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	file, err := pCtrl.GetAnswerFromAttendee(attendeeId, examId)
 	if err != nil {
 		log.Errorf("Unable to get file from answer: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
@@ -1663,9 +1697,7 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-
-	// TODO: get user_id from cookie
-	userId, err := strconv.Atoi(c.Param("user_id"))
+	attendeeId, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1680,6 +1712,8 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 		return
 	}
 
+	userId := c.MustGet("CookieUserId").(int)
+
 	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
 	if err != nil {
 		log.Errorf("Unable to get course role: %s", err.Error())
@@ -1693,7 +1727,7 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 		return
 	}
 
-	err = pCtrl.SetAttended(examId, userId)
+	err = pCtrl.SetAttended(examId, attendeeId)
 	if err != nil {
 		log.Errorf("Unable to set user's exam to attended: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
@@ -2120,7 +2154,6 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		c.Status(http.StatusUnauthorized)
 		return
 	}
-
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())

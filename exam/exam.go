@@ -36,7 +36,7 @@ type ExamService interface {
 	GetFileFromExam(examId int) ([]*models.File, error)
 	SubmitAnswer(fileName, uri string, local bool, file io.Reader, examId, userId int) error
 	GetRegisteredUsersFromExam(examId, userId int) (models.UserHasExamSlice, error)
-	GetAnswerFromAttendee(fileId int) (*models.File, error)
+	GetAnswerFromAttendee(userId, examId int) (*models.File, error)
 	GradeAnswer(examId, creatorId, userId int, grade null.Int, passed null.Int8, feedback null.String) error
 	SetAttended(examId, userId int) error
 	GetUnregisteredExams(userId int) (models.ExamSlice, error)
