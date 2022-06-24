@@ -1929,10 +1929,31 @@ func (f *PublicController) DeleteExam(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, ex)
 }
 func (f *PublicController) GetSubmission(c *gin.Context) {
+
+	user_id := c.MustGet("CookieUserId").(int)
+
 	submission_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
+		return
+	}
+	course_id, err := course.GetCourseIdBySubmission(f.Database, submission_id)
+	if err != nil {
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized")
+		c.Status(http.StatusUnauthorized)
 		return
 	}
 	submission, err := course.GetSubmission(f.Database, submission_id)
@@ -2262,13 +2283,19 @@ func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 }
 
 func (f *PublicController) GetUserSubmission(c *gin.Context) {
-	user_submission_id, err := strconv.Atoi(c.Param("id"))
+	user_id, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+	submission_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
-	user_submission, err := course.GetUserSubmission(f.Database, user_submission_id)
+	user_submission, err := course.GetUserSubmissionBySubmission(f.Database, submission_id, user_id)
 	if err != nil {
 		log.Errorf("Unable to get user submission: %s", err.Error())
 		handleApiError(c, err)

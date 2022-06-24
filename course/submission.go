@@ -248,6 +248,18 @@ func GetUserSubmission(db *sql.DB, user_submission_id int) (*models.UserSubmissi
 	return user_submission, nil
 }
 
+func GetUserSubmissionBySubmission(db *sql.DB, submission_id int, user_id int) (*models.UserSubmission, error) {
+	user_submission, err := models.UserSubmissions(
+		qm.From(models.TableNames.Submission),
+		qm.Where(models.UserSubmissionColumns.SubmissionID+"=?", submission_id),
+		qm.And(models.UserSubmissionColumns.SubmitterID+"=?", user_id),
+	).One(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+	return user_submission, nil
+}
+
 func CreateUserSubmission(db *sql.DB, name string, submitter_id int, submission_id int, ignores_submission_deadline int8) (int, error) {
 	var nullname null.String
 	curtime := time.Now()
