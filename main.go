@@ -172,6 +172,9 @@ func main() {
 		auth.GET("/exams/:id/users/attended", pCtrl.GetAttendeesFromExam)
 		auth.PATCH("/users/:user_id/exams/:exam_id/grade", pCtrl.GradeAnswer)
 		auth.DELETE("/exams/:id", pCtrl.DeleteExam)
+		auth.GET("/exams/:id", pCtrl.GetExamById)
+		auth.PATCH("/users/:user_id/exams/:exam_id/attend", pCtrl.SetAttended)
+		auth.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
 		auth.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
 		auth.DELETE("/courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
 		auth.PATCH("/courses/submissions/:submission_id", pCtrl.EditSubmissionById)
@@ -196,13 +199,6 @@ func main() {
 	// TODO: add authorization => user
 	router.GET("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.GetFileFromUserSubmission)
 	router.GET("/courses/search", pCtrl.SearchCourse)
-	// TODO: add authorization => user has access to exam
-	router.GET("/exams/:id", pCtrl.GetExamById)
-	// TODO: add authorization => user has access to exam
-	router.PATCH("/users/:user_id/exams/:exam_id/attend", pCtrl.SetAttended)
-	// NOTE: `usersx` is used as `users` seems to cause problems for this particular route
-	// TODO: add authorization => only as course moderator or higher
-	router.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
 	// TODO: add authorization?
 	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
 	// TODO: add authorization?
