@@ -248,7 +248,7 @@ func GetUserSubmission(db *sql.DB, user_submission_id int) (*models.UserSubmissi
 	return user_submission, nil
 }
 
-func GetUserSubmissionBySubmission(db *sql.DB, submission_id int, user_id int) (*models.UserSubmission, error) {
+func GetUserSubmissionBySubmissionId(db *sql.DB, submission_id int, user_id int) (*models.UserSubmission, error) {
 	user_submission, err := models.UserSubmissions(
 		qm.From(models.TableNames.Submission),
 		qm.Where(models.UserSubmissionColumns.SubmissionID+"=?", submission_id),
