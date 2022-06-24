@@ -1201,15 +1201,29 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	// Fetch Data from Database with Backend function
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	co, err := pCtrl.GetExamByID(id)
+	ex, err := pCtrl.GetExamByID(id)
 	if err != nil {
 		log.Errorf("Unable to get exam: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.IndentedJSON(http.StatusOK, co)
+
+	userId := c.MustGet("CookieUserId").(int)
+
+	course_role, err := course.GetCourseRole(f.Database, userId, ex.CourseID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseUser(course_role) {
+		log.Infof("User is not authorized")
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+	c.IndentedJSON(http.StatusOK, ex)
 }
 
 func (f *PublicController) GetRegisteredExamsFromUser(c *gin.Context) {
