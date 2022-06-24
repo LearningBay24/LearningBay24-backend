@@ -174,22 +174,27 @@ func main() {
 		auth.DELETE("/exams/:id", pCtrl.DeleteExam)
 		auth.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
 		auth.DELETE("/courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
-		auth.PATCH("/courses/:id/submissions/:submission_id", pCtrl.EditSubmissionById)
+		auth.PATCH("/courses/submissions/:submission_id", pCtrl.EditSubmissionById)
 		auth.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
-		auth.POST("/courses/:id/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
-		auth.DELETE("/courses/:id/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
-		auth.POST("/courses/:id/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
-		auth.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
+		auth.POST("/courses/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
+		auth.DELETE("/courses/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
+		auth.POST("/courses/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
+		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
 		auth.POST("/courses/:id/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
-		auth.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
+		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
 		auth.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
-		auth.PATCH("/courses/:id/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
+		auth.PATCH("/courses/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
 	}
 
 	router.POST("/login", pCtrl.Login)
 	// TODO: add authorization => user has access to submission
 	router.GET("/submissions/:id", pCtrl.GetSubmission)
 	// TODO: add authorization => user
+	router.GET("/courses/submissions/:submission_id/usersubmissions", pCtrl.GetUserSubmissionsFromSubmission)
+	// TODO: add authorization => user
+	router.GET("/courses/submissions/:submission_id/files", pCtrl.GetFileFromSubmission)
+	// TODO: add authorization => user
+	router.GET("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.GetFileFromUserSubmission)
 	router.GET("/courses/search", pCtrl.SearchCourse)
 	// TODO: add authorization => user has access to exam
 	router.GET("/exams/:id", pCtrl.GetExamById)

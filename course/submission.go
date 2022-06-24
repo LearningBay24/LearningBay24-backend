@@ -417,7 +417,7 @@ func GetSubmissionsFromCourse(db *sql.DB, course_id int) ([]*models.Submission, 
 	if err != nil {
 		return nil, err
 	}
-	return submissions, err
+	return submissions, nil
 }
 
 func GradeUserSubmission(db *sql.DB, user_submission_id int, grade int) error {
@@ -432,5 +432,59 @@ func GradeUserSubmission(db *sql.DB, user_submission_id int, grade int) error {
 		return err
 	}
 
-	return err
+	return nil
+}
+
+func GetUserSubmissionsFromSubmission(db *sql.DB, submission_id int) ([]*models.UserSubmission, error) {
+	user_submissions, err := models.UserSubmissions(models.UserSubmissionWhere.SubmissionID.EQ(submission_id)).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+	return user_submissions, err
+}
+
+func GetFileFromSubmission(db *sql.DB, submission_id int) (*models.File, error) {
+	files, err := models.Files(
+		qm.From("submission_has_files"),
+		qm.Where("submission_has_files.submission_id = ?", submission_id),
+		qm.And("submission_has_files.file_id = file.id"),
+	).One(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
+func GetFileFromUserSubmission(db *sql.DB, user_submission_id int) (*models.File, error) {
+	files, err := models.Files(
+		qm.From("user_submission_has_files"),
+		qm.Where("user_submission_has_files.user_submission_id = ?", user_submission_id),
+		qm.And("user_submission_has_files.file_id = file.id"),
+	).One(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return files, nil
+}
+
+func GetCourseIdBySubmission(db *sql.DB, submission_id int) (int, error) {
+	submission, err := GetSubmission(db, submission_id)
+	if err != nil {
+		return 0, err
+	}
+	return submission.CourseID, nil
+}
+
+func GetCourseIdByUserSubmission(db *sql.DB, user_submission_id int) (int, error) {
+	user_submission, err := GetUserSubmission(db, user_submission_id)
+	if err != nil {
+		return 0, err
+	}
+	submission, err := GetSubmission(db, user_submission.SubmissionID)
+	if err != nil {
+		return 0, err
+	}
+	return submission.CourseID, nil
 }
