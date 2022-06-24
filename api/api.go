@@ -1833,7 +1833,7 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 }
 
 func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
-	userId, err := strconv.Atoi(c.Param("id"))
+	attendeeId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -1847,8 +1847,34 @@ func (f *PublicController) GetFileFromAttendee(c *gin.Context) {
 		return
 	}
 
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get id from Cookie: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
 	pCtrl := exam.PublicController{Database: f.Database}
-	file, err := pCtrl.GetAnswerFromAttendee(userId, examId)
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized: %s", err.Error())
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	file, err := pCtrl.GetAnswerFromAttendee(attendeeId, examId)
 	if err != nil {
 		log.Errorf("Unable to get file from answer: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
