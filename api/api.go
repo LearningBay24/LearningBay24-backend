@@ -615,6 +615,13 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 }
 
 func (f *PublicController) DeleteMaterialFromCourse(c *gin.Context) {
+	role_id := c.MustGet("CookieRoleId").(int)
+	if !AuthorizeCourseModerator(role_id) {
+		log.Errorf("User is not authorized to delete course material")
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
 	course_id, err := strconv.Atoi(c.Param("course_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
