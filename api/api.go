@@ -1989,7 +1989,7 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 		c.Status(http.StatusBadRequest)
 		return
 	}
-	userId, err := strconv.Atoi(c.Param("user_id"))
+	attendeeId, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
 		c.Status(http.StatusBadRequest)
@@ -2000,6 +2000,13 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 	co, err := pCtrl.GetCourseFromExam(examId)
 	if err != nil {
 		log.Errorf("Unable to get course from exam: %s", err.Error())
+		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	userId, err := f.GetIdFromCookie(c)
+	if err != nil {
+		log.Errorf("Unable to get user_id from Cookie: %s", err.Error())
 		c.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -2016,7 +2023,7 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 		return
 	}
 
-	err = pCtrl.SetAttended(examId, userId)
+	err = pCtrl.SetAttended(examId, attendeeId)
 	if err != nil {
 		log.Errorf("Unable to set user's exam to attended: %s", err.Error())
 		c.Status(http.StatusInternalServerError)
