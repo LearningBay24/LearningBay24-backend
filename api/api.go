@@ -614,6 +614,30 @@ func (f *PublicController) GetMaterialFromCourse(c *gin.Context) {
 	c.Status(http.StatusOK)
 }
 
+func (f *PublicController) DeleteMaterialFromCourse(c *gin.Context) {
+	course_id, err := strconv.Atoi(c.Param("course_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	file_id, err := strconv.Atoi(c.Param("file_id"))
+	if err != nil {
+		log.Errorf("Unable to convert parameter `file_id` to int: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	err = coursematerial.DeleteMaterialFromCourse(f.Database, course_id, file_id)
+	if err != nil {
+		log.Errorf("Unable to delete file with id %d from course with id %d", file_id, course_id)
+		c.Status(http.StatusInternalServerError)
+	}
+
+	c.Status(http.StatusOK)
+}
+
 func (f *PublicController) DeleteUser(c *gin.Context) {
 	role_id := c.MustGet("CookieRoleId").(int)
 
