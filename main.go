@@ -2,11 +2,16 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
 
 	"learningbay24.de/backend/api"
 	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/dbi"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	migrate "github.com/rubenv/sql-migrate"
 	log "github.com/sirupsen/logrus"
@@ -52,6 +57,74 @@ func CORSMiddleware() gin.HandlerFunc {
 	}
 }
 
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		flog := log.WithFields(log.Fields{
+			"context": "auth_middleware",
+		})
+
+		cookie := c.Request.Header.Get("Cookie")
+		if cookie == "" {
+			flog.Errorf("Unable to get cookie")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		tokenString := strings.Split(cookie, "=")[1]
+
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+
+			return []byte(config.Conf.Secrets.JWTSecret), nil
+		})
+		if err != nil {
+			flog.Errorf("Error parsing token: %s", err.Error())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		data, ok := token.Claims.(jwt.MapClaims)["data"]
+		if !ok {
+			flog.Error("Unable to map id from data interface")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		datamap, ok := data.(map[string]interface{})
+		if !ok {
+			flog.Error("Unable to map id from data interface")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		id, err := strconv.Atoi(datamap["id"].(string))
+		if err != nil {
+			flog.Errorf("Unable to convert id to int: %s", err.Error())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		role_id, err := strconv.Atoi(datamap["role_id"].(string))
+		if err != nil {
+			flog.Errorf("Unable to convert role_id to int: %s", err.Error())
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// ensure basic permissions
+		if !api.AuthorizeUser(role_id) {
+			flog.Error("Cookie's role_id does not have user permissions")
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		c.Set("CookieUserId", id)
+		c.Set("CookieRoleId", role_id)
+		c.Next()
+	}
+}
+
 func main() {
 	config.InitConfig()
 	config.InitLogger()
@@ -63,61 +136,73 @@ func main() {
 	router := gin.Default()
 	router.Use(CORSMiddleware())
 
-	router.GET("/courses/:id", pCtrl.GetCourseById)
-	router.GET("/users/courses", pCtrl.GetCoursesFromUser)
-	router.GET("/courses/:id/users", pCtrl.GetUsersInCourse)
-	router.DELETE("/courses/:id", pCtrl.DeleteCourse)
-	router.DELETE("/courses/:id/:user_id", pCtrl.DeleteUserFromCourse)
+	auth := router.Group("").Use(AuthMiddleware())
+	{
+		auth.GET("/courses/:id", pCtrl.GetCourseById)
+		auth.DELETE("/courses/:id/:user_id", pCtrl.DeleteUserFromCourse)
+		auth.GET("/courses/:id/users", pCtrl.GetUsersInCourse)
+		auth.GET("/users/courses", pCtrl.GetCoursesFromUser)
+		auth.DELETE("/courses/:id", pCtrl.DeleteCourse)
+		auth.POST("/courses", pCtrl.CreateCourse)
+		auth.POST("/courses/:id", pCtrl.EnrollUser)
+		auth.PATCH("/courses/:id", pCtrl.EditCourseById)
+		auth.POST("/logout", pCtrl.Logout)
+		auth.POST("/register", pCtrl.Register)
+		auth.POST("/courses/:id/files", pCtrl.UploadMaterial)
+		auth.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
+		auth.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
+		auth.DELETE("/users/:id", pCtrl.DeleteUser)
+		auth.GET("/users/cookie", pCtrl.GetUserByCookie)
+		auth.GET("/users/:id", pCtrl.GetUserById)
+		auth.GET("/courses/appointments", pCtrl.GetAllAppointments)
+		auth.POST("/exams", pCtrl.CreateExam)
+		auth.PATCH("/exams/:id/edit", pCtrl.EditExam)
+		auth.POST("/exams/:id/files", pCtrl.UploadExamFile)
+		auth.GET("/users/exams/registered", pCtrl.GetRegisteredExamsFromUser)
+		auth.GET("/users/exams/unregistered", pCtrl.GetUnregisteredExamsFromUser)
+		auth.GET("/courses/:id/exams", pCtrl.GetExamsFromCourse)
+		auth.GET("/users/exams/attended", pCtrl.GetAttendedExamsFromUser)
+		auth.GET("/users/exams/passed", pCtrl.GetPassedExamsFromUser)
+		auth.GET("/users/exams/created", pCtrl.GetCreatedFromUser)
+		auth.POST("/users/exams/:id", pCtrl.RegisterToExam)
+		auth.DELETE("/users/exams/:id", pCtrl.DeregisterFromExam)
+		auth.GET("/exams/:id/files", pCtrl.GetFileFromExam)
+		auth.POST("/users/exams/:id/submit", pCtrl.SubmitAnswerToExam)
+		auth.GET("/exams/:id/users", pCtrl.GetRegisteredUsersFromExam)
+		auth.GET("/exams/:id/users/attended", pCtrl.GetAttendeesFromExam)
+		auth.PATCH("/users/:user_id/exams/:exam_id/grade", pCtrl.GradeAnswer)
+		auth.DELETE("/exams/:id", pCtrl.DeleteExam)
+		auth.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
+		auth.DELETE("/courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
+		auth.PATCH("/courses/:id/submissions/:submission_id", pCtrl.EditSubmissionById)
+		auth.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
+		auth.POST("/courses/:id/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
+		auth.DELETE("/courses/:id/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
+		auth.POST("/courses/:id/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
+		auth.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
+		auth.POST("/courses/:id/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
+		auth.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
+		auth.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
+		auth.PATCH("/courses/:id/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
+	}
+
 	router.POST("/login", pCtrl.Login)
-	router.POST("/logout", pCtrl.Logout)
-	router.POST("/register", pCtrl.Register)
-	router.POST("/courses", pCtrl.CreateCourse)
-	router.POST("/courses/:id", pCtrl.EnrollUser)
-	router.POST("/courses/:id/files", pCtrl.UploadMaterial)
+	// TODO: add authorization => user has access to submission
 	router.GET("/submissions/:id", pCtrl.GetSubmission)
-	router.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
-	router.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
-	router.PATCH("/courses/:id/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
-	router.DELETE("courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
-	router.PATCH("courses/:id/submissions/:submission_id", pCtrl.EditSubmissionById)
-	router.POST("/courses/:id/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
-	router.DELETE("/courses/:id/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
-	router.POST("/courses/:id/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
-	router.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
-	router.POST("/courses/:id/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
-	router.DELETE("/courses/:id/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
-	router.GET("/courses/:id/files", pCtrl.GetMaterialsFromCourse)
-	router.GET("/courses/:id/files/:file_id", pCtrl.GetMaterialFromCourse)
+	// TODO: add authorization => user
 	router.GET("/courses/search", pCtrl.SearchCourse)
-	router.PATCH("/courses/:id", pCtrl.EditCourseById)
-	router.DELETE("/users/:id", pCtrl.DeleteUser)
-	router.GET("/users/cookie", pCtrl.GetUserByCookie)
-	router.GET("/users/:id", pCtrl.GetUserById)
-	router.POST("/exams", pCtrl.CreateExam)
-	router.PATCH("/exams/:id/edit", pCtrl.EditExam)
-	router.POST("/exams/:id/files", pCtrl.UploadExamFile)
+	// TODO: add authorization => user has access to exam
 	router.GET("/exams/:id", pCtrl.GetExamById)
-	router.GET("/courses/:id/exams", pCtrl.GetExamsFromCourse)
-	router.GET("/users/exams/registered", pCtrl.GetRegisteredExamsFromUser)
-	router.GET("/users/exams/unregistered", pCtrl.GetUnregisteredExamsFromUser)
-	router.GET("/users/exams/attended", pCtrl.GetAttendedExamsFromUser)
-	router.GET("/users/exams/passed", pCtrl.GetPassedExamsFromUser)
-	router.GET("/users/exams/created", pCtrl.GetCreatedFromUser)
-	router.POST("/users/exams/:id", pCtrl.RegisterToExam)
-	router.DELETE("/users/exams/:id", pCtrl.DeregisterFromExam)
+	// TODO: add authorization => user has access to exam
 	router.PATCH("/users/:user_id/exams/:exam_id/attend", pCtrl.SetAttended)
-	router.GET("/exams/:id/files", pCtrl.GetFileFromExam)
-	router.POST("/users/exams/:id/submit", pCtrl.SubmitAnswerToExam)
-	router.GET("/exams/:id/users", pCtrl.GetRegisteredUsersFromExam)
-	router.GET("exams/:id/users/attended", pCtrl.GetAttendeesFromExam)
 	// NOTE: `usersx` is used as `users` seems to cause problems for this particular route
+	// TODO: add authorization => only as course moderator or higher
 	router.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
-	router.PATCH("/users/:user_id/exams/:exam_id/grade", pCtrl.GradeAnswer)
-	router.DELETE("/exams/:id", pCtrl.DeleteExam)
-	router.GET("/courses/appointments", pCtrl.GetAllAppointments)
+	// TODO: add authorization?
 	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
+	// TODO: add authorization?
 	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
-	router.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
+	// TODO: add authorization => user
 	router.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 
 	router.Run("0.0.0.0:8080")
