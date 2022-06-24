@@ -908,13 +908,7 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 }
 
 func (f *PublicController) SearchCourse(c *gin.Context) {
-
-	role_id, err := f.GetRoleIdFromCookie(c)
-	if err != nil {
-		log.Errorf("Unable to get role_id from Cookie: %s", err.Error())
-		c.IndentedJSON(http.StatusUnauthorized, err.Error())
-		return
-	}
+	role_id := c.MustGet("CookieRoleId").(int)
 
 	if !AuthorizeUser(role_id) {
 		log.Infof("User is not authorized")
@@ -2297,12 +2291,7 @@ func (f *PublicController) DeleteSubmissionHasFiles(c *gin.Context) {
 }
 
 func (f *PublicController) GetUserSubmission(c *gin.Context) {
-	user_id, err := f.GetIdFromCookie(c)
-	if err != nil {
-		log.Errorf("Unable to get id from Cookie: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
-		return
-	}
+	user_id := c.MustGet("CookieUserId").(int)
 
 	submission_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {

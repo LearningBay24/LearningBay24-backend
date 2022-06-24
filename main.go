@@ -187,7 +187,7 @@ func main() {
 		auth.DELETE("/courses/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
 		auth.POST("/courses/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
 		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
-		auth.POST("/courses/:id/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
+		auth.POST("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
 		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
 		auth.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
 		auth.PATCH("/courses/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
