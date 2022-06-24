@@ -21,6 +21,7 @@ type DB struct {
 type Files struct {
 	Path             string
 	AllowedFileTypes []string
+	MaxUploadPerUser int
 }
 
 type Secrets struct {
@@ -32,6 +33,7 @@ type Config struct {
 	Secure      bool
 	Environment string
 	LogLevel    string
+	AdminPass   string
 	DB          DB
 	Files       Files
 	Secrets     Secrets

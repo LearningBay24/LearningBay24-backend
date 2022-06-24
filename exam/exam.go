@@ -235,13 +235,13 @@ func (p *PublicController) EditExam(name, description string, date time.Time, du
 
 // UploadExamFile takes a fileName, URI, associated uploaderId, examId and indicator if file is local or remote
 // Created struct gets inserted into database
-func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderId, examId int, local bool, file io.Reader) error {
+func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderId, examId int, local bool, file io.Reader, fileSize int) error {
 	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return err
 	}
 	if uploaderId == ex.CreatorID {
-		fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file)
+		fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file, fileSize)
 		if err != nil {
 			return fmt.Errorf("error at saving file: %s", err)
 		}
@@ -421,10 +421,8 @@ func (p *PublicController) GetFileFromExam(examId int) ([]*models.File, error) {
 }
 
 // SubmitAnswer takes a filename, uri, local-indicator, file, examId, and userId and uploads the file as an answer
-func (p *PublicController) SubmitAnswer(fileName, uri string, examId, userId int, local bool, file io.Reader) error {
-	// TODO: max upload size
-
-	fileId, err := dbi.SaveFile(p.Database, fileName, uri, userId, local, &file)
+func (p *PublicController) SubmitAnswer(fileName, uri string, examId, userId int, local bool, file io.Reader, fileSize int) error {
+	fileId, err := dbi.SaveFile(p.Database, fileName, uri, userId, local, &file, fileSize)
 	if err != nil {
 		return err
 	}

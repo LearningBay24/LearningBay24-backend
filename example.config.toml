@@ -5,6 +5,7 @@ Secure = true
 # Populate the development database with dummy data
 Environment = "development"
 LogLevel = "info"
+AdminPass = "changethis"
 
 [DB]
 Host = "127.0.0.1"
@@ -17,6 +18,9 @@ Database = "learningbay24"
 [Files]
 Path = "/var/lib/learningbay24/"
 AllowedFileTypes = ["pdf", "png", "jpg", "zip", "tar", "gz", "bzip", "rar", "txt"]
+# maximum number of bytes in files a user can upload in total
+# 0 = disable
+MaxUploadPerUser = 0
 
 [Secrets]
 JWTSecret = "changethis"

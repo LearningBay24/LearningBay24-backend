@@ -37,10 +37,8 @@ func GetAllMaterialsFromCourse(db *sql.DB, courseId int) ([]*models.File, error)
 
 // CreateMaterial takes a fileName, URI, associated uploader-id, course, id and indicator if file is local or remote
 // Created struct gets inserted into database
-func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local bool, file io.Reader) error {
-	// TODO: max upload size
-
-	fileId, err := dbi.SaveFile(dbHandle, fileName, uri, uploaderId, local, &file)
+func CreateMaterial(dbHandle *sql.DB, fileName string, uri string, uploaderId, courseId int, local bool, file io.Reader, fileSize int) error {
+	fileId, err := dbi.SaveFile(dbHandle, fileName, uri, uploaderId, local, &file, fileSize)
 	if err != nil {
 		return err
 	}

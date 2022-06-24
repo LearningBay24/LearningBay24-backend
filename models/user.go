@@ -51,6 +51,7 @@ type User struct {
 	CreatedAt           time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt           null.Time `boil:"updated_at" json:"updated_at,omitempty" toml:"updated_at" yaml:"updated_at,omitempty"`
 	DeletedAt           null.Time `boil:"deleted_at" json:"deleted_at,omitempty" toml:"deleted_at" yaml:"deleted_at,omitempty"`
+	UploadedBytes       int       `boil:"uploaded_bytes" json:"uploaded_bytes" toml:"uploaded_bytes" yaml:"uploaded_bytes"`
 
 	R *userR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L userL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -74,6 +75,7 @@ var UserColumns = struct {
 	CreatedAt           string
 	UpdatedAt           string
 	DeletedAt           string
+	UploadedBytes       string
 }{
 	ID:                  "id",
 	Title:               "title",
@@ -92,6 +94,7 @@ var UserColumns = struct {
 	CreatedAt:           "created_at",
 	UpdatedAt:           "updated_at",
 	DeletedAt:           "deleted_at",
+	UploadedBytes:       "uploaded_bytes",
 }
 
 var UserTableColumns = struct {
@@ -112,6 +115,7 @@ var UserTableColumns = struct {
 	CreatedAt           string
 	UpdatedAt           string
 	DeletedAt           string
+	UploadedBytes       string
 }{
 	ID:                  "user.id",
 	Title:               "user.title",
@@ -130,6 +134,7 @@ var UserTableColumns = struct {
 	CreatedAt:           "user.created_at",
 	UpdatedAt:           "user.updated_at",
 	DeletedAt:           "user.deleted_at",
+	UploadedBytes:       "user.uploaded_bytes",
 }
 
 // Generated where
@@ -161,6 +166,7 @@ var UserWhere = struct {
 	CreatedAt           whereHelpertime_Time
 	UpdatedAt           whereHelpernull_Time
 	DeletedAt           whereHelpernull_Time
+	UploadedBytes       whereHelperint
 }{
 	ID:                  whereHelperint{field: "`user`.`id`"},
 	Title:               whereHelpernull_String{field: "`user`.`title`"},
@@ -179,6 +185,7 @@ var UserWhere = struct {
 	CreatedAt:           whereHelpertime_Time{field: "`user`.`created_at`"},
 	UpdatedAt:           whereHelpernull_Time{field: "`user`.`updated_at`"},
 	DeletedAt:           whereHelpernull_Time{field: "`user`.`deleted_at`"},
+	UploadedBytes:       whereHelperint{field: "`user`.`uploaded_bytes`"},
 }
 
 // UserRels is where relationship names are stored.
@@ -329,9 +336,9 @@ func (r *userR) GetSubmitterUserSubmissions() UserSubmissionSlice {
 type userL struct{}
 
 var (
-	userAllColumns            = []string{"id", "title", "firstname", "surname", "email", "password", "role_id", "graduation_level", "semester", "phone_number", "residence", "profile_picture", "biography", "preferred_language_id", "created_at", "updated_at", "deleted_at"}
+	userAllColumns            = []string{"id", "title", "firstname", "surname", "email", "password", "role_id", "graduation_level", "semester", "phone_number", "residence", "profile_picture", "biography", "preferred_language_id", "created_at", "updated_at", "deleted_at", "uploaded_bytes"}
 	userColumnsWithoutDefault = []string{"title", "firstname", "surname", "email", "password", "role_id", "graduation_level", "semester", "phone_number", "residence", "profile_picture", "biography", "preferred_language_id", "updated_at", "deleted_at"}
-	userColumnsWithDefault    = []string{"id", "created_at"}
+	userColumnsWithDefault    = []string{"id", "created_at", "uploaded_bytes"}
 	userPrimaryKeyColumns     = []string{"id"}
 	userGeneratedColumns      = []string{}
 )

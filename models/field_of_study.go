@@ -576,7 +576,7 @@ func (fieldOfStudyL) LoadUsers(ctx context.Context, e boil.ContextExecutor, sing
 	}
 
 	query := NewQuery(
-		qm.Select("`user`.`id`, `user`.`title`, `user`.`firstname`, `user`.`surname`, `user`.`email`, `user`.`password`, `user`.`role_id`, `user`.`graduation_level`, `user`.`semester`, `user`.`phone_number`, `user`.`residence`, `user`.`profile_picture`, `user`.`biography`, `user`.`preferred_language_id`, `user`.`created_at`, `user`.`updated_at`, `user`.`deleted_at`, `a`.`field_of_study_id`"),
+		qm.Select("`user`.`id`, `user`.`title`, `user`.`firstname`, `user`.`surname`, `user`.`email`, `user`.`password`, `user`.`role_id`, `user`.`graduation_level`, `user`.`semester`, `user`.`phone_number`, `user`.`residence`, `user`.`profile_picture`, `user`.`biography`, `user`.`preferred_language_id`, `user`.`created_at`, `user`.`updated_at`, `user`.`deleted_at`, `user`.`uploaded_bytes`, `a`.`field_of_study_id`"),
 		qm.From("`user`"),
 		qm.InnerJoin("`user_has_field_of_study` as `a` on `user`.`id` = `a`.`user_id`"),
 		qm.WhereIn("`a`.`field_of_study_id` in ?", args...),
@@ -598,7 +598,7 @@ func (fieldOfStudyL) LoadUsers(ctx context.Context, e boil.ContextExecutor, sing
 		one := new(User)
 		var localJoinCol int
 
-		err = results.Scan(&one.ID, &one.Title, &one.Firstname, &one.Surname, &one.Email, &one.Password, &one.RoleID, &one.GraduationLevel, &one.Semester, &one.PhoneNumber, &one.Residence, &one.ProfilePicture, &one.Biography, &one.PreferredLanguageID, &one.CreatedAt, &one.UpdatedAt, &one.DeletedAt, &localJoinCol)
+		err = results.Scan(&one.ID, &one.Title, &one.Firstname, &one.Surname, &one.Email, &one.Password, &one.RoleID, &one.GraduationLevel, &one.Semester, &one.PhoneNumber, &one.Residence, &one.ProfilePicture, &one.Biography, &one.PreferredLanguageID, &one.CreatedAt, &one.UpdatedAt, &one.DeletedAt, &one.UploadedBytes, &localJoinCol)
 		if err != nil {
 			return errors.Wrap(err, "failed to scan eager loaded results for user")
 		}

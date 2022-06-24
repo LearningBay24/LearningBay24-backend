@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"learningbay24.de/backend/config"
 	"learningbay24.de/backend/models"
 
 	log "github.com/sirupsen/logrus"
@@ -12,6 +13,67 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func AddDefaultData(db *sql.DB) error {
+	password, err := bcrypt.GenerateFromPassword([]byte(config.Conf.AdminPass), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	admin_role := models.Role{ID: AdminRoleId, Name: "admin", DisplayName: "Administrator"}
+	moderator_role := models.Role{ID: ModeratorRoleId, Name: "mod", DisplayName: "Moderator"}
+	user_role := models.Role{ID: UserRoleId, Name: "user", DisplayName: "User"}
+	language := models.Language{ID: 1, Name: "Deutsch"}
+	admin := models.User{ID: 1, Firstname: "Admin", Surname: "Admin", Email: "admin@learningbay24.de", Password: password, RoleID: AdminRoleId, PreferredLanguageID: 9999}
+
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	if err := admin_role.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	if err := moderator_role.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	if err := user_role.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	if err := language.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			log.Error("Unable to rollback changes from database, aborting insertion of default data")
+		}
+
+		return err
+	}
+
+	admin.PreferredLanguageID = language.ID
+	if err := admin.Insert(context.Background(), tx, boil.Infer()); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func AddDummyData(db *sql.DB) {
 	log.Info("Populating database with dummy data.")
