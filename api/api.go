@@ -499,7 +499,11 @@ func (f *PublicController) UploadMaterial(c *gin.Context) {
 			return
 		}
 
-		coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil, 0)
+		if err := coursematerial.CreateMaterial(f.Database, file.Name, file.Uri, user_id, course_id, false, nil, 0); err != nil {
+			log.Errorf("Unable to create CourseMaterial: %s", err.Error())
+			c.Status(http.StatusInternalServerError)
+			return
+		}
 	} else {
 		file, err := c.FormFile("file")
 		if err != nil {
