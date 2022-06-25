@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 
+	"learningbay24.de/backend/dbi"
+	"learningbay24.de/backend/errs"
+	"learningbay24.de/backend/models"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
-	"learningbay24.de/backend/dbi"
-	"learningbay24.de/backend/models"
 )
 
 // GetMaterialFromCourse takes an ID and returns a struct of the file with the corresponding ID
@@ -141,7 +143,7 @@ func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) err
 // RenameMaterialFromCourse takes the ID of an existing file and name and overwrites the corresponding string with the new one
 func RenameMaterialFromCourse(db *sql.DB, fileId int, fileName string) error {
 	if fileName == "" {
-		return err.ErrEmptyFileName
+		return errs.ErrEmptyFileName
 	}
 
 	cm, err := models.FindFile(context.Background(), db, fileId)
