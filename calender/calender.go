@@ -82,21 +82,21 @@ func (p *PublicController) AddCourseToCalender(date time.Time, duration int, loc
 	err = newAppoint.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return 0, err
 	}
 	course, err := models.FindCourse(context.Background(), tx, courseId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return 0, err
 	}
 	course.AddAppointments(context.Background(), tx, true, newAppoint)
 
 	if e := tx.Commit(); e != nil {
-		return 0, fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+		return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}
 	return newAppoint.ID, nil
 }
@@ -110,14 +110,14 @@ func (p *PublicController) DeactivateCourseInCalender(appointmentId int) error {
 	appointment, err := models.FindAppointment(context.Background(), tx, appointmentId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return err
 	}
 	appointment.Delete(context.Background(), p.Database, false)
 
 	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to Commit transaction on error: %s; %s", err.Error(), e.Error())
+		return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}
 	return nil
 }
