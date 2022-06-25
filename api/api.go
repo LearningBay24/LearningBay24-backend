@@ -66,6 +66,7 @@ func handleApiError(c *gin.Context, err error) {
 	for _, cf := range CONFLICTS {
 		if errors.Is(err, cf) {
 			c.Status(http.StatusConflict)
+			return
 		}
 	}
 
@@ -1412,7 +1413,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 
 	user, err := pCtrl.RegisterToExam(userId, examId)
 	if err != nil {
-		log.Errorf("Unable to register user to course: %s", err.Error())
+		log.Errorf("Unable to register user for exam: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
