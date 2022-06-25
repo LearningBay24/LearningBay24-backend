@@ -354,6 +354,7 @@ func GetCourseRole(db *sql.DB, user_id int, course_id int) (int, error) {
 func SearchCourse(db *sql.DB, searchterm string) ([]*models.Course, error) {
 	searchterm = "%" + searchterm + "%"
 	courses, err := models.Courses(
+		qm.Select(models.CourseColumns.ID, models.CourseColumns.Name, models.CourseColumns.Description, models.CourseColumns.ForumID, models.CourseColumns.CreatedAt, models.CourseColumns.UpdatedAt),
 		qm.Where(models.CourseColumns.Name+" LIKE ?", searchterm),
 		qm.Or(models.CourseColumns.Description+" LIKE ?", searchterm),
 	).All(context.Background(), db)
