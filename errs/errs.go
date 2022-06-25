@@ -2,7 +2,6 @@ package errs
 
 import (
 	"errors"
-	"fmt"
 )
 
 var (
@@ -22,11 +21,3 @@ var (
 	ErrNoFileInRequest     error = errors.New("Unable to find file in request")
 	ErrBodyConversion      error = errors.New("Unable to convert body")
 )
-
-func Wrap(err error, s string) error {
-	if err == nil {
-		return nil
-	}
-
-	return fmt.Errorf("%s: %w", s, err)
-}
