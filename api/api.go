@@ -297,6 +297,7 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 
 func (f *PublicController) EditCourseById(c *gin.Context) {
 	user_id := c.MustGet("CookieUserId").(int)
+	role_id := c.MustGet("CookieRoleId").(int)
 
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
@@ -311,7 +312,8 @@ func (f *PublicController) EditCourseById(c *gin.Context) {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
-	if !AuthorizeCourseModerator(course_role) {
+
+	if !AuthorizeCourseModerator(course_role) && !AuthorizeAdmin(role_id) {
 		log.Infof("User is not authorized")
 		c.Status(http.StatusUnauthorized)
 		return
