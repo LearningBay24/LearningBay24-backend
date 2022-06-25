@@ -21,8 +21,7 @@ var (
 	ErrNoFileInRequest     error = errors.New("Unable to find file in request")
 	ErrBodyConversion      error = errors.New("Unable to convert body")
 
-	// TODO: add to `handleApiError`
-	ErrSelfRegisterExam error = errors.New("Cannot register for own exam")
-	// TODO: add to `handleApiError`
-	ErrRegisterDeadlinePassed error = errors.New("Cannot register to exam past deadline")
+	ErrSelfRegisterExam         error = errors.New("Cannot register for own exam")
+	ErrRegisterDeadlinePassed   error = errors.New("Cannot register to exam past deadline")
+	ErrUnregisterDeadlinePassed error = errors.New("Cannot unregister from exam past deadline")
 )

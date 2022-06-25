@@ -372,7 +372,7 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 		return nil
 	}
 
-	return nil, errs.ErrRegisterDeadlinePassed
+	return errs.ErrUnregisterDeadlinePassed
 }
 
 // AttendExam takes an userId and examId and marks the user's exam as attended

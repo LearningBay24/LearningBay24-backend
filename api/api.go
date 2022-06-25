@@ -38,6 +38,7 @@ func handleApiError(c *gin.Context, err error) {
 	NOT_AUTHORIZED := []error{errs.ErrNotAdmin, errs.ErrNotModerator, errs.ErrNotUser, errs.ErrNotCourseAdmin, errs.ErrNotCourseModerator, errs.ErrNotCourseUser}
 	NOT_FOUNDS := []error{sql.ErrNoRows}
 	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData}
+	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed}
 
 	log.Error(err)
 
@@ -59,6 +60,12 @@ func handleApiError(c *gin.Context, err error) {
 		if errors.Is(err, br) {
 			c.JSON(http.StatusBadRequest, br)
 			return
+		}
+	}
+
+	for _, cf := range CONFLICTS {
+		if errors.Is(err, cf) {
+			c.Status(http.StatusConflict)
 		}
 	}
 
