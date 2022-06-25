@@ -7,6 +7,7 @@ import (
 var (
 	ErrFileExtensionNotAllowed error = errors.New("File extension is not allowed")
 	ErrNoFileExtension         error = errors.New("File has no extension")
+	ErrNoName                  error = errors.New("Name can't be empty")
 
 	ErrNotAdmin           error = errors.New("Admin permission required")
 	ErrNotModerator       error = errors.New("Moderator permissions required")
@@ -29,4 +30,7 @@ var (
 
 	ErrNoUploads          error = errors.New("This item doesn't have any associated uplods")
 	ErrUploadLimitReached error = errors.New("The upload limit has been reached")
+
+	ErrCourseNotEmpty error = errors.New("Course is not empty")
+	ErrWrongEnrollkey error = errors.New("Wrong enroll key")
 )

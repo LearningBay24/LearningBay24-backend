@@ -37,8 +37,8 @@ type _file struct {
 func handleApiError(c *gin.Context, err error) {
 	NOT_AUTHORIZED := []error{errs.ErrNotAdmin, errs.ErrNotModerator, errs.ErrNotUser, errs.ErrNotCourseAdmin, errs.ErrNotCourseModerator, errs.ErrNotCourseUser}
 	NOT_FOUNDS := []error{sql.ErrNoRows, errs.ErrNoUploads}
-	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData, errs.ErrUploadLimitReached}
-	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed, errs.ErrExamEnded, errs.ErrExamHasntStarted}
+	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData, errs.ErrUploadLimitReached, errs.ErrNoName}
+	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed, errs.ErrExamEnded, errs.ErrExamHasntStarted, errs.ErrCourseNotEmpty, errs.ErrWrongEnrollkey}
 
 	log.Error(err)
 
