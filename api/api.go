@@ -105,7 +105,7 @@ func (f *PublicController) GetCourseById(c *gin.Context) {
 	// Convert data type from str to int to use ist as param
 	course_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		// TODO: no context about what conversion error happened specifically
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
@@ -159,14 +159,13 @@ func (f *PublicController) DeleteUserFromCourse(c *gin.Context) {
 		return
 	}
 
-	// Fetch Data from Database with Backend function
 	err = course.DeleteUserFromCourse(f.Database, user_to_delete_id, course_id)
 	if err != nil {
 		log.Errorf("Unable to delete user from course: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
-	// Return Status and Data in JSON-Format
+
 	c.Status(http.StatusNoContent)
 }
 
@@ -191,14 +190,14 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 		handleApiError(c, errs.ErrNotCourseUser)
 		return
 	}
-	// Fetch Data from Database with Backend function
+
 	users, err := course.GetUsersInCourse(f.Database, course_id)
 	if err != nil {
 		log.Errorf("Unable to get users in course: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
-	// Return Status and Data in JSON-Format
+
 	c.IndentedJSON(http.StatusOK, users)
 }
 
@@ -212,14 +211,13 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 
 	user_id := c.MustGet("CookieUserId").(int)
 
-	// Fetch Data from Database with Backend function
 	courses, err := course.GetCoursesFromUser(f.Database, user_id)
 	if err != nil {
 		log.Errorf("Unable to get courses from user: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
-	// Return Status and Data in JSON-Format
+
 	c.IndentedJSON(http.StatusOK, courses)
 }
 
@@ -244,9 +242,8 @@ func (f *PublicController) DeleteCourse(c *gin.Context) {
 		handleApiError(c, errs.ErrNotCourseAdmin)
 		return
 	}
-	// Deactivate Data from Database with Backend function
+
 	course, err := course.DeleteCourse(f.Database, course_id)
-	// Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to delete course: %s", err.Error())
 		handleApiError(c, err)
@@ -261,7 +258,7 @@ func (f *PublicController) CreateCourse(c *gin.Context) {
 	role_id := c.MustGet("CookieRoleId").(int)
 
 	if !AuthorizeModerator(role_id) {
-		c.Status(http.StatusUnauthorized)
+		handleApiError(c, errs.ErrNotModerator)
 		return
 	}
 
@@ -354,7 +351,9 @@ func (f *PublicController) EditCourseById(c *gin.Context) {
 		handleApiError(c, err)
 		return
 	}
+
 	newCourse.ID = course_id
+
 	c.IndentedJSON(http.StatusOK, newCourse)
 }
 
@@ -483,6 +482,7 @@ func (f *PublicController) Register(c *gin.Context) {
 
 	newUser.ID = id
 	newUser.Password = nil
+
 	c.IndentedJSON(http.StatusCreated, newUser)
 }
 
@@ -640,13 +640,14 @@ func (f *PublicController) DeleteMaterialFromCourse(c *gin.Context) {
 
 	course_id, err := strconv.Atoi(c.Param("course_id"))
 	if err != nil {
+		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
 	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `course_id` to int: %s", err.Error())
+		log.Errorf("Unable to get course role: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
@@ -760,6 +761,7 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 		handleApiError(c, err)
 		return
 	}
+
 	c.IndentedJSON(http.StatusOK, appointments)
 }
 
@@ -1072,7 +1074,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		handleApiError(c, errs.ErrBodyConversion)
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
@@ -1266,6 +1268,7 @@ func (f *PublicController) GetExamById(c *gin.Context) {
 		handleApiError(c, errs.ErrNotCourseUser)
 		return
 	}
+
 	c.IndentedJSON(http.StatusOK, ex)
 }
 
@@ -1739,13 +1742,13 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 	examId, err := strconv.Atoi(c.Param("exam_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `exam_id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 	attendeeId, err := strconv.Atoi(c.Param("user_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `user_id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
@@ -1753,7 +1756,7 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 	co, err := pCtrl.GetCourseFromExam(examId)
 	if err != nil {
 		log.Errorf("Unable to get course from exam: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		handleApiError(c, err)
 		return
 	}
 
@@ -1763,19 +1766,19 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
 	if err != nil {
 		log.Errorf("Unable to get course role: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		handleApiError(c, err)
 		return
 	}
 
 	if !AuthorizeCourseModerator(course_role, role_id) {
-		c.Status(http.StatusUnauthorized)
+		handleApiError(c, errs.ErrNotCourseModerator)
 		return
 	}
 
 	err = pCtrl.SetAttended(examId, attendeeId)
 	if err != nil {
 		log.Errorf("Unable to set user's exam to attended: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		handleApiError(c, err)
 		return
 	}
 	c.Status(http.StatusOK)
@@ -1784,7 +1787,8 @@ func (f *PublicController) SetAttended(c *gin.Context) {
 func (f *PublicController) DeleteExam(c *gin.Context) {
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
-		c.Status(http.StatusBadRequest)
+		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
@@ -1795,40 +1799,41 @@ func (f *PublicController) DeleteExam(c *gin.Context) {
 	co, err := pCtrl.GetCourseFromExam(id)
 	if err != nil {
 		log.Errorf("Unable to get course from exam: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		handleApiError(c, err)
 		return
 	}
 
 	course_role, err := course.GetCourseRole(f.Database, userId, co.ID)
 	if err != nil {
 		log.Errorf("Unable to get course role: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		handleApiError(c, err)
 		return
 	}
 	if !AuthorizeCourseAdmin(course_role, role_id) {
-		c.Status(http.StatusUnauthorized)
+		handleApiError(c, errs.ErrNotCourseAdmin)
 		return
 	}
 	ex, err := pCtrl.DeleteExam(id)
 	// Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to delete course: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		handleApiError(c, err)
 		return
 	}
+
 	c.IndentedJSON(http.StatusOK, ex)
 }
 func (f *PublicController) GetSubmission(c *gin.Context) {
 	submission_id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 	submission, err := course.GetSubmission(f.Database, submission_id)
 	if err != nil {
 		log.Errorf("Unable to get submission: %s", err.Error())
-		c.IndentedJSON(http.StatusInternalServerError, err.Error())
+		handleApiError(c, err)
 		return
 	}
 
@@ -1970,7 +1975,7 @@ func (f *PublicController) EditSubmissionById(c *gin.Context) {
 		return
 	}
 	if !AuthorizeCourseModerator(course_role, role_id) {
-		c.Status(http.StatusUnauthorized)
+		handleApiError(c, errs.ErrNotCourseModerator)
 		return
 	}
 	raw, err := c.GetRawData()
@@ -2026,14 +2031,13 @@ func (f *PublicController) EditSubmissionById(c *gin.Context) {
 func (f *PublicController) GetSubmissionFromUser(c *gin.Context) {
 	user_id := c.MustGet("CookieUserId").(int)
 
-	// Fetch Data from Database with Backend function
 	users, err := course.GetSubmissionsFromUser(f.Database, user_id)
 	if err != nil {
 		log.Errorf("Unable to get submissions from user: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
-	// Return Status and Data in JSON-Format
+
 	c.IndentedJSON(http.StatusOK, users)
 }
 
@@ -2283,8 +2287,8 @@ func (f *PublicController) CreateUserSubmissionHasFiles(c *gin.Context) {
 
 	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		handleApiError(c, err)
+		log.Errorf("Unable to convert parameter `usersubmission_id` to int: %s", err.Error())
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
@@ -2355,7 +2359,7 @@ func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
 
 	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to convert parameter `usersubmission_id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
@@ -2381,7 +2385,7 @@ func (f *PublicController) DeleteUserSubmissionHasFiles(c *gin.Context) {
 
 	file_id, err := strconv.Atoi(c.Param("file_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to convert parameter `file_id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
@@ -2436,8 +2440,8 @@ func (f *PublicController) GetSubmissionsFromCourse(c *gin.Context) {
 func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		log.Errorf("Unable to convert parameter `usersubmission_id` to int: %s", err.Error())
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
@@ -2447,25 +2451,25 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 	course_id, err := course.GetCourseIdByUserSubmission(f.Database, user_submission_id)
 	if err != nil {
 		log.Errorf("Unable to get `course_id` by submission: %s", err.Error())
-		c.Status(http.StatusBadRequest)
+		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
 
 	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
 	if err != nil {
 		log.Errorf("Unable to get course role: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
+		handleApiError(c, err)
 		return
 	}
 
 	if !AuthorizeCourseModerator(course_role, role_id) {
-		c.Status(http.StatusUnauthorized)
+		handleApiError(c, errs.ErrNotCourseModerator)
 		return
 	}
 	raw, err := c.GetRawData()
 	if err != nil {
 		log.Errorf("Unable to get raw data from request: %s", err.Error())
-		c.IndentedJSON(http.StatusBadRequest, err.Error())
+		handleApiError(c, errs.ErrRawData)
 		return
 	}
 
@@ -2502,7 +2506,7 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 func (f *PublicController) GetUserSubmissionsFromSubmission(c *gin.Context) {
 	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to convert parameter `submission_id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
@@ -2520,7 +2524,7 @@ func (f *PublicController) GetUserSubmissionsFromSubmission(c *gin.Context) {
 func (f *PublicController) GetFileFromSubmission(c *gin.Context) {
 	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
-		log.Errorf("unable to convert parameter `submission` to int: %s", err.Error())
+		log.Errorf("unable to convert parameter `submission_id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
@@ -2538,7 +2542,7 @@ func (f *PublicController) GetFileFromSubmission(c *gin.Context) {
 func (f *PublicController) GetFileFromUserSubmission(c *gin.Context) {
 	user_submission_id, err := strconv.Atoi(c.Param("usersubmission_id"))
 	if err != nil {
-		log.Errorf("unable to convert parameter `usersubmission` to int: %s", err.Error())
+		log.Errorf("unable to convert parameter `usersubmission_id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
 		return
 	}
