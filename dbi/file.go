@@ -59,9 +59,9 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	allowed := false
 	if ext != "" {
 		// strip leading dot
-		ext = ext[1:]
+		_ext := ext[1:]
 		for _, e := range config.Conf.Files.AllowedFileTypes {
-			if ext == e {
+			if _ext == e {
 				// file type is allowed per config
 				allowed = true
 				break
@@ -75,9 +75,10 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 		return 0, errs.ErrFileExtensionNotAllowed
 	}
 
+	newName := name
 	// check if file type is valid
 	for num := 0; ; num++ {
-		if _, err := os.Stat(filepath.Join(filePath, name)); err != nil {
+		if _, err := os.Stat(filepath.Join(filePath, newName)); err != nil {
 			if !os.IsNotExist(err) {
 				return 0, err
 			} else {
@@ -85,9 +86,8 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 			}
 		} else {
 			if num != 0 {
-				ext := path.Ext(name)
 				f := strings.TrimSuffix(name, ext)
-				name = fmt.Sprintf("%s-%d%s", f, num, ext)
+				newName = fmt.Sprintf("%s-%d%s", f, num, ext)
 			}
 		}
 	}
@@ -115,7 +115,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 		return 0, fmt.Errorf("user has reached the upload limit of %d bytes", config.Conf.Files.MaxUploadPerUser)
 	}
 
-	fullFile := filepath.Join(filePath, name)
+	fullFile := filepath.Join(filePath, newName)
 	f := models.File{Name: name, URI: fullFile, Local: 1, UploaderID: uploaderID}
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
