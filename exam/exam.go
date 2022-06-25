@@ -223,13 +223,13 @@ func (p *PublicController) EditExam(name, description string, date time.Time, du
 	_, err = ex.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return err
 	}
 	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		return fmt.Errorf("unable to commit transaction on error: %s; %w", err, e)
 	}
 	return nil
 }
@@ -241,44 +241,43 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 	if err != nil {
 		return err
 	}
-	if uploaderId == ex.CreatorID {
-		fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file, fileSize)
-		if err != nil {
-			return fmt.Errorf("error at saving file: %s", err)
-		}
-		tx, err := p.Database.BeginTx(context.Background(), nil)
-		if err != nil {
-			return err
-		}
 
-		f, err := models.FindFile(context.Background(), tx, fileId)
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-			}
-			return fmt.Errorf("cannot find saved file: %s", err)
-		}
+	fileId, err := dbi.SaveFile(p.Database, fileName, uri, uploaderId, local, &file, fileSize)
+	if err != nil {
+		return err
+	}
 
-		err = p.DeleteExamFile(tx, examId)
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-			}
-			return fmt.Errorf("cannot delete previous file: %s", err)
-		}
+	tx, err := p.Database.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
 
-		err = ex.SetFiles(context.Background(), tx, false, f)
-		if err != nil {
-			if e := tx.Rollback(); e != nil {
-				return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
-			}
-			return fmt.Errorf("cannot set file to exam:  %s", err)
+	f, err := models.FindFile(context.Background(), tx, fileId)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
-		if e := tx.Commit(); e != nil {
-			return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		return err
+	}
+
+	err = p.DeleteExamFile(tx, examId)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
-	} else {
-		return fmt.Errorf("invalid value for uploaderId: only the exam's creator can upload files")
+		return err
+	}
+
+	err = ex.SetFiles(context.Background(), tx, false, f)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+		return err
+	}
+
+	if e := tx.Commit(); e != nil {
+		return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}
 	return nil
 }
@@ -450,29 +449,21 @@ func (p *PublicController) SubmitAnswer(fileName, uri string, examId, userId int
 
 // GetRegisteredUsersFromExam takes an examId and userId and returns a slice of relations between the exam and all of it's registered users
 func (p *PublicController) GetRegisteredUsersFromExam(examId, userId int) ([]*Attendee, error) {
-	ex, err := models.FindExam(context.Background(), p.Database, examId)
+	var attendees []*Attendee
+
+	err := models.NewQuery(
+		qm.Select("user.*", "user_has_exam.*"),
+		qm.From(models.TableNames.User),
+		qm.InnerJoin("user_has_exam on user.id = user_has_exam.user_id"),
+		qm.Where("user_has_exam.exam_id=?", examId),
+		qm.And("user_has_exam.deleted_at is null"),
+		qm.And("user.deleted_at is null"),
+	).Bind(context.Background(), p.Database, &attendees)
 	if err != nil {
 		return nil, err
 	}
 
-	if userId == ex.CreatorID {
-		var attendees []*Attendee
-
-		err := models.NewQuery(
-			qm.Select("user.*", "user_has_exam.*"),
-			qm.From(models.TableNames.User),
-			qm.InnerJoin("user_has_exam on user.id = user_has_exam.user_id"),
-			qm.Where("user_has_exam.exam_id=?", examId),
-			qm.And("user_has_exam.deleted_at is null"),
-			qm.And("user.deleted_at is null"),
-		).Bind(context.Background(), p.Database, &attendees)
-		if err != nil {
-			return nil, err
-		}
-
-		return attendees, nil
-	}
-	return nil, fmt.Errorf("only the exam-creator can see the registered users")
+	return attendees, nil
 }
 
 // GetAttendeesFromExam takes an examId and userId and returns a slice of relations between the exam and all of it's registered users
@@ -541,7 +532,7 @@ func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null
 	_, err = uhex.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return err
@@ -550,7 +541,7 @@ func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null
 	attendees, err := p.GetRegisteredUsersFromExam(examId, creatorId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return err
@@ -559,7 +550,7 @@ func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null
 	for _, att := range attendees {
 		if att.Grade.Int == 1 {
 			if e := tx.Commit(); e != nil {
-				return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+				return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 			}
 			return nil
 		}
@@ -569,13 +560,17 @@ func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null
 	_, err = ex.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return err
 	}
 	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
 	}
 	return nil
 

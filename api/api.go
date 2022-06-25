@@ -1206,6 +1206,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		handleApiError(c, errs.ErrNotCourseModerator)
 		return
 	}
+
 	if c.ContentType() == "text/plain" {
 		var file _file
 		if err := c.BindJSON(&file); err != nil {
@@ -1213,7 +1214,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 			// NOTE: `BindJSON` sets the return status arleady
 			return
 		}
-		log.Info(file)
+
 		err = pCtrl.UploadExamFile(file.Name, file.Uri, user_id, id, false, nil, 0)
 		if err != nil {
 			log.Errorf("Unable to create Exam-URI: %s", err.Error())
