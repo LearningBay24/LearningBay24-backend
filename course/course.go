@@ -33,7 +33,7 @@ func GetCourse(db *sql.DB, id int) (*models.Course, error) {
 func CreateCourse(db *sql.DB, name string, description null.String, enrollkey string, usersid int) (int, error) {
 	// Validation
 	if name == "" {
-		return 0, errs.ErrNoName
+		return 0, errs.ErrEmptyName
 	}
 	// Begins the transaction
 	tx, err := db.BeginTx(context.Background(), nil)
@@ -85,7 +85,7 @@ func CreateCourse(db *sql.DB, name string, description null.String, enrollkey st
 func EditCourse(db *sql.DB, id int, name string, description null.String, enrollkey string) (int, error) {
 	// Validation
 	if name == "" {
-		return 0, errs.ErrNoName
+		return 0, errs.ErrEmptyName
 	}
 
 	tx, err := db.BeginTx(context.Background(), nil)

@@ -65,33 +65,37 @@ func DeleteMaterialFromCourse(db *sql.DB, courseId, fileId int) error {
 	cm, err := models.FindFile(context.Background(), tx, fileId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 	}
 
 	_, err = cm.Delete(context.Background(), tx, false)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 	}
 
 	chf, err := models.FindCourseHasFile(context.Background(), tx, courseId, fileId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 	}
 
 	_, err = chf.Delete(context.Background(), tx, false)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 	}
 
 	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return fmt.Errorf("unable to commit transaction on error: %s; %w", err, e)
 	}
 
 	return nil
@@ -109,7 +113,7 @@ func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) err
 	materials, err = GetAllMaterialsFromCourse(db, courseId)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return err
@@ -118,14 +122,18 @@ func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) err
 	_, err = materials.DeleteAll(context.Background(), tx, hardDelete)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("fatal: unable to rollback transaction on error: %s; %s", err, e)
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return err
 	}
 
 	if e := tx.Commit(); e != nil {
-		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %s", err, e)
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return fmt.Errorf("fatal: unable to commit transaction on error: %s; %w", err, e)
 	}
 	return nil
 }
@@ -133,7 +141,7 @@ func DeleteAllMaterialsFromCourse(db *sql.DB, courseId int, hardDelete bool) err
 // RenameMaterialFromCourse takes the ID of an existing file and name and overwrites the corresponding string with the new one
 func RenameMaterialFromCourse(db *sql.DB, fileId int, fileName string) error {
 	if fileName == "" {
-		return fmt.Errorf("Invalid value for variable fileName: String can't be empty!")
+		return err.ErrEmptyFileName
 	}
 
 	cm, err := models.FindFile(context.Background(), db, fileId)

@@ -7,7 +7,8 @@ import (
 var (
 	ErrFileExtensionNotAllowed error = errors.New("File extension is not allowed")
 	ErrNoFileExtension         error = errors.New("File has no extension")
-	ErrNoName                  error = errors.New("Name can't be empty")
+	ErrEmptyFileName           error = errors.New("Filename can't be empty")
+	ErrEmptyName               error = errors.New("Name can't be empty")
 
 	ErrNotAdmin           error = errors.New("Admin permission required")
 	ErrNotModerator       error = errors.New("Moderator permissions required")

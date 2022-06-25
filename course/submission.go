@@ -33,7 +33,7 @@ func CreateSubmission(db *sql.DB, name string, deadline string, cid int, maxfile
 	curTime := time.Now()
 	//Check if name ist emtpy
 	if name == "" {
-		return 0, errs.ErrNoName
+		return 0, errs.ErrEmptyName
 	}
 	// Parse visiblefrom String to time
 	vtime, err := time.Parse(time.RFC3339, visiblefrom)
@@ -87,7 +87,7 @@ func EditSubmission(db *sql.DB, sid int, name string, deadline string, maxfilesi
 	curTime := time.Now()
 	//Check if name ist emtpy
 	if name == "" {
-		return 0, errs.ErrNoName
+		return 0, errs.ErrEmptyName
 	}
 	// Parse visiblefrom String to time
 	vtime, err := time.Parse(time.RFC3339, visiblefrom)
