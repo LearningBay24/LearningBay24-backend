@@ -36,9 +36,9 @@ type _file struct {
 // Handle an error by setting the correct HTTP status code and filling the body of the response with the error message if necessary.
 func handleApiError(c *gin.Context, err error) {
 	NOT_AUTHORIZED := []error{errs.ErrNotAdmin, errs.ErrNotModerator, errs.ErrNotUser, errs.ErrNotCourseAdmin, errs.ErrNotCourseModerator, errs.ErrNotCourseUser}
-	NOT_FOUNDS := []error{sql.ErrNoRows}
+	NOT_FOUNDS := []error{sql.ErrNoRows, errs.ErrNoUploads}
 	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData}
-	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed}
+	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed, errs.ErrExamEnded, errs.ErrExamHasntStarted}
 
 	log.Error(err)
 
@@ -1202,7 +1202,7 @@ func (f *PublicController) UploadExamFile(c *gin.Context) {
 		handleApiError(c, err)
 		return
 	}
-	if !AuthorizeCourseModerator(course_role, role_id) {
+	if !AuthorizeCourseAdmin(course_role, role_id) {
 		handleApiError(c, errs.ErrNotCourseModerator)
 		return
 	}
@@ -1586,6 +1586,11 @@ func (f *PublicController) GetRegisteredUsersFromExam(c *gin.Context) {
 }
 
 func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
+	creatorId := c.MustGet("CookieUserId").(int)
+	role_id := c.MustGet("CookieRoleId").(int)
+
+	pCtrl := exam.PublicController{Database: f.Database}
+
 	examId, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter 'id' to an int: %s", err.Error())
@@ -1593,9 +1598,25 @@ func (f *PublicController) GetAttendeesFromExam(c *gin.Context) {
 		return
 	}
 
-	creatorId := c.MustGet("CookieUserId").(int)
+	co, err := pCtrl.GetCourseFromExam(examId)
+	if err != nil {
+		log.Errorf("Unable to get course from exam: %s", err)
+		handleApiError(c, err)
+		return
+	}
 
-	pCtrl := exam.PublicController{Database: f.Database}
+	course_role_id, err := course.GetCourseRole(f.Database, creatorId, co.ID)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err)
+		handleApiError(c, err)
+		return
+	}
+
+	if !AuthorizeCourseModerator(course_role_id, role_id) {
+		handleApiError(c, errs.ErrNotCourseModerator)
+		return
+	}
+
 	attendees, err := pCtrl.GetAttendeesFromExam(examId, creatorId)
 	if err != nil {
 		log.Errorf("Unable to fetch attendees from exam: %s", err.Error())

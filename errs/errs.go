@@ -24,4 +24,8 @@ var (
 	ErrSelfRegisterExam         error = errors.New("Cannot register for own exam")
 	ErrRegisterDeadlinePassed   error = errors.New("Cannot register to exam past deadline")
 	ErrUnregisterDeadlinePassed error = errors.New("Cannot unregister from exam past deadline")
+	ErrExamHasntStarted         error = errors.New("Exam hasn't started yet")
+	ErrExamEnded                error = errors.New("Exam already ended")
+
+	ErrNoUploads error = errors.New("This item doesn't have any associated uplods")
 )
