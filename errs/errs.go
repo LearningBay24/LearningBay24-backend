@@ -33,4 +33,9 @@ var (
 
 	ErrCourseNotEmpty error = errors.New("Course is not empty")
 	ErrWrongEnrollkey error = errors.New("Wrong enroll key")
+
+	ErrVisibleTimePast             error = errors.New("VisibleFrom time can't be in the past")
+	ErrDeadlineTimePast            error = errors.New("Deadline time can't be in the past")
+	ErrVisibleFromAfterDeadline    error = errors.New("Visible from time can't be after deadline")
+	ErrSubmissionTimeAfterDeadline error = errors.New("Submission time is past deadline time of this submission")
 )
