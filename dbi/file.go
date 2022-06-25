@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"learningbay24.de/backend/config"
+	"learningbay24.de/backend/errs"
 	"learningbay24.de/backend/models"
 
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -53,6 +54,26 @@ func SaveFile(db *sql.DB, fileName string, uri string, uploaderID int, isLocal b
 func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int, file *io.Reader, fileSize int) (int, error) {
 	// possibly changed name due to a file with the same name already existing
 	name := fileName
+
+	ext := path.Ext(name)
+	allowed := false
+	if ext != "" {
+		// strip leading dot
+		ext = ext[1:]
+		for _, e := range config.Conf.Files.AllowedFileTypes {
+			if ext == e {
+				// file type is allowed per config
+				allowed = true
+				break
+			}
+		}
+	} else {
+		return 0, errs.ErrNoFileExtension
+	}
+
+	if !allowed {
+		return 0, errs.ErrFileExtensionNotAllowed
+	}
 
 	// check if file type is valid
 	for num := 0; ; num++ {
