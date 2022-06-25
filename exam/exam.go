@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"learningbay24.de/backend/course"
+	"learningbay24.de/backend/errs"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -307,6 +308,10 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 		return nil, err
 	}
 
+	if ex.CreatorID == userId {
+		return nil, errs.ErrSelfRegisterExam
+	}
+
 	u, err := models.FindUser(context.Background(), p.Database, userId)
 	if err != nil {
 		return nil, err
@@ -338,9 +343,11 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 		if err != nil {
 			return nil, err
 		}
+
 		return u, nil
 	}
-	return nil, fmt.Errorf("can't register from exam: RegisterDeadline has passed")
+
+	return nil, errs.ErrRegisterDeadlinePassed
 }
 
 // DeregisterFromExam takes a userId and examId and deactivates the registration
@@ -364,8 +371,8 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 		}
 		return nil
 	}
-	return fmt.Errorf("can't deregister from exam: DeregisterDeadline has passed")
 
+	return errs.ErrUnregisterDeadlinePassed
 }
 
 // AttendExam takes an userId and examId and marks the user's exam as attended

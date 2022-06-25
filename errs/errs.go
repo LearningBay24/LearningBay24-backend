@@ -20,4 +20,8 @@ var (
 	ErrRawData             error = errors.New("Unable to get raw data from request")
 	ErrNoFileInRequest     error = errors.New("Unable to find file in request")
 	ErrBodyConversion      error = errors.New("Unable to convert body")
+
+	ErrSelfRegisterExam         error = errors.New("Cannot register for own exam")
+	ErrRegisterDeadlinePassed   error = errors.New("Cannot register to exam past deadline")
+	ErrUnregisterDeadlinePassed error = errors.New("Cannot unregister from exam past deadline")
 )

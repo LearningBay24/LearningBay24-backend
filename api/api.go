@@ -38,6 +38,7 @@ func handleApiError(c *gin.Context, err error) {
 	NOT_AUTHORIZED := []error{errs.ErrNotAdmin, errs.ErrNotModerator, errs.ErrNotUser, errs.ErrNotCourseAdmin, errs.ErrNotCourseModerator, errs.ErrNotCourseUser}
 	NOT_FOUNDS := []error{sql.ErrNoRows}
 	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData}
+	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed}
 
 	log.Error(err)
 
@@ -58,6 +59,13 @@ func handleApiError(c *gin.Context, err error) {
 	for _, br := range BAD_REQUESTS {
 		if errors.Is(err, br) {
 			c.JSON(http.StatusBadRequest, br)
+			return
+		}
+	}
+
+	for _, cf := range CONFLICTS {
+		if errors.Is(err, cf) {
+			c.Status(http.StatusConflict)
 			return
 		}
 	}
@@ -1405,7 +1413,7 @@ func (f *PublicController) RegisterToExam(c *gin.Context) {
 
 	user, err := pCtrl.RegisterToExam(userId, examId)
 	if err != nil {
-		log.Errorf("Unable to register user to course: %s", err.Error())
+		log.Errorf("Unable to register user for exam: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
