@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/queries"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -303,7 +304,7 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		return nil, err
 	}
 
-	c, err := models.FindCourse(context.Background(), tx, cid)
+	c, err := models.FindCourse(context.Background(), db, cid)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
@@ -319,6 +320,30 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		return nil, errs.ErrWrongEnrollkey
 
 	}
+	u, err := models.FindUser(context.Background(), db, uid)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return nil, err
+	}
+
+	var uhex models.UserHasCourseSlice
+	// first check if relation already exists in the database and either insert a new row or reset deleted_at
+	err = queries.Raw("select * from user_has_course where course_id=? AND user_id=?", cid, uid).Bind(context.Background(), db, &uhex)
+	if err != nil {
+		return nil, err
+	}
+	if len(uhex) > 0 {
+		uhex[0].DeletedAt = null.TimeFromPtr(nil)
+		_, err = uhex[0].Update(context.Background(), db, boil.Infer())
+		if err != nil {
+			return nil, err
+		}
+		return u, nil
+	}
+
 	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: dbi.CourseUserRoleId}
 	err = userhascourse.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
@@ -328,14 +353,7 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 
 		return nil, err
 	}
-	u, err := models.FindUser(context.Background(), tx, uid)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
-		}
 
-		return nil, err
-	}
 	if e := tx.Commit(); e != nil {
 		return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}

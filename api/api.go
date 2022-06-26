@@ -315,14 +315,14 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 		}
 	}
 
-	_, err = course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
+	user, err := course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
 	if err != nil {
 		log.Errorf("Unable to enroll user in course: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, newCourse)
+	c.IndentedJSON(http.StatusOK, user.ID)
 }
 
 func (f *PublicController) EditCourseById(c *gin.Context) {
