@@ -450,7 +450,7 @@ func GradeUserSubmission(db *sql.DB, user_submission_id int, grade int) error {
 	return nil
 }
 
-func GetUserSubmissionsFromSubmission(db *sql.DB, submission_id int) ([]*models.UserSubmission, error) {
+func GetAllUserSubmissionsFromSubmission(db *sql.DB, submission_id int) ([]*models.UserSubmission, error) {
 	user_submissions, err := models.UserSubmissions(models.UserSubmissionWhere.SubmissionID.EQ(submission_id)).All(context.Background(), db)
 	if err != nil {
 		return nil, err

@@ -1948,7 +1948,7 @@ func (f *PublicController) GetSubmission(c *gin.Context) {
 	}
 	course_id, err := course.GetCourseIdBySubmission(f.Database, submission_id)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to get course_id by submission: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -2302,7 +2302,7 @@ func (f *PublicController) GetUserSubmission(c *gin.Context) {
 
 	course_id, err := course.GetCourseIdBySubmission(f.Database, submission_id)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to get course_id by submission: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -2647,8 +2647,8 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 		handleApiError(c, errs.ErrBodyConversion)
 		return
 	}
-	// Deactivate Data from Database with Backend function
-	err = course.GradeUserSubmission(f.Database, user_submission_id, gradeint)
+
+	err = course.GradeUserSubmission(f.Database, user_submission_id, grade)
 	// Return Status and Data in JSON-Format
 	if err != nil {
 		handleApiError(c, err)
@@ -2657,7 +2657,7 @@ func (f *PublicController) GradeUserSubmission(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func (f *PublicController) GetUserSubmissionsFromSubmission(c *gin.Context) {
+func (f *PublicController) GetAllUserSubmissionsFromSubmission(c *gin.Context) {
 	submission_id, err := strconv.Atoi(c.Param("submission_id"))
 	if err != nil {
 		log.Errorf("Unable to convert parameter `submission_id` to int: %s", err.Error())
@@ -2666,6 +2666,32 @@ func (f *PublicController) GetUserSubmissionsFromSubmission(c *gin.Context) {
 	}
 
 	submissions, err := course.GetUserSubmissionsFromSubmission(f.Database, submission_id)
+		c.Status(http.StatusBadRequest)
+		return
+	}
+	user_id := c.MustGet("CookieUserId").(int)
+	course_id, err := course.GetCourseIdBySubmission(f.Database, submission_id)
+	if err != nil {
+		log.Errorf("Unable to get course_id by submission: %s", err.Error())
+		c.Status(http.StatusBadRequest)
+		return
+	}
+
+	course_role, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if !AuthorizeCourseModerator(course_role) {
+		log.Infof("User is not authorized")
+		c.Status(http.StatusUnauthorized)
+		return
+	}
+
+	submissions, err := course.GetAllUserSubmissionsFromSubmission(f.Database, submission_id)
+	// Return Status and Data in JSON-Format
 	if err != nil {
 		log.Errorf("Unable to get usersubmissions from submission: %s", err.Error())
 		handleApiError(c, err)
@@ -2686,7 +2712,7 @@ func (f *PublicController) GetFileFromSubmission(c *gin.Context) {
 	user_id := c.MustGet("CookieUserId").(int)
 	course_id, err := course.GetCourseIdBySubmission(f.Database, submission_id)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to get course_id by submission: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -2725,7 +2751,7 @@ func (f *PublicController) GetFileFromUserSubmission(c *gin.Context) {
 	user_id := c.MustGet("CookieUserId").(int)
 	course_id, err := course.GetCourseIdByUserSubmission(f.Database, user_submission_id)
 	if err != nil {
-		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
+		log.Errorf("Unable to get course_id by usersubmission: %s", err.Error())
 		c.Status(http.StatusBadRequest)
 		return
 	}

@@ -190,7 +190,7 @@ func main() {
 		auth.POST("/courses/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
 		auth.DELETE("/courses/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
 		auth.POST("/courses/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
-		auth.GET("/courses/submissions/:submission_id/usersubmissions", pCtrl.GetUserSubmissionsFromSubmission)
+		auth.GET("/courses/submissions/:submission_id/usersubmissions", pCtrl.GetAllUserSubmissionsFromSubmission)
 		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
 		auth.GET("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.GetFileFromUserSubmission)
 		auth.POST("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
