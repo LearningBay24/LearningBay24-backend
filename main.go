@@ -189,6 +189,7 @@ func main() {
 		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
 		auth.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
 		auth.PATCH("/courses/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
+		auth.GET("/courses/:id/role", pCtrl.GetUserCourseRole)
 	}
 
 	router.POST("/login", pCtrl.Login)

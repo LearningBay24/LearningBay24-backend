@@ -2606,3 +2606,22 @@ func (f *PublicController) GetFileFromUserSubmission(c *gin.Context) {
 
 	c.IndentedJSON(http.StatusOK, users)
 }
+
+func (f *PublicController) GetUserCourseRole(c *gin.Context) {
+	user_id := c.MustGet("CookieUserId").(int)
+
+	course_id, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		log.Errorf("unable to convert parameter `id` to int: %s", err.Error())
+		handleApiError(c, errs.ErrParameterConversion)
+	}
+
+	course_role_id, err := course.GetCourseRole(f.Database, user_id, course_id)
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err)
+		handleApiError(c, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, course_role_id)
+}
