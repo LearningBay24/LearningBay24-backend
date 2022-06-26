@@ -22,6 +22,7 @@ import (
 	"github.com/gin-gonic/gin"
 	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type PublicController struct {
@@ -37,7 +38,7 @@ type _file struct {
 func handleApiError(c *gin.Context, err error) {
 	NOT_AUTHORIZED := []error{errs.ErrNotAdmin, errs.ErrNotModerator, errs.ErrNotUser, errs.ErrNotCourseAdmin, errs.ErrNotCourseModerator, errs.ErrNotCourseUser}
 	NOT_FOUNDS := []error{sql.ErrNoRows, errs.ErrNoUploads}
-	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData, errs.ErrUploadLimitReached, errs.ErrEmptyName, errs.ErrVisibleTimePast, errs.ErrDeadlineTimePast, errs.ErrVisibleFromAfterDeadline, errs.ErrSubmissionTimeAfterDeadline, errs.ErrEmptyFileName}
+	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData, errs.ErrUploadLimitReached, errs.ErrEmptyName, errs.ErrVisibleTimePast, errs.ErrDeadlineTimePast, errs.ErrVisibleFromAfterDeadline, errs.ErrSubmissionTimeAfterDeadline, errs.ErrEmptyFileName, bcrypt.ErrMismatchedHashAndPassword}
 	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed, errs.ErrExamEnded, errs.ErrExamHasntStarted, errs.ErrCourseNotEmpty, errs.ErrWrongEnrollkey}
 
 	log.Error(err)
