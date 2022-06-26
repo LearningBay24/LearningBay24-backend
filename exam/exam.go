@@ -3,7 +3,6 @@ package exam
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"io"
 	"strconv"
