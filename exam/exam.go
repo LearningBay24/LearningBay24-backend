@@ -325,7 +325,6 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 
 	// Fails if trying to register to an exam while deadline has passed
 	curTime := time.Now()
-	curTime = curTime.Add(time.Minute * 120)
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		// need to set DeletedAt back to zero-value if row already exists
@@ -365,7 +364,6 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 	}
 	// Fails if trying to deregister from an exam while deadline has passed
 	curTime := time.Now()
-	curTime = curTime.Add(time.Minute * 120)
 	diff := curTime.Sub(ex.DeregisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
@@ -392,7 +390,6 @@ func (p *PublicController) AttendExam(examId, userId int) error {
 
 	// Can attend to exam if exam start <= current time <= exam end
 	curTime := time.Now()
-	curTime = curTime.Add(time.Minute * 120)
 	end := ex.Date.Add(time.Minute * time.Duration(ex.Duration))
 	diffBegin := curTime.Sub(ex.Date)
 	diffEnd := end.Sub(curTime)
