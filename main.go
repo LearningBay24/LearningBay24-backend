@@ -191,6 +191,8 @@ func main() {
 		auth.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
 		auth.PATCH("/courses/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
 		auth.GET("/courses/:id/role", pCtrl.GetUserCourseRole)
+		auth.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
+		auth.POST("/appointments/add", pCtrl.AddCourseToCalender)
 	}
 
 	router.POST("/login", pCtrl.Login)
@@ -203,10 +205,6 @@ func main() {
 	// TODO: add authorization => user
 	router.GET("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.GetFileFromUserSubmission)
 	router.GET("/courses/search", pCtrl.SearchCourse)
-	// TODO: add authorization?
-	router.POST("/appointments/add", pCtrl.AddCourseToCalender)
-	// TODO: add authorization?
-	router.DELETE("/appointments", pCtrl.DeactivateCourseInCalender)
 	// TODO: add authorization => user
 	router.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 
