@@ -187,3 +187,74 @@ func saveRemoteFile(db *sql.DB, linkName string, u *url.URL, uploaderID int, fil
 
 	return f.ID, nil
 }
+
+// Soft delete a file, e.g. when an error happens.
+// A hard delete is not performed as this could mess with foreign keys.
+func DeleteFile(db *sql.DB, file_id int) error {
+	tx, err := db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+
+	f, err := models.FindFile(context.Background(), tx, file_id)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	fi, err := os.Stat(f.URI)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	u, err := models.FindUser(context.Background(), tx, f.UploaderID)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	u.UploadedBytes -= int(fi.Size())
+	if _, err := u.Update(context.Background(), tx, boil.Infer()); err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	if err := os.Remove(f.URI); err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	if _, err = f.Delete(context.Background(), tx, false); err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		if e := tx.Rollback(); e != nil {
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return err
+	}
+
+	return nil
+}

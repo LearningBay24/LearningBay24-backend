@@ -253,6 +253,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 
 	f, err := models.FindFile(context.Background(), tx, fileId)
 	if err != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
@@ -261,6 +263,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 
 	err = p.DeleteExamFile(tx, examId)
 	if err != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
@@ -269,6 +273,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 
 	err = ex.SetFiles(context.Background(), tx, false, f)
 	if err != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
@@ -276,6 +282,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 	}
 
 	if e := tx.Commit(); e != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}
 	return nil
