@@ -209,7 +209,7 @@ func (f *PublicController) GetUsersInCourse(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, users)
 }
 
-func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
+func (f *PublicController) GetEnrolledCoursesFromUser(c *gin.Context) {
 	role_id := c.MustGet("CookieRoleId").(int)
 
 	if !AuthorizeUser(role_id) {
@@ -219,7 +219,27 @@ func (f *PublicController) GetCoursesFromUser(c *gin.Context) {
 
 	user_id := c.MustGet("CookieUserId").(int)
 
-	courses, err := course.GetCoursesFromUser(f.Database, user_id)
+	courses, err := course.GetEnrolledCoursesFromUser(f.Database, user_id)
+	if err != nil {
+		log.Errorf("Unable to get courses from user: %s", err.Error())
+		handleApiError(c, err)
+		return
+	}
+
+	c.IndentedJSON(http.StatusOK, courses)
+}
+
+func (f *PublicController) GetCreatedCoursesFromUser(c *gin.Context) {
+	role_id := c.MustGet("CookieRoleId").(int)
+
+	if !AuthorizeUser(role_id) {
+		handleApiError(c, errs.ErrNotUser)
+		return
+	}
+
+	user_id := c.MustGet("CookieUserId").(int)
+
+	courses, err := course.GetCreatedCoursesFromUser(f.Database, user_id)
 	if err != nil {
 		log.Errorf("Unable to get courses from user: %s", err.Error())
 		handleApiError(c, err)
@@ -315,14 +335,14 @@ func (f *PublicController) EnrollUser(c *gin.Context) {
 		}
 	}
 
-	_, err = course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
+	user, err := course.EnrollUser(f.Database, user_id, id, newCourse.EnrollKey)
 	if err != nil {
 		log.Errorf("Unable to enroll user in course: %s", err.Error())
 		handleApiError(c, err)
 		return
 	}
 
-	c.IndentedJSON(http.StatusOK, newCourse)
+	c.IndentedJSON(http.StatusOK, user.ID)
 }
 
 func (f *PublicController) EditCourseById(c *gin.Context) {

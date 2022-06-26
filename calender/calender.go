@@ -48,7 +48,7 @@ const (
 // Returns all appointments the user with the user-ID has
 func (p *PublicController) GetAllAppointments(userId int) ([]AppointmentWithCourse, error) {
 
-	courses, err := course.GetCoursesFromUser(p.Database, userId)
+	courses, err := course.GetEnrolledCoursesFromUser(p.Database, userId)
 	if err != nil {
 		return nil, err
 	}

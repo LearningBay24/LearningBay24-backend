@@ -13,6 +13,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/queries"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -231,13 +232,35 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 	return c.ID, nil
 }
 
-// GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
-func GetCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
+// GetEnrolledCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
+func GetEnrolledCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
 
 	courses, err := models.Courses(
+		qm.Select(models.CourseColumns.ID, models.CourseColumns.Name, models.CourseColumns.Description, models.CourseColumns.ForumID, "course.created_at", "course.updated_at"),
 		qm.From(models.TableNames.UserHasCourse),
 		qm.Where("user_has_course.user_id=?", uid),
 		qm.And("user_has_course.course_id = course.id"),
+		qm.And("user_has_course.role_id = ?", dbi.CourseUserRoleId),
+		qm.Or("user_has_course.user_id=?", uid),
+		qm.And("user_has_course.course_id = course.id"),
+		qm.And("user_has_course.role_id = ?", dbi.CourseModeratorRoleId),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return courses, nil
+}
+
+// GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
+func GetCreatedCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
+
+	courses, err := models.Courses(
+		qm.Select(models.CourseColumns.ID, models.CourseColumns.Name, models.CourseColumns.Description, models.CourseColumns.ForumID, "course.created_at", "course.updated_at"),
+		qm.From(models.TableNames.UserHasCourse),
+		qm.Where("user_has_course.user_id=?", uid),
+		qm.And("user_has_course.course_id = course.id"),
+		qm.And("user_has_course.role_id = ?", dbi.CourseAdminRoleId),
 	).All(context.Background(), db)
 	if err != nil {
 		return nil, err
@@ -303,7 +326,7 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		return nil, err
 	}
 
-	c, err := models.FindCourse(context.Background(), tx, cid)
+	c, err := models.FindCourse(context.Background(), db, cid)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
 			return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
@@ -319,6 +342,30 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 		return nil, errs.ErrWrongEnrollkey
 
 	}
+	u, err := models.FindUser(context.Background(), db, uid)
+	if err != nil {
+		if e := tx.Rollback(); e != nil {
+			return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
+		}
+
+		return nil, err
+	}
+
+	var uhex models.UserHasCourseSlice
+	// first check if relation already exists in the database and either insert a new row or reset deleted_at
+	err = queries.Raw("select * from user_has_course where course_id=? AND user_id=?", cid, uid).Bind(context.Background(), db, &uhex)
+	if err != nil {
+		return nil, err
+	}
+	if len(uhex) > 0 {
+		uhex[0].DeletedAt = null.TimeFromPtr(nil)
+		_, err = uhex[0].Update(context.Background(), db, boil.Infer())
+		if err != nil {
+			return nil, err
+		}
+		return u, nil
+	}
+
 	userhascourse := models.UserHasCourse{UserID: uid, CourseID: cid, RoleID: dbi.CourseUserRoleId}
 	err = userhascourse.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
@@ -328,14 +375,7 @@ func EnrollUser(db *sql.DB, uid int, cid int, enrollkey string) (*models.User, e
 
 		return nil, err
 	}
-	u, err := models.FindUser(context.Background(), tx, uid)
-	if err != nil {
-		if e := tx.Rollback(); e != nil {
-			return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
-		}
 
-		return nil, err
-	}
 	if e := tx.Commit(); e != nil {
 		return nil, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}
