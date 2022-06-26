@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"learningbay24.de/backend/course"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/errs"
+	"learningbay24.de/backend/models"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"learningbay24.de/backend/dbi"
-	"learningbay24.de/backend/models"
 )
 
 type ExamService interface {
@@ -253,6 +253,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 
 	f, err := models.FindFile(context.Background(), tx, fileId)
 	if err != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
@@ -261,6 +263,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 
 	err = p.DeleteExamFile(tx, examId)
 	if err != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
@@ -269,6 +273,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 
 	err = ex.SetFiles(context.Background(), tx, false, f)
 	if err != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		if e := tx.Rollback(); e != nil {
 			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
@@ -276,6 +282,8 @@ func (p *PublicController) UploadExamFile(fileName string, uri string, uploaderI
 	}
 
 	if e := tx.Commit(); e != nil {
+		// NOTE: disregard error, only god can help us now
+		_ = dbi.DeleteFile(p.Database, fileId)
 		return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 	}
 	return nil
@@ -317,6 +325,7 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 
 	// Fails if trying to register to an exam while deadline has passed
 	curTime := time.Now()
+	curTime = curTime.Add(time.Minute * 120)
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		// need to set DeletedAt back to zero-value if row already exists
@@ -356,6 +365,7 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 	}
 	// Fails if trying to deregister from an exam while deadline has passed
 	curTime := time.Now()
+	curTime = curTime.Add(time.Minute * 120)
 	diff := curTime.Sub(ex.DeregisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
