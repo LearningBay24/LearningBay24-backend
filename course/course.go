@@ -3,6 +3,7 @@ package course
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -400,6 +401,11 @@ func SearchCourse(db *sql.DB, searchterm string) ([]*models.Course, error) {
 		qm.Or(models.CourseColumns.Description+" LIKE ?", searchterm),
 	).All(context.Background(), db)
 	if err != nil {
+		// avoid no courses available being a `404`
+		if errors.Is(err, sql.ErrNoRows) {
+			return []*models.Course{}, nil
+		}
+
 		return nil, err
 	}
 	return courses, nil
