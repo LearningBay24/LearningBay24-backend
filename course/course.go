@@ -232,13 +232,35 @@ func DeleteCourse(db *sql.DB, id int) (int, error) {
 	return c.ID, nil
 }
 
-// GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
-func GetCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
+// GetEnrolledCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
+func GetEnrolledCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
 
 	courses, err := models.Courses(
+		qm.Select(models.CourseColumns.ID, models.CourseColumns.Name, models.CourseColumns.Description, models.CourseColumns.ForumID, "course.created_at", "course.updated_at"),
 		qm.From(models.TableNames.UserHasCourse),
 		qm.Where("user_has_course.user_id=?", uid),
 		qm.And("user_has_course.course_id = course.id"),
+		qm.And("user_has_course.role_id = ?", dbi.CourseUserRoleId),
+		qm.Or("user_has_course.user_id=?", uid),
+		qm.And("user_has_course.course_id = course.id"),
+		qm.And("user_has_course.role_id = ?", dbi.CourseModeratorRoleId),
+	).All(context.Background(), db)
+	if err != nil {
+		return nil, err
+	}
+
+	return courses, nil
+}
+
+// GetCoursesFromUser takes the ID of a User and returns a slice of Courses in which he is enrolled
+func GetCreatedCoursesFromUser(db *sql.DB, uid int) ([]*models.Course, error) {
+
+	courses, err := models.Courses(
+		qm.Select(models.CourseColumns.ID, models.CourseColumns.Name, models.CourseColumns.Description, models.CourseColumns.ForumID, "course.created_at", "course.updated_at"),
+		qm.From(models.TableNames.UserHasCourse),
+		qm.Where("user_has_course.user_id=?", uid),
+		qm.And("user_has_course.course_id = course.id"),
+		qm.And("user_has_course.role_id = ?", dbi.CourseAdminRoleId),
 	).All(context.Background(), db)
 	if err != nil {
 		return nil, err
