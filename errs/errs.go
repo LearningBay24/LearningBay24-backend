@@ -28,6 +28,7 @@ var (
 	ErrUnregisterDeadlinePassed error = errors.New("Cannot unregister from exam past deadline")
 	ErrExamHasntStarted         error = errors.New("Exam hasn't started yet")
 	ErrExamEnded                error = errors.New("Exam already ended")
+	ErrDeleteExamNotEmpty       error = errors.New("Cannot delete exam when users are still registered")
 
 	ErrNoUploads          error = errors.New("This item doesn't have any associated uplods")
 	ErrUploadLimitReached error = errors.New("The upload limit has been reached")

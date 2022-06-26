@@ -609,7 +609,7 @@ func (p *PublicController) DeleteExam(examId int) (int, error) {
 		return 0, err
 	}
 	if uhex > 0 {
-		return 0, errors.New("there are still people registered into the exam")
+		return 0, errs.ErrDeleteExamNotEmpty
 	}
 
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
