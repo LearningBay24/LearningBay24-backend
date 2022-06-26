@@ -878,15 +878,14 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 		return
 	}
 
-	course_id, err := strconv.Atoi(j["course_id"].(string))
+	// authorization
+	appointment, err := models.FindAppointment(context.Background(), f.Database, appointment_id)
 	if err != nil {
-		log.Error("unable to convert string to int")
-		handleApiError(c, errs.ErrBodyConversion)
+		log.Errorf("Unable to get appointment from id: %s", err.Error())
+		handleApiError(c, err)
 		return
 	}
-
-	// authorization
-	course_role, err := course.GetCourseRole(f.Database, user_id, int(course_id))
+	course_role, err := course.GetCourseRole(f.Database, user_id, appointment.CourseID)
 	if err != nil {
 		log.Errorf("Unable to get course role: %s", err.Error())
 		handleApiError(c, err)
