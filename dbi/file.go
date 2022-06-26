@@ -101,7 +101,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	user, err := models.FindUser(context.Background(), tx, uploaderID)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -109,10 +109,10 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 
 	if config.Conf.Files.MaxUploadPerUser != 0 && user.UploadedBytes+fileSize > config.Conf.Files.MaxUploadPerUser {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
-		return 0, fmt.Errorf("user has reached the upload limit of %d bytes", config.Conf.Files.MaxUploadPerUser)
+		return 0, errs.ErrUploadLimitReached
 	}
 
 	fullFile := filepath.Join(filePath, newName)
@@ -120,7 +120,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -130,7 +130,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	fp, err := os.Create(fullFile)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -141,7 +141,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	_, err = bufr.WriteTo(fp)
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -150,7 +150,7 @@ func saveLocalFile(db *sql.DB, filePath string, fileName string, uploaderID int,
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -170,7 +170,7 @@ func saveRemoteFile(db *sql.DB, linkName string, u *url.URL, uploaderID int, fil
 	err = f.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -179,7 +179,7 @@ func saveRemoteFile(db *sql.DB, linkName string, u *url.URL, uploaderID int, fil
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err

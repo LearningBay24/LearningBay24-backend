@@ -34,7 +34,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 	err = user.Insert(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -43,7 +43,7 @@ func CreateUser(db *sql.DB, user models.User) (int, error) {
 	err = tx.Commit()
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
-			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return 0, fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 
 		return 0, err
@@ -86,7 +86,7 @@ func DeleteUser(db *sql.DB, id int) error {
 	if err != nil {
 		flog.Errorf("Unable to delete user submissions: %s", err.Error())
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return err
 	}
@@ -96,7 +96,7 @@ func DeleteUser(db *sql.DB, id int) error {
 	if err != nil {
 		flog.Errorf("Unable to delete files: %s", err.Error())
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return err
 	}
@@ -108,7 +108,7 @@ func DeleteUser(db *sql.DB, id int) error {
 	if err != nil {
 		flog.Errorf("Unable to delete notifications: %s", err.Error())
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return err
 	}
@@ -118,7 +118,7 @@ func DeleteUser(db *sql.DB, id int) error {
 	if err != nil {
 		flog.Errorf("Unable to delete user_has_courses: %s", err.Error())
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return err
 	}
@@ -128,7 +128,7 @@ func DeleteUser(db *sql.DB, id int) error {
 	if err != nil {
 		flog.Errorf("Unable to delete user with id %d: %s", id, err.Error())
 		if e := tx.Rollback(); e != nil {
-			return fmt.Errorf("unable to rollback transaction on error: %s; %s", err.Error(), e.Error())
+			return fmt.Errorf("unable to rollback transaction on error: %s; %w", err, e)
 		}
 		return err
 	}
@@ -137,7 +137,7 @@ func DeleteUser(db *sql.DB, id int) error {
 	// TODO: user_has_field_of_study?
 
 	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("unable to commit transaction: %s", err)
+		return fmt.Errorf("unable to commit transaction: %w", err)
 	}
 
 	return nil
