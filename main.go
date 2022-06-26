@@ -38,6 +38,7 @@ func setupEnvironment(db *sql.DB) {
 	}
 
 	if config.Conf.Environment != "development" {
+		gin.SetMode(gin.ReleaseMode)
 		return
 	}
 
