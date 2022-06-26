@@ -2614,6 +2614,7 @@ func (f *PublicController) GetUserCourseRole(c *gin.Context) {
 	if err != nil {
 		log.Errorf("unable to convert parameter `id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)
+		return
 	}
 
 	course_role_id, err := course.GetCourseRole(f.Database, user_id, course_id)
