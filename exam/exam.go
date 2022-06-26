@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"learningbay24.de/backend/course"
+	"learningbay24.de/backend/dbi"
 	"learningbay24.de/backend/errs"
+	"learningbay24.de/backend/models"
 
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"learningbay24.de/backend/dbi"
-	"learningbay24.de/backend/models"
 )
 
 type ExamService interface {

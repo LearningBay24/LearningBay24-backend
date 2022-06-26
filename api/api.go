@@ -1188,7 +1188,7 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		deregisterDeadline = deregisterDeadline.Local()
 	}
 
-	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), null.NewTime(registerDeadline, !registerDeadline.IsZero()), null.NewTime(deregisterDeadline, !deregisterDeadline.IsZero()))
 	if err != nil {
 		log.Errorf("Unable to edit exam: %s", err.Error())
 		handleApiError(c, err)
