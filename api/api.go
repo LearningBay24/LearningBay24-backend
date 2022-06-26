@@ -795,6 +795,9 @@ func (f *PublicController) GetAllAppointments(c *gin.Context) {
 }
 
 func (f *PublicController) AddCourseToCalender(c *gin.Context) {
+	role_id := c.MustGet("CookieRoleId").(int)
+	user_id := c.MustGet("CookieUserId").(int)
+
 	var j map[string]interface{}
 
 	if err := c.BindJSON(&j); err != nil {
@@ -833,6 +836,18 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 		return
 	}
 
+	// authorization
+	course_role, err := course.GetCourseRole(f.Database, user_id, int(courseId))
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		handleApiError(c, err)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role, role_id) {
+		handleApiError(c, errs.ErrNotCourseModerator)
+		return
+	}
+
 	pCon := &calender.PublicController{Database: f.Database}
 	_, err = pCon.AddCourseToCalender(date, int(duration), null.StringFrom(location), int8(online), int(courseId))
 	if err != nil {
@@ -845,6 +860,9 @@ func (f *PublicController) AddCourseToCalender(c *gin.Context) {
 }
 
 func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
+	role_id := c.MustGet("CookieRoleId").(int)
+	user_id := c.MustGet("CookieUserId").(int)
+
 	var j map[string]interface{}
 
 	if err := c.BindJSON(&j); err != nil {
@@ -855,8 +873,27 @@ func (f *PublicController) DeactivateCourseInCalender(c *gin.Context) {
 
 	appointment_id, err := strconv.Atoi(j["appointment_id"].(string))
 	if err != nil {
-		log.Error("unable to convert string to time.Time")
+		log.Error("unable to convert string to int")
 		handleApiError(c, errs.ErrBodyConversion)
+		return
+	}
+
+	course_id, err := strconv.Atoi(j["course_id"].(string))
+	if err != nil {
+		log.Error("unable to convert string to int")
+		handleApiError(c, errs.ErrBodyConversion)
+		return
+	}
+
+	// authorization
+	course_role, err := course.GetCourseRole(f.Database, user_id, int(course_id))
+	if err != nil {
+		log.Errorf("Unable to get course role: %s", err.Error())
+		handleApiError(c, err)
+		return
+	}
+	if !AuthorizeCourseModerator(course_role, role_id) {
+		handleApiError(c, errs.ErrNotCourseModerator)
 		return
 	}
 
