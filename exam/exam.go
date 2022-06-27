@@ -92,7 +92,8 @@ func (p *PublicController) GetRegisteredExamsFromUser(userId int) (models.ExamSl
 		"AND user_has_exam.passed is null "+
 		"AND UTC_TIMESTAMP() < date_add(exam.date, interval exam.duration second) "+
 		"AND user_has_exam.deleted_at is null "+
-		"AND exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
+		"AND exam.deleted_at is null "+
+		"ORDER BY date ASC", userId).Bind(context.Background(), p.Database, &exams)
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func (p *PublicController) GetRegisteredExamsFromUser(userId int) (models.ExamSl
 
 func (p *PublicController) GetExamsFromCourse(courseId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
-	err := queries.Raw("select * from exam where course_id=? AND deleted_at is null", courseId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select * from exam where course_id=? AND deleted_at is null ORDER BY date ASC", courseId).Bind(context.Background(), p.Database, &exams)
 	if err != nil {
 		return nil, err
 	}
