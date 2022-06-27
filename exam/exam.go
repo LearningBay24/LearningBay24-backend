@@ -88,7 +88,12 @@ func (p *PublicController) GetExamByID(examId int) (*models.Exam, error) {
 // GetRegisteredExamsFromUser takes a userId and returns a slice of exams associated with it where the user is registered in
 func (p *PublicController) GetRegisteredExamsFromUser(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
-	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.attended=0 AND user_has_exam.passed is null AND user_has_exam.deleted_at is null AND exam.deleted_at is null ORDER BY date ASC", userId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id "+
+		"AND user_has_exam.passed is null "+
+		"AND UTC_TIMESTAMP() < date_add(exam.date, interval exam.duration second) "+
+		"AND user_has_exam.deleted_at is null "+
+		"AND exam.deleted_at is null "+
+		"ORDER BY date ASC", userId).Bind(context.Background(), p.Database, &exams)
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +120,7 @@ func (p *PublicController) GetAttendedExamsFromUser(userId int) ([]*GradedExam, 
 		qm.InnerJoin("user_has_exam on exam.id = user_has_exam.exam_id"),
 		qm.Where("user_has_exam.attended=1"),
 		qm.And("user_has_exam.user_id = ?", userId),
+		qm.And("(UTC_TIMESTAMP() >= date_add(exam.date, interval exam.duration second))"),
 		qm.And("(user_has_exam.passed is null"),
 		qm.Or("user_has_exam.passed = 0)"),
 	).Bind(context.Background(), p.Database, &gex)
@@ -325,7 +331,6 @@ func (p *PublicController) RegisterToExam(userId, examId int) (*models.User, err
 
 	// Fails if trying to register to an exam while deadline has passed
 	curTime := time.Now()
-	curTime = curTime.Add(time.Minute * 120)
 	diff := curTime.Sub(ex.RegisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		// need to set DeletedAt back to zero-value if row already exists
@@ -365,7 +370,6 @@ func (p *PublicController) DeregisterFromExam(userId, examId int) error {
 	}
 	// Fails if trying to deregister from an exam while deadline has passed
 	curTime := time.Now()
-	curTime = curTime.Add(time.Minute * 120)
 	diff := curTime.Sub(ex.DeregisterDeadline.Time)
 	if diff.Minutes() <= 0 {
 		uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
@@ -392,7 +396,6 @@ func (p *PublicController) AttendExam(examId, userId int) error {
 
 	// Can attend to exam if exam start <= current time <= exam end
 	curTime := time.Now()
-	curTime = curTime.Add(time.Minute * 120)
 	end := ex.Date.Add(time.Minute * time.Duration(ex.Duration))
 	diffBegin := curTime.Sub(ex.Date)
 	diffEnd := end.Sub(curTime)
