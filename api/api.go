@@ -1039,30 +1039,45 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 		handleApiError(c, errs.ErrBodyConversion)
 		return
 	}
+	var registerDeadline time.Time
+	var registerDeadlineNull null.Time
+	if registerDeadlineStr == "" {
 
-	registerDeadline, err := time.Parse(time.RFC3339, registerDeadlineStr)
-	if err != nil {
-		log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
-		handleApiError(c, errs.ErrBodyConversion)
-		return
+		registerDeadlineNull = null.NewTime(date, true)
+
+	} else {
+		registerDeadline, err = time.Parse(time.RFC3339, registerDeadlineStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
+			handleApiError(c, errs.ErrBodyConversion)
+			return
+		}
+		registerDeadlineNull = null.NewTime(registerDeadline, true)
 	}
-
 	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
 	if !ok {
 		log.Error("unable to convert deregister_deadline to string")
 		handleApiError(c, errs.ErrBodyConversion)
 		return
 	}
+	var deregisterDeadline time.Time
+	var deregisterDeadlineNull null.Time
+	if deregisterDeadlineStr == "" {
 
-	deregisterDeadline, err := time.Parse(time.RFC3339, deregisterDeadlineStr)
-	if err != nil {
-		log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
-		handleApiError(c, errs.ErrBodyConversion)
-		return
+		deregisterDeadlineNull = null.NewTime(date, false)
+
+	} else {
+		deregisterDeadline, err = time.Parse(time.RFC3339, deregisterDeadlineStr)
+		if err != nil {
+			log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
+			handleApiError(c, errs.ErrBodyConversion)
+			return
+		}
+		deregisterDeadlineNull = null.NewTime(deregisterDeadline, true)
 	}
 
 	pCtrl := exam.PublicController{Database: f.Database}
-	id, err := pCtrl.CreateExam(name, description, date, duration, courseId, creatorId, int8(online), null.StringFrom(location), null.TimeFrom(registerDeadline), null.TimeFrom(deregisterDeadline))
+	id, err := pCtrl.CreateExam(name, description, date, duration, courseId, creatorId, int8(online), null.StringFrom(location), registerDeadlineNull, deregisterDeadlineNull)
 	if err != nil {
 		log.Errorf("Unable to create exam: %s", err.Error())
 		handleApiError(c, err)
