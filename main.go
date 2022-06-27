@@ -49,6 +49,7 @@ func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, GET, DELETE, PATCH, OPTIONS")
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "https://learningbay24.de")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Cache-Control")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
