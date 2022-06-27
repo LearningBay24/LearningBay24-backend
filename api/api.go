@@ -1212,34 +1212,42 @@ func (f *PublicController) EditExam(c *gin.Context) {
 		return
 	}
 	var registerDeadline time.Time
-	if registerDeadlineStr != "" {
-		registerDeadline, err = time.ParseInLocation(time.RFC3339, registerDeadlineStr, time.Local)
+	var registerDeadlineNull null.Time
+	if registerDeadlineStr == "" {
+
+		registerDeadlineNull = null.NewTime(date, true)
+
+	} else {
+		registerDeadline, err = time.Parse(time.RFC3339, registerDeadlineStr)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
 			handleApiError(c, errs.ErrBodyConversion)
 			return
 		}
-		registerDeadline = registerDeadline.Local()
+		registerDeadlineNull = null.NewTime(registerDeadline, true)
 	}
-
 	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
 	if !ok {
-		log.Error("unable to convert register_deadline to string")
+		log.Error("unable to convert deregister_deadline to string")
 		handleApiError(c, errs.ErrBodyConversion)
 		return
 	}
 	var deregisterDeadline time.Time
-	if deregisterDeadlineStr != "" {
-		deregisterDeadline, err = time.ParseInLocation(time.RFC3339, deregisterDeadlineStr, time.Local)
+	var deregisterDeadlineNull null.Time
+	if deregisterDeadlineStr == "" {
+
+		deregisterDeadlineNull = null.NewTime(date, false)
+
+	} else {
+		deregisterDeadline, err = time.Parse(time.RFC3339, deregisterDeadlineStr)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
 			handleApiError(c, errs.ErrBodyConversion)
 			return
 		}
-		deregisterDeadline = deregisterDeadline.Local()
+		deregisterDeadlineNull = null.NewTime(deregisterDeadline, true)
 	}
-
-	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), null.NewTime(registerDeadline, !registerDeadline.IsZero()), null.NewTime(deregisterDeadline, !deregisterDeadline.IsZero()))
+	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), registerDeadlineNull, deregisterDeadlineNull)
 	if err != nil {
 		log.Errorf("Unable to edit exam: %s", err.Error())
 		handleApiError(c, err)
