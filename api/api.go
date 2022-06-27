@@ -1112,13 +1112,12 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	}
 	var date time.Time
 	if dateStr != "" {
-		date, err = time.ParseInLocation(time.RFC3339, dateStr, time.Local)
+		date, err = time.Parse(time.RFC3339, dateStr)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `date` to time.Time: %s", err.Error())
 			handleApiError(c, errs.ErrBodyConversion)
 			return
 		}
-		date = date.Local()
 	}
 	durationStr, ok := j["duration"].(string)
 	if !ok {
@@ -1198,13 +1197,12 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	}
 	var registerDeadline time.Time
 	if registerDeadlineStr != "" {
-		registerDeadline, err = time.ParseInLocation(time.RFC3339, registerDeadlineStr, time.Local)
+		registerDeadline, err = time.Parse(time.RFC3339, registerDeadlineStr)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `register_deadline` to time.Time: %s", err.Error())
 			handleApiError(c, errs.ErrBodyConversion)
 			return
 		}
-		registerDeadline = registerDeadline.Local()
 	}
 
 	deregisterDeadlineStr, ok := j["deregister_deadline"].(string)
@@ -1215,13 +1213,12 @@ func (f *PublicController) EditExam(c *gin.Context) {
 	}
 	var deregisterDeadline time.Time
 	if deregisterDeadlineStr != "" {
-		deregisterDeadline, err = time.ParseInLocation(time.RFC3339, deregisterDeadlineStr, time.Local)
+		deregisterDeadline, err = time.Parse(time.RFC3339, deregisterDeadlineStr)
 		if err != nil {
 			log.Errorf("Unable to convert parameter `deregister_deadline` to time.Time: %s", err.Error())
 			handleApiError(c, errs.ErrBodyConversion)
 			return
 		}
-		deregisterDeadline = deregisterDeadline.Local()
 	}
 
 	err = pCtrl.EditExam(name, description, date, duration, examId, online, null.StringFrom(location), null.NewTime(registerDeadline, !registerDeadline.IsZero()), null.NewTime(deregisterDeadline, !deregisterDeadline.IsZero()))
