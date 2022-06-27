@@ -1978,7 +1978,7 @@ func (f *PublicController) CreateSubmission(c *gin.Context) {
 	user_id := c.MustGet("CookieUserId").(int)
 	role_id := c.MustGet("CookieRoleId").(int)
 
-	course_id, err := strconv.Atoi(c.Param("id"))
+	course_id, err := course.GetCourseIdBySubmission(f.Database, submission_id)
 	if err != nil {
 		log.Errorf("Unable to convert parameter `id` to int: %s", err.Error())
 		handleApiError(c, errs.ErrParameterConversion)

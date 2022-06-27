@@ -183,7 +183,7 @@ func main() {
 		auth.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
 		auth.GET("/submissions/:id", pCtrl.GetSubmission)
 		auth.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
-		auth.DELETE("/courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
+		auth.DELETE("/courses/submissions/:submission_id", pCtrl.DeleteSubmission)
 		auth.PATCH("/courses/submissions/:submission_id", pCtrl.EditSubmissionById)
 		auth.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
 		auth.GET("/courses/submissions/:submission_id/files", pCtrl.GetFileFromSubmission)
