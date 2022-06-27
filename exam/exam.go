@@ -88,7 +88,7 @@ func (p *PublicController) GetExamByID(examId int) (*models.Exam, error) {
 // GetRegisteredExamsFromUser takes a userId and returns a slice of exams associated with it where the user is registered in
 func (p *PublicController) GetRegisteredExamsFromUser(userId int) (models.ExamSlice, error) {
 	var exams []*models.Exam
-	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.attended=0 AND user_has_exam.passed is null AND now() <= date_add(exam.date, interval exam.duration minute) AND user_has_exam.deleted_at is null AND exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
+	err := queries.Raw("select * from exam, user_has_exam where user_has_exam.user_id=? AND user_has_exam.exam_id=exam.id AND user_has_exam.passed is null AND ((now() <= date_add(exam.date, interval exam.duration minute AND user_has_exam.attended=1)) OR user_has_exam.attended=0) AND user_has_exam.deleted_at is null AND exam.deleted_at is null", userId).Bind(context.Background(), p.Database, &exams)
 	if err != nil {
 		return nil, err
 	}
