@@ -156,6 +156,27 @@ func (p *PublicController) GetCreatedExamsFromUser(userId int) (models.ExamSlice
 // CreateExam takes a name, description, date, duration, location, courseId, creatorId, de-, and register-deadline and indicators for online and graded
 // Created struct gets inserted into database
 func (p *PublicController) CreateExam(name, description string, date time.Time, duration, courseId, creatorId int, online int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) (int, error) {
+	curTime := time.Now()
+	if date.Sub(curTime) < 0 {
+		return 0, errs.ErrDateTimePast
+	}
+
+	if registerDeadLine.Time.Sub(curTime) < 0 {
+		return 0, errs.ErrRegisterDeadlinePast
+	}
+	if deregisterDeadLine.Time.Sub(curTime) < 0 {
+		return 0, errs.ErrDeregisterDeadlinePast
+	}
+	if date.Sub(registerDeadLine.Time) < 0 {
+		return 0, errs.ErrRegisterDeadlineAfterDateTime
+	}
+	if date.Sub(deregisterDeadLine.Time) < 0 {
+		return 0, errs.ErrDeregisterDeadlineAfterDateTime
+	}
+	if deregisterDeadLine.Time.Sub(registerDeadLine.Time) < 0 {
+		return 0, errs.ErrRegisterDeadlineAfterDerigsterDeadline
+	}
+
 	c, err := models.FindCourse(context.Background(), p.Database, courseId)
 	if err != nil {
 		return 0, err
