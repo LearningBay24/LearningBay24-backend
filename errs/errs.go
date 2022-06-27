@@ -29,6 +29,7 @@ var (
 	ErrExamHasntStarted         error = errors.New("Exam hasn't started yet")
 	ErrExamEnded                error = errors.New("Exam already ended")
 	ErrDeleteExamNotEmpty       error = errors.New("Cannot delete exam when users are still registered")
+	ErrExamHasntEnded           error = errors.New("Exam hasn't ended yet")
 
 	ErrNoUploads          error = errors.New("This item doesn't have any associated uploads")
 	ErrUploadLimitReached error = errors.New("The upload limit has been reached")

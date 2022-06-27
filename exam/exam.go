@@ -13,6 +13,7 @@ import (
 	"learningbay24.de/backend/errs"
 	"learningbay24.de/backend/models"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
@@ -558,6 +559,11 @@ func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null
 	ex, err := models.FindExam(context.Background(), p.Database, examId)
 	if err != nil {
 		return err
+	}
+
+	if ex.Date.Add(time.Minute*time.Duration(ex.Duration)).Sub(time.Now()) > 0 {
+		log.Infof("trying to grade exam %d before it ended", ex.ID)
+		return errs.ErrExamHasntEnded
 	}
 
 	uhex, err := models.FindUserHasExam(context.Background(), p.Database, userId, examId)
