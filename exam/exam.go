@@ -205,6 +205,28 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 
 // EditExam takes a fileName, examId, creatorId, file-handle, date, duration, and an indicator if the file is local
 func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) error {
+
+	curTime := time.Now()
+	if date.Sub(curTime) < 0 {
+		return errs.ErrDateTimePast
+	}
+
+	if registerDeadLine.Time.Sub(curTime) < 0 {
+		return errs.ErrRegisterDeadlinePast
+	}
+	if deregisterDeadLine.Time.Sub(curTime) < 0 {
+		return errs.ErrDeregisterDeadlinePast
+	}
+	if date.Sub(registerDeadLine.Time) < 0 {
+		return errs.ErrRegisterDeadlineAfterDateTime
+	}
+	if date.Sub(deregisterDeadLine.Time) < 0 {
+		return errs.ErrDeregisterDeadlineAfterDateTime
+	}
+	if deregisterDeadLine.Time.Sub(registerDeadLine.Time) < 0 {
+		return errs.ErrRegisterDeadlineAfterDerigsterDeadline
+	}
+
 	ex, err := p.GetExamByID(examId)
 	if err != nil {
 		return err
@@ -238,14 +260,8 @@ func (p *PublicController) EditExam(name, description string, date time.Time, du
 		ex.Location.String = location.String
 	}
 
-	if !registerDeadLine.IsZero() {
-		ex.RegisterDeadline.Time = registerDeadLine.Time
-	}
-
-	if !deregisterDeadLine.IsZero() {
-		ex.DeregisterDeadline.Time = deregisterDeadLine.Time
-	}
-
+	ex.RegisterDeadline = registerDeadLine
+	ex.DeregisterDeadline = deregisterDeadLine
 	_, err = ex.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
