@@ -471,8 +471,8 @@ func (f *PublicController) Logout(c *gin.Context) {
 func (f *PublicController) Register(c *gin.Context) {
 	role_id := c.MustGet("CookieRoleId").(int)
 
-	if !AuthorizeModerator(role_id) {
-		handleApiError(c, errs.ErrNotModerator)
+	if !AuthorizeAdmin(role_id) {
+		handleApiError(c, errs.ErrNotAdmin)
 		return
 	}
 
