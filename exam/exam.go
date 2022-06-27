@@ -208,7 +208,7 @@ func (p *PublicController) CreateExam(name, description string, date time.Time, 
 func (p *PublicController) EditExam(name, description string, date time.Time, duration, examId int, online null.Int8, location null.String, registerDeadLine, deregisterDeadLine null.Time) error {
 
 	curTime := time.Now()
-	if date.Sub(curTime) < 0 {
+	if !date.IsZero() && date.Sub(curTime) < 0 {
 		return errs.ErrDateTimePast
 	}
 
