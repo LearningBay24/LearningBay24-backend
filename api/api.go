@@ -1042,9 +1042,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	var registerDeadline time.Time
 	var registerDeadlineNull null.Time
 	if registerDeadlineStr == "" {
-
 		registerDeadlineNull = null.NewTime(date, true)
-
 	} else {
 		registerDeadline, err = time.Parse(time.RFC3339, registerDeadlineStr)
 		if err != nil {
@@ -1063,9 +1061,7 @@ func (f *PublicController) CreateExam(c *gin.Context) {
 	var deregisterDeadline time.Time
 	var deregisterDeadlineNull null.Time
 	if deregisterDeadlineStr == "" {
-
-		deregisterDeadlineNull = null.NewTime(date, false)
-
+		deregisterDeadlineNull = null.NewTime(date, true)
 	} else {
 		deregisterDeadline, err = time.Parse(time.RFC3339, deregisterDeadlineStr)
 		if err != nil {
