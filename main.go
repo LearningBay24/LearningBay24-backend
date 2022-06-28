@@ -165,6 +165,8 @@ func main() {
 		auth.GET("/users/exams/registered", pCtrl.GetRegisteredExamsFromUser)
 		auth.GET("/users/exams/unregistered", pCtrl.GetUnregisteredExamsFromUser)
 		auth.GET("/courses/:id/exams", pCtrl.GetExamsFromCourse)
+		auth.GET("/courses/search", pCtrl.SearchCourse)
+		auth.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 		auth.GET("/users/exams/attended", pCtrl.GetAttendedExamsFromUser)
 		auth.GET("/users/exams/passed", pCtrl.GetPassedExamsFromUser)
 		auth.GET("/users/exams/created", pCtrl.GetCreatedFromUser)
@@ -179,15 +181,19 @@ func main() {
 		auth.GET("/exams/:id", pCtrl.GetExamById)
 		auth.PATCH("/users/:user_id/exams/:exam_id/attend", pCtrl.SetAttended)
 		auth.GET("/usersx/:id/exams/:exam_id/files", pCtrl.GetFileFromAttendee)
+		auth.GET("/submissions/:id", pCtrl.GetSubmission)
 		auth.POST("/courses/:id/submissions", pCtrl.CreateSubmission)
-		auth.DELETE("/courses/:id/submissions/:submission_id", pCtrl.DeleteSubmission)
+		auth.DELETE("/courses/submissions/:submission_id", pCtrl.DeleteSubmission)
 		auth.PATCH("/courses/submissions/:submission_id", pCtrl.EditSubmissionById)
 		auth.GET("/users/submissions", pCtrl.GetSubmissionFromUser)
+		auth.GET("/courses/submissions/:submission_id/files", pCtrl.GetFileFromSubmission)
 		auth.POST("/courses/submissions/:submission_id/files", pCtrl.CreateSubmissionHasFiles)
 		auth.DELETE("/courses/submissions/:submission_id/files/:file_id", pCtrl.DeleteSubmissionHasFiles)
 		auth.POST("/courses/submissions/:submission_id/usersubmissions", pCtrl.CreateUserSubmission)
+		auth.GET("/courses/submissions/:submission_id/usersubmissions", pCtrl.GetAllUserSubmissionsFromSubmission)
 		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id", pCtrl.DeleteUserSubmission)
-		auth.POST("/courses/:id/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
+		auth.GET("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.GetFileFromUserSubmission)
+		auth.POST("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.CreateUserSubmissionHasFiles)
 		auth.DELETE("/courses/submissions/usersubmissions/:usersubmission_id/files/:file_id", pCtrl.DeleteUserSubmissionHasFiles)
 		auth.GET("/courses/:id/submissions", pCtrl.GetSubmissionsFromCourse)
 		auth.PATCH("/courses/submissions/usersubmissions/:usersubmission_id/grade", pCtrl.GradeUserSubmission)
@@ -197,17 +203,6 @@ func main() {
 	}
 
 	router.POST("/login", pCtrl.Login)
-	// TODO: add authorization => user has access to submission
-	router.GET("/submissions/:id", pCtrl.GetSubmission)
-	// TODO: add authorization => user
-	router.GET("/courses/submissions/:submission_id/usersubmissions", pCtrl.GetUserSubmissionsFromSubmission)
-	// TODO: add authorization => user
-	router.GET("/courses/submissions/:submission_id/files", pCtrl.GetFileFromSubmission)
-	// TODO: add authorization => user
-	router.GET("/courses/submissions/usersubmissions/:usersubmission_id/files", pCtrl.GetFileFromUserSubmission)
-	router.GET("/courses/search", pCtrl.SearchCourse)
-	// TODO: add authorization => user
-	router.GET("/users/submissions/:id", pCtrl.GetUserSubmission)
 
 	router.Run("0.0.0.0:8080")
 }
