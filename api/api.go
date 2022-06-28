@@ -39,7 +39,7 @@ func handleApiError(c *gin.Context, err error) {
 	NOT_AUTHORIZED := []error{errs.ErrNotAdmin, errs.ErrNotModerator, errs.ErrNotUser, errs.ErrNotCourseAdmin, errs.ErrNotCourseModerator, errs.ErrNotCourseUser}
 	NOT_FOUNDS := []error{sql.ErrNoRows, errs.ErrNoUploads}
 	BAD_REQUESTS := []error{errs.ErrFileExtensionNotAllowed, errs.ErrNoFileExtension, errs.ErrParameterConversion, errs.ErrNoFileInRequest, errs.ErrBodyConversion, errs.ErrNoQuery, errs.ErrRawData, errs.ErrUploadLimitReached, errs.ErrEmptyName, errs.ErrVisibleTimePast, errs.ErrDeadlineTimePast, errs.ErrVisibleFromAfterDeadline, errs.ErrSubmissionTimeAfterDeadline, errs.ErrEmptyFileName, bcrypt.ErrMismatchedHashAndPassword}
-	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed, errs.ErrExamEnded, errs.ErrExamHasntStarted, errs.ErrCourseNotEmpty, errs.ErrWrongEnrollkey, errs.ErrExamHasntEnded}
+	CONFLICTS := []error{errs.ErrSelfRegisterExam, errs.ErrRegisterDeadlinePassed, errs.ErrUnregisterDeadlinePassed, errs.ErrExamEnded, errs.ErrExamHasntStarted, errs.ErrCourseNotEmpty, errs.ErrWrongEnrollkey, errs.ErrExamHasntEnded, errs.ErrRegisterDeadlinePast, errs.ErrDeregisterDeadlinePast, errs.ErrRegisterDeadlineAfterDateTime, errs.ErrDeregisterDeadlineAfterDateTime, errs.ErrRegisterDeadlineAfterDerigsterDeadline}
 
 	log.Error(err)
 
