@@ -212,10 +212,10 @@ func (p *PublicController) EditExam(name, description string, date time.Time, du
 		return errs.ErrDateTimePast
 	}
 
-	if registerDeadLine.Time.Sub(curTime) < 0 {
+	if registerDeadLine.Valid && registerDeadLine.Time.Sub(curTime) < 0 {
 		return errs.ErrRegisterDeadlinePast
 	}
-	if deregisterDeadLine.Time.Sub(curTime) < 0 {
+	if deregisterDeadLine.Valid && deregisterDeadLine.Time.Sub(curTime) < 0 {
 		return errs.ErrDeregisterDeadlinePast
 	}
 	if date.Sub(registerDeadLine.Time) < 0 {
@@ -261,8 +261,13 @@ func (p *PublicController) EditExam(name, description string, date time.Time, du
 		ex.Location.String = location.String
 	}
 
-	ex.RegisterDeadline = registerDeadLine
-	ex.DeregisterDeadline = deregisterDeadLine
+	if registerDeadLine.Valid {
+		ex.RegisterDeadline = registerDeadLine
+	}
+	if deregisterDeadLine.Valid {
+		ex.DeregisterDeadline = deregisterDeadLine
+	}
+
 	_, err = ex.Update(context.Background(), tx, boil.Infer())
 	if err != nil {
 		if e := tx.Rollback(); e != nil {
