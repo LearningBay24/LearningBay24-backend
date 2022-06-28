@@ -2386,7 +2386,7 @@ func (f *PublicController) CreateUserSubmission(c *gin.Context) {
 		handleApiError(c, errs.ErrBodyConversion)
 		return
 	}
-	user_submission_id, err := course.CreateUserSubmission(f.Database, name, 9999, submission_id, int8(ignores_deadlineint))
+	user_submission_id, err := course.CreateUserSubmission(f.Database, name, user_id, submission_id, int8(ignores_deadlineint))
 	if err != nil {
 		log.Errorf("Unable to add file to submission: %s", err.Error())
 		handleApiError(c, errs.ErrBodyConversion)
