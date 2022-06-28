@@ -66,7 +66,7 @@ func handleApiError(c *gin.Context, err error) {
 
 	for _, cf := range CONFLICTS {
 		if errors.Is(err, cf) {
-			c.Status(http.StatusConflict)
+			c.JSON(http.StatusConflict, cf)
 			return
 		}
 	}
