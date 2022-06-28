@@ -434,7 +434,7 @@ func (p *PublicController) AttendExam(examId, userId int) error {
 
 	// Can attend to exam if exam start <= current time <= exam end
 	curTime := time.Now()
-	end := ex.Date.Add(time.Minute * time.Duration(ex.Duration))
+	end := ex.Date.Add(time.Second * time.Duration(ex.Duration))
 	diffBegin := curTime.Sub(ex.Date)
 	diffEnd := end.Sub(curTime)
 	if diffBegin.Minutes() >= 0 {
@@ -561,7 +561,7 @@ func (p *PublicController) GradeAnswer(examId, creatorId, userId int, grade null
 		return err
 	}
 
-	if ex.Date.Add(time.Minute*time.Duration(ex.Duration)).Sub(time.Now()) > 0 {
+	if ex.Date.Add(time.Second*time.Duration(ex.Duration)).Sub(time.Now()) > 0 {
 		log.Infof("trying to grade exam %d before it ended", ex.ID)
 		return errs.ErrExamHasntEnded
 	}
