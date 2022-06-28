@@ -59,14 +59,14 @@ func handleApiError(c *gin.Context, err error) {
 
 	for _, br := range BAD_REQUESTS {
 		if errors.Is(err, br) {
-			c.JSON(http.StatusBadRequest, br)
+			c.JSON(http.StatusBadRequest, br.Error())
 			return
 		}
 	}
 
 	for _, cf := range CONFLICTS {
 		if errors.Is(err, cf) {
-			c.JSON(http.StatusConflict, cf)
+			c.JSON(http.StatusConflict, cf.Error())
 			return
 		}
 	}
